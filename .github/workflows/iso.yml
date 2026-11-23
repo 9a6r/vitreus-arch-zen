@@ -2,11 +2,22 @@ name: Build Vitreus ISO
 
 on:
   workflow_dispatch:
+    inputs:
+      retest_run_id:
+        description: 'Re-test the existing ISO from this tagged build run ID (empty builds a new ISO)'
+        required: false
+        type: string
+      publish_retested_image:
+        description: 'Publish the original ISO to its original tag if this re-test passes'
+        required: false
+        type: boolean
+        default: false
   push:
     tags: ['v*']
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: vitreus-iso-${{ github.ref }}
@@ -28,18 +39,61 @@ jobs:
       - name: Test the differential update client
         run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p test_iso_delta.py
 
-      - name: Prepare build space on the hosted runner
+      - name: Identify the source revision and release tag
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RETEST_ID: ${{ inputs.retest_run_id }}
+          PUBLISH_RETEST: ${{ inputs.publish_retested_image }}
         run: |
-          if [[ "$GITHUB_REF_TYPE" == tag && ! "$GITHUB_REF_NAME" =~ ^v[0-9A-Za-z][0-9A-Za-z._-]*$ ]]; then
-            echo 'Use a release tag such as v2026.11.22.' >&2
-            exit 1
+          tag=
+          sha=$GITHUB_SHA
+          if [[ -n "$RETEST_ID" ]]; then
+            [[ "$RETEST_ID" =~ ^[1-9][0-9]*$ ]]
+            api="repos/$GITHUB_REPOSITORY/actions"
+            workflow=$(gh api "$api/workflows/iso.yml" --jq .id)
+            source=$(gh api "$api/runs/$RETEST_ID")
+            jq -e --argjson wf "$workflow" --arg repo "$GITHUB_REPOSITORY" \
+              '.workflow_id == $wf and .event == "push" and .status == "completed" and .head_repository.full_name == $repo' \
+              <<< "$source" >/dev/null
+            tag=$(jq -r .head_branch <<< "$source")
+            sha=$(jq -r .head_sha <<< "$source")
+            attempt=$(jq -r .run_attempt <<< "$source")
+            [[ "$tag" =~ ^v[0-9A-Za-z][0-9A-Za-z._-]*$ ]]
+            [[ "$(gh api "repos/$GITHUB_REPOSITORY/commits/refs/tags/$tag" --jq .sha)" == "$sha" ]]
+            jobs=$(gh api "$api/runs/$RETEST_ID/attempts/$attempt/jobs")
+            jq -e 'any(.jobs[].steps[]; .name == "Build and inspect the Arch Linux image" and .conclusion == "success")' \
+              <<< "$jobs" >/dev/null
+            echo "artifact=unverified-iso-$RETEST_ID-$attempt" >> "$GITHUB_OUTPUT"
+            echo "Re-testing ISO built from tag $tag at $sha in run $RETEST_ID"
+            if [[ "$PUBLISH_RETEST" != true ]]; then tag=; fi
+          elif [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            tag=$GITHUB_REF_NAME
+            [[ "$tag" =~ ^v[0-9A-Za-z][0-9A-Za-z._-]*$ ]]
           fi
+          echo "release_tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "build_sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Download the original image with its artifact digest
+        if: inputs.retest_run_id != ''
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ steps.source.outputs.artifact }}
+          run-id: ${{ inputs.retest_run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/vitreus
+          digest-mismatch: error
+
+      - name: Prepare build space on the hosted runner
+        if: inputs.retest_run_id == ''
+        run: |
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup
           mkdir -p "$RUNNER_TEMP/vitreus/out"
           echo "SOURCE_DATE_EPOCH=$(git show -s --format=%ct HEAD)" >> "$GITHUB_ENV"
           df -h "$RUNNER_TEMP"
 
       - name: Build and inspect the Arch Linux image
+        if: inputs.retest_run_id == ''
         env:
           ARCH_IMAGE: archlinux:base-20261108.0.623074@sha256:d4594bb2300cba11f41c2f27923eb56f63d9988909c402f9c95517d1e362c899
         run: |
@@ -62,8 +116,11 @@ jobs:
             '
           sudo rm -rf "$RUNNER_TEMP/vitreus/build"
           sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/vitreus/out"
+
+      - name: Select the verified image
+        run: |
           shopt -s nullglob
-          images=("$RUNNER_TEMP"/vitreus/out/*.iso)
+          images=("$RUNNER_TEMP"/vitreus/out/*.iso "$RUNNER_TEMP"/vitreus/*.iso)
           if (( ${#images[@]} != 1 )); then
             echo 'Expected exactly one ISO in the output directory.' >&2
             exit 1
@@ -95,37 +152,43 @@ jobs:
 
       - name: Index the ISO for differential updates
         id: pack
+        if: inputs.retest_run_id == '' || inputs.publish_retested_image
+        env:
+          RELEASE_TAG: ${{ steps.source.outputs.release_tag }}
         run: |
           args=()
-          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
-            args+=(--base-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/")
+          if [[ -n "$RELEASE_TAG" ]]; then
+            args+=(--base-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG/")
           fi
           python3 scripts/iso_delta.py pack "$ISO_FILE" "$RUNNER_TEMP/release" "${args[@]}"
 
       - name: Publish the verified tag
         id: publish
-        if: github.ref_type == 'tag'
+        if: steps.source.outputs.release_tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.source.outputs.release_tag }}
+          BUILD_SHA: ${{ steps.source.outputs.build_sha }}
         run: |
-          marker="<!-- vitreus-iso $GITHUB_SHA -->"
-          if release=$(gh release view "$GITHUB_REF_NAME" --json isDraft,body); then
+          [[ "$(gh api "repos/$GITHUB_REPOSITORY/commits/refs/tags/$RELEASE_TAG" --jq .sha)" == "$BUILD_SHA" ]]
+          marker="<!-- vitreus-iso $BUILD_SHA -->"
+          if release=$(gh release view "$RELEASE_TAG" --json isDraft,body); then
             if ! jq -e --arg marker "$marker" '.isDraft and (.body | contains($marker))' <<< "$release" >/dev/null; then
               echo 'This tag already has a release. Use a new tag to publish a new ISO.' >&2
               exit 1
             fi
           else
-            gh release create "$GITHUB_REF_NAME" --verify-tag --draft \
-              --title "Vitreus Arch Zen $GITHUB_REF_NAME" \
-              --notes "Arch Linux x86_64 with linux-zen and Vitreus. See the repository README for download and incremental update commands.
+            gh release create "$RELEASE_TAG" --verify-tag --draft \
+              --title "Vitreus Arch Zen $RELEASE_TAG" \
+              --notes "Arch Linux x86_64 with linux-zen and Vitreus, built from $BUILD_SHA. See the repository README for download and incremental update commands.
 
           $marker"
           fi
-          gh release upload "$GITHUB_REF_NAME" "$RUNNER_TEMP"/release/* --clobber
-          gh release edit "$GITHUB_REF_NAME" --draft=false
+          gh release upload "$RELEASE_TAG" "$RUNNER_TEMP"/release/* --clobber
+          gh release edit "$RELEASE_TAG" --draft=false
 
       - name: Save the build for manual download
-        if: always() && steps.pack.outcome == 'success' && (github.ref_type != 'tag' || steps.publish.outcome == 'failure')
+        if: always() && steps.pack.outcome == 'success' && (steps.source.outputs.release_tag == '' || steps.publish.outcome == 'failure')
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: vitreus-iso-${{ github.run_id }}-${{ github.run_attempt }}
@@ -135,7 +198,7 @@ jobs:
           if-no-files-found: error
 
       - name: Keep the generated ISO for diagnosing a failed check
-        if: failure() && steps.pack.outcome != 'success'
+        if: failure() && inputs.retest_run_id == '' && steps.pack.outcome != 'success'
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: unverified-iso-${{ github.run_id }}-${{ github.run_attempt }}

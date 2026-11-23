@@ -94,4 +94,19 @@ if ! wait_marker VITREUS_SMOKE_CONTROLS 85; then
     exit 1
 fi
 capture controls
+# Require a visible response in the captured scanout as well as the guest facts.
+# A clock tick or a cursor blink changes far fewer pixels than the drawer.
+/usr/bin/python3 - "$results" <<'PYTHON'
+from pathlib import Path
+import sys
+from PIL import Image, ImageChops
+
+directory = Path(sys.argv[1])
+with Image.open(directory / "desktop.png") as desktop, Image.open(directory / "controls.png") as controls:
+    histogram = ImageChops.difference(desktop, controls).convert("L").histogram()
+    changed = sum(histogram[8:])
+    print(f"Control Center changed {changed} visible pixels")
+    if changed < desktop.width * desktop.height / 100:
+        raise SystemExit("The Control Center did not visibly change the scanout")
+PYTHON
 cat "$results/serial.log"
