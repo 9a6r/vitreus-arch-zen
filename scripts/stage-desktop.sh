@@ -35,6 +35,9 @@ install -Dm644 "$dest/assets/greeter.jpeg" "$skel/Pictures/Wallpapers/Vitreus.jp
 mkdir -p "$skel/.local/share/fonts"
 cp -R "$assets/fonts/." "$skel/.local/share/fonts/"
 printf '%s\n' 'config-file = ?~/.config/pleamar/shells/vitreus/terminal/ghostty.conf' > "$skel/.config/ghostty/config"
+if [[ ! -f "$skel/.bashrc" ]]; then
+    install -m 644 /etc/skel/.bashrc "$skel/.bashrc"
+fi
 if ! grep -q '# vitreus: vitfetch' "$skel/.bashrc" 2>/dev/null; then
     cat >>"$skel/.bashrc" <<'RC'
 case "$TERM" in xterm-ghostty|xterm-kitty) "$HOME/.local/bin/vitfetch" ;; esac  # vitreus: vitfetch
