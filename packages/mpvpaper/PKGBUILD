@@ -4,7 +4,7 @@ pkgrel=1
 pkgdesc='Play videos as the wallpaper on a Wayland desktop'
 arch=(x86_64)
 url='https://github.com/GhostNaN/mpvpaper'
-license=(GPL-3.0-or-later)
+license=(GPL-3.0-only)
 depends=(mpv wayland libglvnd)
 makedepends=(meson ninja wayland-protocols)
 options=(!debug)
@@ -19,4 +19,5 @@ build() {
 package() {
     meson install -C build --destdir "$pkgdir"
     install -Dm644 "$pkgname-$pkgver/mpvpaper.man" "$pkgdir/usr/share/man/man1/mpvpaper.1"
+    install -Dm644 "$pkgname-$pkgver/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }

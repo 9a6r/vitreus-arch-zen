@@ -10,7 +10,7 @@ repo=$(realpath -m -- "$1")
 recipes=$(cd -- "$(dirname -- "$0")/../packages" && pwd)
 mkdir -p -- "$repo"
 
-# All host/target packages come from the Arch snapshot configured by build.sh.
+# Use the same Arch package repositories as the ISO builder.
 # These also supply the font instancer and wallpaper tools for staging.
 pacman -S --needed --noconfirm base-devel git rust curl libxkbcommon pam wayland \
     vulkan-icd-loader fontconfig mpv mesa libglvnd wayland-protocols meson ninja \
@@ -32,13 +32,9 @@ for name in pleamar iris-colors mpvpaper; do
             CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-2}" makepkg --clean --noconfirm
     )
 done
-archives=("$build_root/pkgs/"*.pkg.tar.*)
-for archive in "${archives[@]}"; do
+packages=()
+for archive in "$build_root/pkgs/"*.pkg.tar.*; do
     install -m644 "$archive" "$repo/"
+    packages+=("$repo/${archive##*/}")
 done
-(
-    cd "$repo"
-    packages=()
-    for archive in "${archives[@]}"; do packages+=("${archive##*/}"); done
-    repo-add vitreus-local.db.tar.gz "${packages[@]}"
-)
+repo-add "$repo/vitreus-local.db.tar.gz" "${packages[@]}"
