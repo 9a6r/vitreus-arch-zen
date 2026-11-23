@@ -1,0 +1,12 @@
+desktop/vitreus/
+https://github.com/natepayn3/Vitreus
+12bf45c64534d262f89c785c77b25349df45bd9c
+The live image uses these MIT-licensed runtime files, including the bundled add-ons
+and their licenses. The shipped theme catalog omits themes/uwu.toml. Reference
+screenshots remain in the source tree and are excluded from the live filesystem.
+
+desktop/fonts/
+https://github.com/google/fonts
+06bfe0d62a98375cb09c942fa18e68bd32cff057
+Original TTF files from the corresponding ofl/ directory. Each family includes
+its OFL.txt. The families match the retained Vitreus themes and Ghostty terminal.
