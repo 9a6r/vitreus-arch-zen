@@ -17,7 +17,16 @@ xorriso -abort_on FAILURE -indev "$iso" -report_el_torito plain \
     -extract /boot/grub/loopback.cfg "$tmp/loopback" \
     -extract /arch/pkglist.x86_64.txt "$tmp/packages" >"$tmp/catalog"
 grep -Eq 'El Torito boot img.*BIOS' "$tmp/catalog"
-grep -Eq 'El Torito boot img.*UEFI' "$tmp/catalog"
+# Firmware reads the appended FAT image. Inspect its contents directly at the
+# EFI boot entry's 2048-byte sector offset inside the finished ISO.
+efi_lba=$(awk '/^El Torito boot img/ && /UEFI/ {print $NF; exit}' "$tmp/catalog")
+[[ $efi_lba =~ ^[0-9]+$ ]]
+esp="$iso@@$((efi_lba * 2048))"
+for path in EFI/BOOT/BOOTX64.EFI arch/boot/x86_64/{vmlinuz-linux-zen,initramfs-linux-zen.img}; do
+    mdir -i "$esp" "::/$path" >/dev/null
+done
+mcopy -i "$esp" ::/loader/entries/01-archiso-linux.conf "$tmp/esp-menu"
+cmp "$tmp/uefi" "$tmp/esp-menu"
 for menu in uefi bios loopback; do
     grep -Fq '/arch/boot/x86_64/vmlinuz-linux-zen' "$tmp/$menu"
     grep -Fq '/arch/boot/x86_64/initramfs-linux-zen.img' "$tmp/$menu"
@@ -60,4 +69,11 @@ fi
 unsquashfs -cat "$sfs" etc/sddm.conf.d/20-vitreus-live.conf >"$tmp/autologin"
 grep -Fxq 'User=vitreus' "$tmp/autologin"
 grep -Fxq 'Session=hyprland.desktop' "$tmp/autologin"
+unsquashfs -cat "$sfs" etc/pacman.d/mirrorlist >"$tmp/mirrors"
+grep -Eq '^[[:space:]]*Server[[:space:]]*=[[:space:]]*https://' "$tmp/mirrors"
+unsquashfs -cat "$sfs" etc/pacman.conf >"$tmp/pacman.conf"
+if grep -Fxq '[vitreus-local]' "$tmp/pacman.conf"; then
+    echo "The builder's package repository leaked into the live system." >&2
+    exit 1
+fi
 echo "Verified the Zen kernel, hybrid boot configuration and Vitreus live filesystem in $iso"
