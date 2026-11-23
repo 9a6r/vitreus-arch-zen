@@ -55,6 +55,7 @@ vulkan-intel
 vulkan-nouveau
 vulkan-radeon
 vulkan-swrast
+vulkan-tools
 wayland
 wayland-protocols
 wf-recorder

@@ -1,6 +1,6 @@
 # Vitreus على Arch Linux بنواة Zen
 
-صورة Live ‏x86_64 تفتح جلسة Hyprland وواجهة Vitreus المبنية على Pleamar. مصدر الواجهة هو الإصدار المثبّت [`12bf45c` من Vitreus](https://github.com/natepayn3/Vitreus/tree/12bf45c64534d262f89c785c77b25349df45bd9c). الثيم الافتراضي Glass يستمد ألوانه من الخلفية. أُزيل UwU من مجموعة الثيمات.
+صورة Live ‏x86_64 تفتح جلسة Hyprland وواجهة Vitreus المبنية على Pleamar. مصدر الواجهة هو الإصدار المثبّت [`12bf45c` من Vitreus](https://github.com/natepayn3/Vitreus/tree/12bf45c64534d262f89c785c77b25349df45bd9c). الثيم الافتراضي Glass يستمد ألوانه من الخلفية. أُزيل UwU من مجموعة الثيمات. يبدأ سطح المكتب بتخطيط **Left Frame** الأصلي الظاهر في عرض Tour وصورة Dashboard، بشريط الأدوات على اليسار وإطار حول باقي الشاشة. تقدر تغيّر موضعه من Settings → Bar.
 
 ## تنزيل الصورة أو تحديث نسخة قديمة
 

@@ -1,0 +1,12 @@
+#!/bin/sh
+# SDDM invokes this once, before Hyprland opens the Wayland display.
+# On a software-only Vulkan device, frames exported as DMA-BUFs can be
+# rejected by the virtual compositor. Use Pleamar's system swapchain and
+# shared-memory backdrop capture for the same scenes, glass and transitions.
+if LC_ALL=C timeout 10 vulkaninfo --summary 2>/dev/null |
+    awk '$1 == "deviceType" { if ($NF ~ /_CPU$/) cpu++; else other++ }
+         END { exit !(cpu && !other) }'
+then
+    export PLEAMAR_SWAPCHAIN=1 PLEAMAR_BACKDROP_SHM=1
+fi
+exec /usr/share/sddm/scripts/wayland-session "$@"

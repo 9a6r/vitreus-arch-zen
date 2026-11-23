@@ -29,6 +29,9 @@ install -m 644 "$assets/session/hyprland.lua" "$skel/.config/hypr/hyprland.lua"
 ln -sfn ../pleamar/shells/vitreus/hypr_vitreus.lua "$skel/.config/hypr/hypr_vitreus.lua"
 ln -sfn ../pleamar/shells/vitreus/pleamar-wm/hypridle.conf "$skel/.config/hypr/hypridle.conf"
 install -m 644 "$assets/session/autostart" "$skel/.config/pleamar/autostart"
+# The left Frame is the native Vitreus preset shown in the README's dashboard.
+printf '%s\n' '{"pos":"left","left":true}' > "$data/bar-position.json"
+install -Dm755 "$assets/session/wayland-session" "$root/usr/local/lib/vitreus-iso/wayland-session"
 install -Dm755 "$assets/session/wallpaper" "$root/usr/local/lib/vitreus-iso/wallpaper"
 install -Dm644 "$dest/assets/greeter.jpeg" "$skel/Pictures/Wallpapers/Vitreus.jpeg"
 
