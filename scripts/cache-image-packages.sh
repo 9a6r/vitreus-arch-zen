@@ -28,12 +28,7 @@ done
 # A single flat directory can serve both official repositories. Keep their
 # original database names, signatures and package bytes. The custom repo
 # continues to point to its own directory.
-cp -L "$db/sync/"{core,extra}.db "$mirror/"
-shopt -s nullglob
-signatures=("$db"/sync/{core,extra}.db.sig)
-if (( ${#signatures[@]} )); then
-    cp -L "${signatures[@]}" "$mirror/"
-fi
+cp -L "$db/sync/"{core,extra}.db* "$mirror/"
 for archive in "$cache/"*.pkg.tar.*; do
     ln -sf -- "$archive" "$mirror/"
 done
