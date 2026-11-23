@@ -1,0 +1,381 @@
+language 0.1
+import "addon-palette.plm"
+import "addon-pencil.plm"
+import "addon-theme.plm"                          // the theme's own pieces (PThumb: see STYLE.md, "Themes")
+
+//  Equalizer, in boiled pencil: ten bands you drag, five presets and one switch, in a panel out of the add-on pill.
+//  The scene only draws and reports what was touched (`eq_toggle`, `preset(n)`, `bset(band * 1000 + (dB + 12) * 10)`, `boost(dB)`); eq.luau keeps the bands and
+//  runs vitreus-eq, which does the filtering (PipeWire's filter-chain). Drag a band, right-click it to put it back to 0 dB.
+
+scene Equalizer {
+    //  Motion: pleamar's house springs, made about 18% quicker (stiffness x1.38, damping x1.18: the same overshoot, sooner).
+    spring calm = 208, 27
+    surface { size: full, full; anchor: top_left; margin: 0; level: top, overlay while slot_open; screens: each max 4; open: shown > 0.5 }
+
+    permissions {
+        services: "files", "files.write"
+        run: "vitreus-eq", "pleamar"
+    }
+
+    fact pal_ink_r = 0.9608
+    fact pal_ink_g = 0.9686
+    fact pal_ink_b = 0.9608
+    fact pal_faint_r = 0.7608
+    fact pal_faint_g = 0.7804
+    fact pal_faint_b = 0.8000
+    fact pal_mint_r = 0.6196
+    fact pal_mint_g = 0.8392
+    fact pal_mint_b = 0.7412
+    fact pal_mintlo_r = 0.4235
+    fact pal_mintlo_g = 0.7373
+    fact pal_mintlo_b = 0.6118
+    fact pal_minthi_r = 0.8627
+    fact pal_minthi_g = 0.9725
+    fact pal_minthi_b = 0.9255
+    fact pal_onmint_r = 0.0627
+    fact pal_onmint_g = 0.0863
+    fact pal_onmint_b = 0.1020
+    fact pal_tint_r = 0.1059
+    fact pal_tint_g = 0.1294
+    fact pal_tint_b = 0.1529
+    fact pal_panel_r = 0.0863
+    fact pal_panel_g = 0.1020
+    fact pal_panel_b = 0.1216
+    fact pal_deep_r = 0.0431
+    fact pal_deep_g = 0.0549
+    fact pal_deep_b = 0.0667
+    fact pal_off_r = 0.2275
+    fact pal_off_g = 0.2510
+    fact pal_off_b = 0.2824
+    fact pal_alert_r = 0.9373
+    fact pal_alert_g = 0.2667
+    fact pal_alert_b = 0.2667
+
+    fact room_t = 0
+    fact room_r = 0
+    fact room_b = 0
+    fact room_l = 0
+    fact look = 0
+
+    fact slot_open = false
+    fact slot_sw = 0
+    fact slot_sh = 0
+    text slot_mon = ""
+    fact mon_known = false
+    fact mon_c0 = false
+    fact mon_c1 = false
+    fact mon_c2 = false
+    fact mon_c3 = false
+    fact slot_x = 0
+    fact slot_y = 0
+    fact slot_w = 0
+    fact slot_h = 0
+    let mon_here = if(screen.index == 0, if(mon_c0, 1, 0), if(screen.index == 1, if(mon_c1, 1, 0), if(screen.index == 2, if(mon_c2, 1, 0), if(mon_c3, 1, 0))))
+    let onmon = if(mon_known, mon_here > 0.5, slot_sw == 0 or screen.width == slot_sw)       // this copy is on the panel's monitor (still told while it shuts)
+    let here = if(slot_open and onmon, 1, 0)       // 1 on that copy, while the panel is out
+    let shown = if(onmon and (slot_open or en1 > 0.004 or tail > 0.004), 1, 0)       // what is drawn: as `here`, and on after it while the content fades out with the glass (the window stays until it has). `en1` is one for every copy: the monitor test keeps the others shut
+
+    let u = 1.1
+    //  The pencil's clock, running only while the panel shows: naming pleamar's `time` keeps a scene awake for good, about fifty rounds a second
+    //  with the panel shut (pleamar --report: "animating 100%"). Stopped, the scene rests.
+    prop ax_clk = 0
+    spin ax_clk by if(shown > 0.5, 1, 0)
+    let fr = if(shown > 0.5 and look < 4.5, floor(ax_clk * 8), 0)       // (the pencil holds still on the Proxy theme: its HUD is crisp)
+
+    prop wk = 0 ~595ms
+    prop en1 = 0 ~170ms
+    prop en2 = 0 ~323ms
+    prop en3 = 0 ~442ms
+    on change here while here > 0.5 { wk: 1; en1: 1 after 200ms; en2: 1 after 200ms; en3: 1 after 200ms }
+    on change here while here < 0.5 { wk: 0 ~68ms; en1: 0 ~68ms; en2: 0 ~68ms; en3: 0 ~68ms; en1: 0 ~68ms after 205ms; en2: 0 ~68ms after 205ms; en3: 0 ~68ms after 205ms }
+    every 500ms while here > 0.5 and en1 < 0.002 { en1: 1 after 200ms; en2: 1 after 200ms; en3: 1 after 200ms }
+    //  The same again, by the clock: a close whose change was never seen (the panel was shut in the frame the content was still arriving, or two says landed
+    //  together) left `en1` at 1, so `shown` held and the content stayed drawn over bare wallpaper with the glass already gone. The rule above has always had
+    //  this backstop for the way in; this is the one for the way out.
+    every 250ms while here < 0.5 and en1 > 0.004 { wk: 0 ~68ms; en1: 0 ~68ms; en2: 0 ~68ms; en3: 0 ~68ms }
+    //  The last frame has to be an empty one. When `shown` stops holding, the surface is closed and the scene stops painting, but what it painted last stays
+    //  on the monitor: the content was left over bare wallpaper, the glass already gone. `tail` keeps the scene awake for a breath after the content has
+    //  faded (`en1` is over in 80 ms, this in ~400), so the frames painted meanwhile are empty ones, and that is what stays.
+    prop tail = 0 ~340ms
+    on change here while here > 0.5 { tail: 1 ~0ms }
+    on change here while here < 0.5 { tail: 0 ~340ms }
+    every 250ms while here < 0.5 and en1 < 0.004 and tail > 0.004 { tail: 0 ~340ms }
+
+    //  What eq.luau reports: whether the EQ is on, which preset is lit (-1: your own curve), what to say under the name, and the ten gains in dB.
+    fact eq_on = 0
+    fact cur = 0
+    text status = "Off"
+    fact held = -1
+    shader glint = file "glint.wgsl"                   // the band of light that crosses the glass now and then
+    prop sw = 0 ~1105ms                                // how far across it is (0 to 1)
+    every 3500ms while shown > 0.5 { sw: 1 ~1105ms; sw: 0 ~0ms after 1700ms }
+    fact bend = 1                                     // 1: the glass bends what is behind it; 0: it only blurs (cheaper): `pleamar --say equalizer "fact bend 0"`
+    event eq_toggle ->
+    event preset ->
+    //  The Boost: 0 to 12 dB past the output's own 100 %, into a maximizer and a limiter at the end of the filter. `boost_ok` is 0 while a plugin package
+    //  it needs is missing, and the row is then not drawn (Settings > Add-ons says what to install).
+    fact boost = 0
+    fact boost_ok = 1
+    event boost ->
+    event bset ->
+    repeat i in 0..10 {
+        fact g.$i = 0
+    }
+    prop ea = 0 ~calm
+    follow ea = eq_on
+    let dim = 0.45 + 0.55 * ea
+
+    prop psel = 0 ~calm                                // the preset thumb: where it is, and whether it shows at all (your own curve lights none)
+    prop pa = 0 ~calm
+    follow psel = max(cur, 0)
+    follow pa = if(cur >= 0, 1, 0)
+
+    //  The spectrum eq.luau gets from vitreus-eq while the panel is out: a level and a peak for each band, 0 to 1. Each goes through a spring so the bars move like light, not like numbers.
+    //  `fl` is the flash that runs along the bands when the switch goes on.
+    repeat i in 0..10 {
+        fact lv.$i = 0
+        fact pk.$i = 0
+        prop ls.$i = 0 ~76ms
+        prop ps.$i = 0 ~119ms
+        prop fl.$i = 0 ~136ms
+        prop gs.$i = 0 ~119ms
+        follow gs.$i = g.$i
+        follow ls.$i = lv.$i
+        follow ps.$i = pk.$i
+    }
+    on change eq_on while eq_on > 0.5 {
+        fl.0: 1 ~60ms after 0ms
+        fl.0: 0 ~357ms after 120ms
+        fl.1: 1 ~60ms after 45ms
+        fl.1: 0 ~357ms after 165ms
+        fl.2: 1 ~60ms after 90ms
+        fl.2: 0 ~357ms after 210ms
+        fl.3: 1 ~60ms after 135ms
+        fl.3: 0 ~357ms after 255ms
+        fl.4: 1 ~60ms after 180ms
+        fl.4: 0 ~357ms after 300ms
+        fl.5: 1 ~60ms after 225ms
+        fl.5: 0 ~357ms after 345ms
+        fl.6: 1 ~60ms after 270ms
+        fl.6: 0 ~357ms after 390ms
+        fl.7: 1 ~60ms after 315ms
+        fl.7: 0 ~357ms after 435ms
+        fl.8: 1 ~60ms after 360ms
+        fl.8: 0 ~357ms after 480ms
+        fl.9: 1 ~60ms after 405ms
+        fl.9: 0 ~357ms after 525ms
+    }
+    let energy = (ls.0 + ls.1 + ls.2 + ls.3 + ls.4 + ls.5 + ls.6 + ls.7 + ls.8 + ls.9) / 10
+
+    //  Where the content is: it glides to `slot_x`, `slot_y` on the glass's own spring (Vitreus's `ax_sp`), so it moves with the panel as it is pulled, and is put
+    //  there at once while it is not drawn yet (the panel opening, or a resize).
+    spring ax_sp = 415, 24
+    prop slx = 0 ~ax_sp
+    prop sly = 0 ~ax_sp
+    on change slot_x { slx: slot_x }
+    on change slot_y { sly: slot_y }
+    on change slot_x while en1 < 0.01 { slx: slot_x ~0ms }
+    on change slot_y while en1 < 0.01 { sly: slot_y ~0ms }
+    every 500ms while here > 0.5 and en1 < 0.01 { slx: slot_x ~0ms; sly: slot_y ~0ms }
+    let left = slx - slot_w / 2
+    let top = sly - slot_h / 2
+    let wd = slot_w                       // the whole rectangle: the shell has already kept its margin round it
+    let x0 = left
+
+    //  The bands: 12 dB up and down. A column is 1/10 of the width; y is worked out the same way in the rules below.
+    let by0 = top + (178 - 30 * (1 - boost_ok)) * u       // the Boost row is not there while its plugins are missing (Settings > Add-ons says so): the bands take its room
+    let by1 = top + slot_h - 20 * u              // (the labels under the bands end on the rectangle's bottom: the shell's margin is under them already)
+    let bh = by1 - by0
+    let bym = (by0 + by1) / 2
+    let colw = wd / 10
+    let ky[10]
+    repeat i in 0..10 {
+        ky[i] = by0 + (12 - g.$i) / 24 * bh
+    }
+
+    group {
+        opacity: en1
+        move: 0, (1 - en1) * 12
+
+        //  ── the switch card ──
+        let cy0 = top + 6
+        let ch0 = 58 * u
+        let con = eq_on
+        let chot = if(con > 0.5 or card_z.hover > 0.5, 1, 0)
+        box { from: x0, cy0; size: wd, ch0; corner: 12 * u; color: mint; opacity: 5% * card_z.hover * shown }
+        PFill(tx: x0, ty: cy0, tw: wd, th: ch0, sx: x0 + wd - 35 * u, sy: cy0 + ch0 / 2, on: con, av: shown)
+        PRound(x: x0 + 2.6 * u, y: cy0 + 2.6 * u, w: wd - 5.2 * u, h: ch0 - 5.2 * u, r: 9.7 * u, s: 1, wd: 1.7 * u, c: mix(faint, mint, con), a: (0.5 + 0.45 * con) * shown, f: chot * fr)
+        PSwitch(sx: x0 + wd - 35 * u, sy: cy0 + ch0 / 2, on: con, av: shown, s: 7, f: chot * fr)
+        //  the icon: three faders
+        repeat k in 0..3 {
+            PLn(ax: x0 + (24 + k * 8) * u, ay: cy0 + ch0 / 2 - 9 * u, bx: x0 + (24 + k * 8) * u, by: cy0 + ch0 / 2 + 9 * u, s: 20 + k, wd: 1.8 * u, c: mix(faint, mint, con), a: shown, f: chot * fr)
+            ellipse { at: x0 + (24 + k * 8) * u, cy0 + ch0 / 2 + (pick(k, 3, -4, 1) - 6 * pick(k, ls.1, ls.4, ls.7)) * u; radius: (3 + 1.5 * pick(k, ls.1, ls.4, ls.7)) * u; color: mix(faint, mint, con); opacity: 80% * shown }
+        }
+        text "Equalizer" { at: x0 + 54 * u, cy0 + ch0 / 2 - 8.5 * u; anchor: left center; size: 13.5 * u; weight: if(look == 4, 600, 700); color: ink; opacity: shown; family: "Space Grotesk" }
+        text status { at: x0 + 54 * u, cy0 + ch0 / 2 + 8.5 * u; anchor: left center; size: 11 * u; weight: 600; width: wd - 110 * u; lines: 1; color: mix(faint, mint, con); opacity: shown; family: "Space Grotesk" }
+        zone box card_z { from: x0, cy0; size: wd, ch0; corner: 12 * u; cursor: pointer; label: "Equalizer on or off"; active: here > 0.5 }
+        on press card_z { emit eq_toggle }
+    }
+
+    group {
+        opacity: en2
+        move: 0, (1 - en2) * 12
+
+        //  ── presets ──
+        //  The Desk's tab strip: a veil pill, a hairline between the tabs and the chosen one a mint thumb that slides and glows. With your own curve (nothing lit) the thumb fades out.
+        let py = top + 6 + 58 * u + 14 * u
+        let ph = 34 * u
+        let pw = wd / 5
+        let pcy = py + ph / 2
+        box { at: x0 + wd / 2, pcy; size: wd, ph; corner: ph / 2; color: ink; opacity: 8% * shown * dim }
+        group {
+            clip inset 0 box { at: x0 + wd / 2, pcy; size: wd, ph; corner: ph / 2 }
+            repeat k in 0..4 {
+                box { at: x0 + (k + 1) * pw, pcy; size: 1 * u, 10 * u; corner: 0.5 * u; color: ink; opacity: 12% * shown * dim }
+            }
+        }
+        PThumb(x: x0 + (psel + 0.5) * pw, y: pcy, w: pw - 8 * u, h: 26 * u, rad: 10 * u, th: ph, a: pa * shown * dim)
+        repeat k in 0..5 {
+            let tsl = clamp(1 - abs(psel - k), 0, 1) * pa
+            text pick(k, "Flat", "Bass", "Vocal", "Treble", "Loud") { at: x0 + (k + 0.5) * pw, pcy; anchor: center; align: center; size: 12.5 * u; weight: 600; color: mix(ink, off, tsl); opacity: shown * dim * (62% + 38% * tsl + 30% * chip.$k.hover); family: "Space Grotesk" }
+            zone box chip.$k { from: x0 + k * pw, py; size: pw, ph; cursor: pointer; label: "Preset"; active: here > 0.5 }
+            on press chip.$k { emit preset(k) }
+        }
+
+        //  ── the Boost: louder than 100 %, into the limiter. Drag along it; a right-click puts it back to 0 ──
+        let bty = py + ph + 22 * u
+        let bsx = x0 + 62 * u
+        let bsw = wd - 62 * u - 4 * u
+        let bok = boost_ok
+        let bhot = if(bz.hover > 0.5, 1, 0)
+        text "Boost" { at: x0 + 4 * u, bty - 7 * u; anchor: left center; size: 12.5 * u; weight: 700; color: ink; opacity: shown * bok; family: "Space Grotesk" }
+        text number(boost, 0, " dB") { at: x0 + 4 * u, bty + 8 * u; anchor: left center; size: 10.5 * u; weight: 700; color: mix(faint, mint, if(boost > 0.5, 1, 0)); opacity: shown * bok; family: "Space Grotesk" }
+        group {
+            opacity: bok
+            PSliderCC(x0: bsx, y: bty, w: bsw, lv: boost / 12, hot: bhot, k: u, h: 12 * u, mute: 0)
+        }
+        zone box bz { from: bsx - 8 * u, bty - 14 * u; size: bsw + 16 * u, 28 * u; cursor: ew_resize; label: "Boost (drag left or right)"; active: here > 0.5 and bok > 0.5 }
+        on press bz { emit boost(floor(clamp((pointer.x - bsx) / bsw, 0, 1) * 12 + 0.5)) }
+        on drag bz { emit boost(floor(clamp((pointer.x - bsx) / bsw, 0, 1) * 12 + 0.5)) }
+        on press right bz { emit boost(0) }
+    }
+
+    group {
+        opacity: en3
+        move: 0, (1 - en3) * 12
+
+        //  ── the ten bands ──
+        //  One piece of glass, drawn as the shell's audio visualiser draws the screen's edge (pages/bar_waves_*.plm): the same tint, rim, light and shadow, a floor and ten wide rounded columns standing on it,
+        //  melted into each other (`blend`). Its silhouette IS the equalizer curve: each column is as tall as its band's gain (12 dB at the top of the area, -12 at the floor), and the live sound ripples on
+        //  top of it. Drag the glass to shape it. A column with no length is moved off the surface, as there.
+        //  The glass takes the theme's own material, as the shell's frame does (pages/bar_glass.plm): Glass and Cyber (its tint taken to black) stay glass; the Cassette is lit plastic with a dark outline and a hard shadow,
+        //  the UwU a pastel candy with a grape outline and a pink shadow, the Milkbox two layers of one pale material (a white light up and left, a soft shade down and right), the Proxy a flat plate with a thin pale
+        //  outline and a hard offset edge, the Doodle sticky-note paper with an ink outline and a solid ink shadow. The plastics are solid, so they have no lens and no rim of glass.
+        body {
+            color: if(look == 3, #000000, mix(tint, mintlo, 0.2 * ea))
+            glass: 100%
+            opacity: shown
+            lens: bend > 0.5
+            frost: 0%
+            refraction: 100%
+            dispersion: 40%
+            rim: 12%
+            shine: pointer
+            shadow: 0, 3 * u, 12 * u, 22%, deep
+            show: look == 0 or look == 3
+            include "eq-columns.plm"
+        }
+        body {
+            color: mix(tint, mint, 0.3)
+            rim: 40%
+            border: 1.7 * u, deep
+            shadow: 4.5 * u, 5.5 * u, 0, 55%, deep
+            opacity: shown
+            show: look == 1
+            include "eq-columns.plm"
+        }
+        body {
+            gradient: x0, by0 to x0 + wd, by1, #ffb3dc, #cfc4ff 38%, #aab4ff 68%, #ffd0ea
+            rim: 55%
+            border: 3 * u, deep
+            shadow: 4 * u, 5 * u, 0, 90%, mix(deep, #ff6ec7, 0.75)
+            opacity: shown
+            show: look == 2
+            include "eq-columns.plm"
+        }
+        body {
+            color: mix(tint, mint, 0.35)
+            rim: 0%
+            shadow: -3 * u, -3 * u, 8 * u, 70%, #ffffff
+            opacity: shown
+            show: look == 4
+            include "eq-columns.plm"
+        }
+        body {
+            color: mix(tint, mint, 0.35)
+            rim: 0%
+            shadow: 3 * u, 4 * u, 10 * u, 55%, mix(deep, ink, 0.3)
+            opacity: shown
+            show: look == 4
+            include "eq-columns.plm"
+        }
+        body {
+            color: mix(tint, mint, 0.3)
+            rim: 0%
+            border: 1.4 * u, mix(#e8f1f5, tint, 0.4)
+            shadow: 2.5 * u, 3 * u, 0, 85%, deep
+            opacity: shown
+            show: look == 5
+            include "eq-columns.plm"
+        }
+        //  Doodle: a sheet of sticky-note paper with a thin ink outline, and the same silhouette again in ink, moved down and to the right, for its solid shadow (as the shell's drawers, pages/bar_glass.plm).
+        group {
+            move: 2.6 * u, 2.6 * u
+            body {
+                color: ink
+                rim: 0%
+                opacity: shown
+                show: look == 7
+                include "eq-columns.plm"
+            }
+        }
+        body {
+            color: mix(tint, mint, 0.22)
+            rim: 0%
+            border: 2 * u, ink
+            opacity: shown
+            show: look == 7
+            include "eq-columns.plm"
+        }
+        //  Every few seconds a band of light crosses the glass (glint.wgsl): a copy of its silhouette in a light colour, of which the shader keeps a moving diagonal band. Hidden between crossings.
+        group {
+            shader: glint, sw, 0.9
+            show: sw > 0.002 and look != 5 and look != 7
+            body {
+                color: minthi
+                opacity: shown
+            include "eq-columns.plm"
+            }
+        }
+        //  0 dB.
+        line { from: x0, bym; to: x0 + wd, bym; width: 1; color: ink; opacity: 20% * shown }
+        repeat i in 0..10 {
+            let cxi = x0 + colw * (i + 0.5)
+            let hot = if(band.$i.hover > 0.5 or held == i, 1, 0)
+            //  What says it can be dragged: a faint lane through the column, the column lit under the pointer, and, under the pointer only, a slim handle riding its crest (it grows when it is the one in hand).
+            let crest = by1 - clamp((gs.$i + 12) / 24 * bh + bh * (0.1 * ls.$i + 0.08 * fl.$i), 0, bh * 1.04)
+            line { from: cxi, by0 - 4 * u; to: cxi, by1; width: 1 * u; color: ink; opacity: (10% + 16% * hot) * shown }
+            box { at: cxi, (by0 + by1) / 2; size: colw * 0.94, bh + 8 * u; corner: colw * 0.4; color: ink; opacity: 8% * hot * shown }
+            box { at: cxi, crest; size: colw * (0.5 + 0.12 * hot), (4.5 + 3 * hot) * u; corner: 3.5 * u; color: ink; opacity: hot * shown * dim }
+            //  the dB of the band under the pointer, and the frequency of every band
+            box { at: cxi, crest - 16 * u; size: 38 * u, 15 * u; corner: 7.5 * u; color: deep; opacity: 78% * hot * shown }
+            text number(g.$i, 1, " dB") { at: cxi, crest - 16 * u; anchor: center; size: 10.5 * u; weight: 700; color: ink; opacity: hot * shown; family: "Space Grotesk" }
+            text pick(i, "32", "64", "125", "250", "500", "1k", "2k", "4k", "8k", "16k") { at: cxi, by1 + 16 * u; anchor: center; size: 10.5 * u; weight: 600; color: faint; opacity: shown; family: "Space Grotesk" }
+            zone box band.$i { from: x0 + colw * i, by0 - 12 * u; size: colw, bh + 24 * u; cursor: ns_resize; label: "Band (drag up or down)"; active: here > 0.5 }
+            on press band.$i { held = i; emit bset(i * 1000 + floor((12 - 24 * clamp((pointer.y - by0) / bh, 0, 1)) * 10 + 120.5)) }
+            on drag band.$i { emit bset(i * 1000 + floor((12 - 24 * clamp((pointer.y - by0) / bh, 0, 1)) * 10 + 120.5)) }
+            on release band.$i { held = -1 }
+            on press right band.$i { emit bset(i * 1000 + 120) }
+        }
+    }
+}

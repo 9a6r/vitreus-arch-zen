@@ -1,0 +1,697 @@
+#!/usr/bin/env python3
+"""Equalizer helper for the Vitreus Equalizer add-on.
+
+Runs PipeWire's own filter-chain (ten biquad bands) as a child `pipewire -c` process, so the EQ is a virtual
+sink called "Vitreus EQ" and goes away with the process. While it is on, the default output is that sink and
+its sound is passed on to the output that was the default; turning it off (or this helper dying) puts the
+default back. Band changes are sent to the running filter, so nothing restarts and nothing clicks.
+Python standard library, pipewire, pw-cli, pw-dump and pactl; the spectrum also wants parec and numpy (without
+them the panel just has no spectrum).
+
+The panel talks to it in JSON lines: one command per line on stdin, one event per line on stdout.
+  in : {"cmd":"apply","on":true,"gains":[0,0,0,0,0,0,0,0,0,0],"boost":0}   {"cmd":"spectrum","on":true}   {"cmd":"stop"}
+       {"cmd":"claim"}   (make the EQ the default output again after the output was changed)
+  out: {"ev":"state","on":true,"active":true,"target":"alsa_output...","error":"","missing":[]}   (active: the EQ is the default output, not bypassed;
+       missing: the plugin packages the Boost still needs, "lsp-plugins" / "zam-plugins"; [] when it can be used)
+       {"ev":"spec","b":[ten levels 0..1],"p":[their peaks]}   (only while the spectrum is on and something is playing)
+argv[1] is the add-on's data folder, where the generated chain.conf is kept.
+"""
+import ctypes
+import json
+import math
+import os
+import re
+import signal
+import subprocess
+import sys
+import threading
+import time
+
+os.environ["LC_ALL"] = "C"     # (pactl's words are read below, "yes"/"no" and "'change' on sink": in another language none matched)
+
+try:
+    import numpy as np
+except Exception:
+    np = None
+
+DATA = sys.argv[1] if len(sys.argv) > 1 and not sys.argv[1].startswith("--") else os.path.expanduser("~/.local/share/pleamar/vitreus-eq")
+CONF = os.path.join(DATA, "chain.conf")
+SINK = os.environ.get("VITREUS_EQ_NAME", "vitreus_eq")
+
+# (type, Hz, Q): the ends are shelves, the eight in between bells about an octave wide.
+BANDS = [("bq_lowshelf", 32, 0.7), ("bq_peaking", 64, 1.41), ("bq_peaking", 125, 1.41), ("bq_peaking", 250, 1.41),
+         ("bq_peaking", 500, 1.41), ("bq_peaking", 1000, 1.41), ("bq_peaking", 2000, 1.41), ("bq_peaking", 4000, 1.41),
+         ("bq_peaking", 8000, 1.41), ("bq_highshelf", 16000, 0.7)]
+MAXDB = 12.0
+MAXBOOST = 12.0         # the Boost: up to 12 dB more than the output's own 100 %
+# The Boost is EasyEffects' "boost" chain: zam-plugins' maximizer (its input gain is the Boost, a -1 dB ceiling and a 25 ms release: the
+# loudness without the crackle) and then LSP's limiter as EasyEffects sets it (Line Duck, x8 oversampling) for what still gets past. A
+# limiter alone, its gain driven by the Boost, crackled: a 5 ms release reshapes the bass inside one wave (9 % distortion at +12, 0 here).
+MAXIMIZER = "urn:zamaudio:ZaMaximX2"
+LIMITER = "http://lsp-plug.in/plugins/lv2/limiter_mono"
+CEILING = 10 ** (-1 / 20)                                       # the limiter's threshold: -1 dB
+LIM_CONTROLS = '"th" = %.5f "boost" = 0 "alr" = 0 "mode" = 11 "ovs" = 20 "dith" = 8 "lk" = 5 "at" = 5 "rt" = 5' % CEILING
+
+
+def lv2_dirs():
+    return os.environ.get("LV2_PATH", "").split(":") + [os.path.expanduser("~/.lv2"), "/usr/local/lib/lv2", "/usr/lib/lv2"]
+
+
+def maximizer_available():
+    """Is zam-plugins' ZaMaximX2 installed where PipeWire's LV2 host looks?"""
+    return any(d and os.path.isfile(os.path.join(d, "ZaMaximX2.lv2", "manifest.ttl")) for d in lv2_dirs())
+
+
+def limiter_available():
+    """Is lsp-plugins' mono limiter installed where PipeWire's LV2 host looks (LV2_PATH, else the usual folders)?"""
+    return any(d and os.path.isfile(os.path.join(d, "lsp-plugins.lv2", "limiter_mono.ttl")) for d in lv2_dirs())
+
+
+def missing_plugins():
+    """The packages the Boost needs that are not installed. Looked at each time the filter is made, so installing them and switching the
+    EQ off and on is enough. With one missing the Boost is off and the filter is the plain EQ: no limiter-only stand-in (it crackled)."""
+    return [name for name, ok in (("lsp-plugins", limiter_available()), ("zam-plugins", maximizer_available())) if not ok]
+
+
+boost_stages = False    # the running filter has the maximizer and the limiter (set when it is made)
+
+lock = threading.Lock()
+want_on = False
+gains = [0.0] * len(BANDS)
+boost = 0.0             # dB, 0 to MAXBOOST
+chain = None            # the child pipewire process
+target = ""             # the output it plays into
+node_id = None
+error = ""
+claim = False           # make the EQ the default output the next time there is a chance (switched on, or restored at start)
+lost = ""               # the output the filter was on when it went away (a headset switched off): the filter goes back to it when it returns
+lost_claim = False      # ... and whether the EQ was the default output then (so it takes the default again, on the fallback and on the return)
+stopping = threading.Event()    # set on SIGTERM: nothing more is started (at a shutdown the sound server goes first, and restarting into it held the shutdown 90 s)
+
+
+def emit(**kw):
+    sys.stdout.write(json.dumps(dict(ev="state", **kw)) + "\n")
+    sys.stdout.flush()
+
+
+def out(*args):
+    try:
+        return subprocess.run(args, capture_output=True, text=True, timeout=5).stdout
+    except Exception:
+        return ""
+
+
+def default_sink():
+    return out("pactl", "get-default-sink").strip()
+
+
+def set_default(name):
+    subprocess.run(["pactl", "set-default-sink", name], capture_output=True, timeout=5)
+
+
+def sink_exists(name):
+    return any(line.split("\t")[1:2] == [name] for line in out("pactl", "list", "short", "sinks").splitlines())
+
+
+def preamp(gs):
+    """Take off as much as the loudest boost adds, so a boost does not clip. With the limiter at the end there is no need: it
+    catches the peaks, and the curve keeps the loudness it was set to."""
+    if boost_stages:
+        return 1.0
+    return 10 ** (-max(0.0, max(gs)) / 20)
+
+
+# The filter's own output stream is never moved (`node.dont-move`): an effects app that takes every stream (EasyEffects does by default) would take it too
+# and send it on to the default output, which is this EQ: a loop, and silence.
+def write_conf(tgt):
+    global boost_stages
+    boost_stages = not missing_plugins()
+    nodes = ['{ type = builtin name = pre label = linear control = { "Mult" = %.5f "Add" = 0.0 } }' % preamp(gains)]
+    links = []
+    prev = "pre"
+    for i, (kind, hz, q) in enumerate(BANDS):
+        nodes.append('{ type = builtin name = eq%d label = %s control = { "Freq" = %d "Q" = %.2f "Gain" = %.2f } }' % (i, kind, hz, q, gains[i]))
+        links.append('{ output = "%s:Out" input = "eq%d:In" }' % (prev, i))
+        prev = "eq%d" % i
+    if boost_stages:                                          # (the maximizer is a stereo plugin: each channel's copy of the graph uses its first pair)
+        nodes.append('{ type = lv2 name = maxi plugin = "%s" control = { "gain" = %.2f "thresh" = -1 "rel" = 25 } }' % (MAXIMIZER, boost))
+        links.append('{ output = "%s:Out" input = "maxi:lv2_audio_in_1" }' % prev)
+        # (`alr` off: LSP's automatic level regulation, on by default, takes the gain back down)
+        nodes.append('{ type = lv2 name = lim plugin = "%s" control = { "g_in" = 1.0 %s } }' % (LIMITER, LIM_CONTROLS))
+        links.append('{ output = "maxi:lv2_audio_out_1" input = "lim:in" }')
+        prev = "lim"
+    text = """context.properties = { log.level = 1 }
+context.spa-libs = { audio.convert.* = audioconvert/libspa-audioconvert  support.* = support/libspa-support }
+context.modules = [
+  { name = libpipewire-module-rt args = { nice.level = -11 } flags = [ ifexists nofail ] }
+  { name = libpipewire-module-protocol-native }
+  { name = libpipewire-module-client-node }
+  { name = libpipewire-module-adapter }
+  { name = libpipewire-module-metadata }
+  { name = libpipewire-module-filter-chain
+    args = {
+      node.description = "Vitreus EQ"
+      media.name = "Vitreus EQ"
+      filter.graph = {
+        nodes = [ %s ]
+        links = [ %s ]
+        inputs = [ "pre:In" ]
+        outputs = [ "%s:%s" ]
+      }
+      audio.channels = 2
+      audio.position = [ FL FR ]
+      capture.props = { node.name = "%s" media.class = Audio/Sink priority.session = 10 channelmix.min-volume = 1.0 channelmix.max-volume = 1.0 }
+      playback.props = { node.name = "%s_out" node.passive = true target.object = "%s" stream.dont-remix = true node.dont-move = true }
+    } }
+]
+""" % ("\n          ".join(nodes), " ".join(links), prev, "out" if prev == "lim" else "Out", SINK, SINK, tgt)
+    os.makedirs(DATA, exist_ok=True)
+    with open(CONF, "w") as f:
+        f.write(text)
+
+
+def die_with_parent():
+    try:
+        ctypes.CDLL("libc.so.6").prctl(1, signal.SIGTERM)       # PR_SET_PDEATHSIG
+    except Exception:
+        pass
+
+
+def find_node():
+    global node_id
+    try:
+        for o in json.loads(out("pw-dump") or "[]"):
+            if o.get("info", {}).get("props", {}).get("node.name") == SINK:
+                node_id = o["id"]
+                return node_id
+    except Exception:
+        pass
+    node_id = None
+    return None
+
+
+def push_params():
+    """Send every band to the running filter: the filter recomputes its coefficients, no restart."""
+    for _ in range(2):
+        if node_id is None and find_node() is None:
+            return False
+        params = ['"channelmix.min-volume"', "1.0", '"channelmix.max-volume"', "1.0", '"pre:Mult"', "%.5f" % preamp(gains)]
+        for i, g in enumerate(gains):
+            params += ['"eq%d:Gain"' % i, "%.2f" % g]
+        if boost_stages:
+            params += ['"maxi:gain"', "%.2f" % max(0.0, min(MAXBOOST, boost))]
+        r = subprocess.run(["pw-cli", "s", str(node_id), "Props", "{ params = [ %s ] }" % " ".join(params)], capture_output=True, text=True, timeout=5)
+        if r.returncode == 0 and "rror" not in r.stderr + r.stdout:
+            return True
+        find_node()
+    return False
+
+
+def start_chain(tgt):
+    global chain, target, error
+    write_conf(tgt)
+    try:
+        chain = subprocess.Popen(["pipewire", "-c", CONF], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, preexec_fn=die_with_parent)
+    except OSError:
+        # (no `pipewire` program, a PulseAudio system: this ended the helper, which was started again every 3 s while the page said "On")
+        chain = None
+        error = "PipeWire is not installed: the EQ runs inside it"
+        return False
+    target = tgt
+    for _ in range(40):
+        if stopping.is_set():
+            break
+        if chain.poll() is not None:
+            lines = chain.stderr.read().decode(errors="replace").strip().splitlines()
+            error = lines[-1][:120] if lines else "the filter stopped"
+            chain = None
+            return False
+        if sink_exists(SINK) and find_node() is not None:
+            return True
+        time.sleep(0.1)
+    stop_chain(None)
+    error = "the EQ sink did not appear"
+    return False
+
+
+def stop_chain(restore):
+    """`restore`: the output to make the default again (None: leave the default alone)."""
+    global chain, node_id
+    if restore and default_sink() == SINK and sink_exists(restore):
+        set_default(restore)
+    if chain is not None:
+        chain.terminate()
+        try:
+            chain.wait(timeout=3)
+        except Exception:
+            chain.kill()
+    chain = None
+    node_id = None
+    vol_last["for"] = ""
+
+
+def configured_default():
+    """The output the user chose, as PipeWire saved it. It can be missing (a headset not connected yet), and then `default_sink()` is a stand-in PipeWire picked."""
+    m = re.search(r"default\.configured\.audio\.sink'\s+value:'\{\s*\"name\"\s*:\s*\"([^\"]+)\"", out("pw-metadata", "-n", "default"))
+    return m.group(1) if m else ""
+
+
+def last_output():
+    try:
+        return open(os.path.join(DATA, "last_output")).read().strip()
+    except Exception:
+        return ""
+
+
+def wanted_output():
+    """The output the filter should play into, and the one it should move to when that one turns up ("" if it is already there).
+    The user's choice is the saved default; when that is "Vitreus EQ" itself (the helper before this one was cut off, a forced reboot) it is the
+    output the EQ last played into. If it is not there yet (a Bluetooth headset connects after login), the filter plays into what is there meanwhile
+    (`lost`), and moves when it appears: before this, the stand-in was taken as the choice, remembered as the last output, and kept."""
+    chosen = configured_default()
+    if chosen == SINK or not chosen:
+        chosen = last_output()
+    if chosen and chosen != SINK and sink_exists(chosen):
+        remember_output(chosen)
+        return chosen, ""
+    d = default_sink()
+    now = d if d and d != SINK else (target or fallback_sink())
+    return now, (chosen if chosen != SINK else "")
+
+
+def fallback_sink():
+    """Any real output, for when the default is still "Vitreus EQ" but nothing is playing through it (the helper before this one was cut off
+    before it could give the default back): without it there is no output to play into, and no sound until the default is picked by hand.
+    The one it last played into first (`last_output`), then the one PipeWire has saved as the user's choice, and only then any."""
+    names = [l.split("\t")[1] for l in out("pactl", "list", "short", "sinks").splitlines() if len(l.split("\t")) > 1]
+    names = [n for n in names if n != SINK]
+    wanted = [last_output(), configured_default()]
+    for n in wanted:
+        if n in names:
+            return n
+    return names[0] if names else ""
+
+
+def remember_output(name):
+    try:
+        path = os.path.join(DATA, "last_output")
+        if not os.path.exists(path) or open(path).read().strip() != name:
+            os.makedirs(DATA, exist_ok=True)
+            with open(path, "w") as f:
+                f.write(name)
+    except Exception:
+        pass
+
+
+def reconcile():
+    """Make what runs match what is wanted. Called on every command and every few seconds.
+    The EQ takes over as the default output when it is switched on (`claim`), and then lets go: if the output is
+    changed afterwards (the shell's output picker) that is the user's choice, the EQ is bypassed, and the filter
+    stays on the output it was on (it does not follow the pick, so a TV picked for a while does not become what "Vitreus EQ" plays into);
+    it only moves when its output goes away, or when the EQ is switched off and on."""
+    global target, error, claim, lost, lost_claim
+    if stopping.is_set():
+        return
+    with lock:
+        if want_on:
+            if chain is not None and chain.poll() is not None:
+                stop_chain(target)
+                error = "the filter stopped"
+            d = default_sink()
+            if chain is not None and not claim:
+                if not sink_exists(target):
+                    # the output went away (a headset switched off): carry on at once on another output, and keep the EQ the default output
+                    # if it was, so the sound goes through the EQ there; the output is remembered, to go back to it when it returns
+                    lost, lost_claim = target, (d == SINK or lost_claim)
+                    stop_chain(None)
+                    claim = lost_claim
+                elif lost and lost != target and sink_exists(lost):
+                    lost_claim = lost_claim or d == SINK          # (the output is back: the filter moves to it, a restart under the same name)
+                    stop_chain(None)
+                    claim = lost_claim
+            if chain is None:
+                if lost and sink_exists(lost):
+                    tgt, lost = lost, ""
+                    lost_claim = False
+                else:
+                    tgt, later = wanted_output()
+                    if later and later != tgt:
+                        lost, lost_claim = later, (claim or lost_claim or default_sink() == SINK)
+                if not tgt:
+                    error = "no output to play into"
+                elif start_chain(tgt):
+                    error = ""
+                    push_params()
+                    if claim:
+                        set_default(SINK)
+                        claim = False
+            elif claim:
+                if d != SINK:
+                    set_default(SINK)
+                claim = False
+            # (another output picked, d != target: it plays directly and the filter stays on its own target, so choosing "Vitreus EQ" again goes through it to the same output as before)
+        else:
+            claim = False
+            lost, lost_claim = "", False
+            if chain is not None:
+                stop_chain(target)
+            error = ""
+        up = bool(want_on and chain is not None)
+        emit(on=up, active=bool(up and default_sink() == SINK), target=target if chain is not None else "", error=error, missing=missing_plugins())
+
+
+# ── the volume ──
+# The EQ sink is the default output, so the shell's volume slider and the media keys act on IT, while the sound is really played by the output behind it (its own volume, the one you
+# actually hear). The EQ sink's own volume is pinned to unity in the filter (`channelmix.min-volume` = `max-volume` = 1.0: it is only a number to show, it never changes the sound), and
+# this keeps it and the output's volume (and mute) the same: move the slider and the output follows, press the headset's buttons and the slider follows.
+vol_last = {"for": "", "eq": None, "t": None, "eqm": None, "tm": None}
+
+
+def sink_volume(name):
+    m = re.search(r"(\d+)%", out("pactl", "get-sink-volume", name))
+    return int(m.group(1)) if m else None
+
+
+def sink_muted(name):
+    o = out("pactl", "get-sink-mute", name)
+    return True if "yes" in o else (False if "no" in o else None)
+
+
+def set_volume(name, pct):
+    subprocess.run(["pactl", "set-sink-volume", name, "%d%%" % pct], capture_output=True, timeout=5)
+
+
+def set_mute(name, on):
+    subprocess.run(["pactl", "set-sink-mute", name, "1" if on else "0"], capture_output=True, timeout=5)
+
+
+def sync_volumes():
+    with lock:
+        tgt = target if chain is not None else ""
+    if not tgt:
+        vol_last["for"] = ""
+        return
+    eq, t = sink_volume(SINK), sink_volume(tgt)
+    eqm, tm = sink_muted(SINK), sink_muted(tgt)
+    if None in (eq, t, eqm, tm):
+        return
+    if vol_last["for"] != tgt:                         # (just started, or pointed at another output: the slider shows the output's volume)
+        set_volume(SINK, t)
+        set_mute(SINK, tm)
+        vol_last.update({"for": tgt, "eq": t, "t": t, "eqm": tm, "tm": tm})
+        return
+    if eq != vol_last["eq"]:                           # the slider (or a media key) moved: the output follows
+        set_volume(tgt, eq)
+        t2 = sink_volume(tgt)
+        t2 = eq if t2 is None else t2
+        if t2 != eq:
+            set_volume(SINK, t2)                       # (the output rounded it: show what it did)
+        vol_last["eq"] = vol_last["t"] = t2
+    elif t != vol_last["t"]:                           # the output's own volume moved (the headset's buttons)
+        set_volume(SINK, t)
+        vol_last["eq"] = vol_last["t"] = t
+    if eqm != vol_last["eqm"]:
+        set_mute(tgt, eqm)
+        vol_last["eqm"] = vol_last["tm"] = eqm
+    elif tm != vol_last["tm"]:
+        set_mute(SINK, tm)
+        vol_last["eqm"] = vol_last["tm"] = tm
+
+
+# What the sound server says wakes the two loops: a sink's volume or mute changing wakes the volume's, a sink coming or going (a headset, the filter itself
+# ending) or the default output changing wakes `reconcile`. Between events they only look every 15 s, in case `pactl subscribe` missed something: polling
+# every second ran six pactl commands a second while nothing happened.
+wake = threading.Event()
+recon = threading.Event()
+IDLE_LOOK = 15.0
+
+
+def listen():
+    # (with no sound server `pactl subscribe` ends at once: it was started again every 2 s for good, each time with a full look at the sinks.
+    # A subscription that ends quickly waits twice as long before the next, up to a minute.)
+    pause = 2.0
+    while True:
+        began = time.time()
+        try:
+            p = subprocess.Popen(["pactl", "subscribe"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, preexec_fn=die_with_parent)
+            # (subscribed again after a break: whatever changed meanwhile is looked at now)
+            wake.set()
+            recon.set()
+            for line in p.stdout:
+                if "'change' on sink" in line:
+                    wake.set()
+                elif "'new' on sink" in line or "'remove' on sink" in line or "on server" in line:
+                    recon.set()
+                    wake.set()
+        except Exception:
+            pass
+        pause = min(60.0, pause * 2) if time.time() - began < 5 else 2.0
+        time.sleep(pause)
+
+
+def volume_loop():
+    """Wakes on the sound server's sink events and mirrors the volume."""
+    while True:
+        wake.wait(IDLE_LOOK)
+        wake.clear()
+        time.sleep(0.04)                               # (a slider drag is many events: one pass for the burst)
+        wake.clear()
+        try:
+            sync_volumes()
+        except Exception:
+            pass
+
+
+# ── the spectrum ──
+# What is heard, as ten levels: the sound is read from the monitor of the EQ sink (what the apps play, before the filter) or, with the EQ off, of the default output,
+# cut into 2048-sample windows, and each band's energy is the sum of its bins, from half an octave below its centre to half an octave above. With the EQ on the band's gain
+# is added, so the bars show what comes out and not what goes in. Only runs while the panel is open (`spectrum` on): reading a monitor keeps the output awake.
+RATE = 48000
+WIN = 2048
+HOP = 1024
+DB_LO, DB_HI = -78.0, -8.0                 # dB of full scale mapped to 0..1
+spec_on = False
+
+
+def band_edges():
+    edges = []
+    for i, (_, hz, _q) in enumerate(BANDS):
+        lo = 20 if i == 0 else hz / math.sqrt(2)
+        hi = 20000 if i == len(BANDS) - 1 else hz * math.sqrt(2)
+        edges.append((lo, hi))
+    return edges
+
+
+def analyse(window, edges, extra_db):
+    """window: WIN float samples -> ten levels in 0..1 (extra_db: what the EQ adds to each band, in dB)."""
+    win = np.hanning(len(window))
+    mag = np.abs(np.fft.rfft(window * win)) / (len(window) / 4)         # a full-scale sine reads 1 in its bin
+    pw = mag * mag
+    freqs = np.fft.rfftfreq(len(window), 1.0 / RATE)
+    out = []
+    for (lo, hi), add in zip(edges, extra_db):
+        sel = (freqs >= lo) & (freqs < hi)
+        e = float(pw[sel].sum()) if sel.any() else 0.0
+        db = 10 * math.log10(e + 1e-12) + add
+        out.append(max(0.0, min(1.0, (db - DB_LO) / (DB_HI - DB_LO))))
+    return out
+
+
+def spectrum_source():
+    """(source to read, whether it is read before the EQ). VITREUS_EQ_SOURCE overrides it (for testing)."""
+    forced = os.environ.get("VITREUS_EQ_SOURCE")
+    if forced:
+        return forced, False
+    d = default_sink()
+    if d == SINK or (chain is not None and sink_exists(SINK)):
+        return SINK + ".monitor", True
+    return (d + ".monitor", False) if d else ("", False)
+
+
+def spectrum_loop():
+    edges = band_edges()
+    proc = None
+    cur = ("", False)
+    last_check = 0.0
+    ring = np.zeros(WIN, dtype=np.float32)
+    bars = [0.0] * len(BANDS)
+    peaks = [0.0] * len(BANDS)
+    hold = [0] * len(BANDS)
+    quiet_sent = True
+    n = 0
+
+    def drop():
+        nonlocal proc
+        if proc is not None:
+            try:
+                proc.kill()
+                proc.wait(timeout=2)
+            except Exception:
+                pass
+        proc = None
+
+    while True:
+        if not spec_on:
+            drop()
+            time.sleep(0.2)
+            continue
+        now = time.time()
+        if proc is None or proc.poll() is not None or now - last_check > 1.5:
+            last_check = now
+            src = spectrum_source()
+            if src[0] and (proc is None or proc.poll() is not None or src != cur):
+                drop()
+                cur = src
+                try:
+                    proc = subprocess.Popen(["parec", "-d", src[0], "--format=float32le", "--rate=%d" % RATE, "--channels=1", "--latency-msec=25",
+                                             "--client-name=vitreus-eq-spectrum"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, preexec_fn=die_with_parent)
+                except Exception:
+                    proc = None
+            if proc is None:
+                time.sleep(1)
+                continue
+        data = proc.stdout.read(HOP * 4)
+        if len(data) < HOP * 4:
+            drop()
+            time.sleep(0.3)
+            continue
+        ring = np.concatenate((ring[HOP:], np.frombuffer(data, dtype=np.float32)))
+        n += 1
+        if n % 2:                                                       # about 23 windows a second
+            continue
+        extra = [0.0] * len(BANDS)
+        if cur[1]:
+            pre = 20 * math.log10(preamp(gains))
+            extra = [g + pre for g in gains]
+        new = analyse(ring, edges, extra)
+        for i, v in enumerate(new):
+            bars[i] = v if v > bars[i] else bars[i] * 0.8 + v * 0.2
+            if v >= peaks[i]:
+                peaks[i], hold[i] = v, 9
+            elif hold[i] > 0:
+                hold[i] -= 1
+            else:
+                peaks[i] = max(bars[i], peaks[i] - 0.025)
+        quiet = max(bars) < 0.01 and max(peaks) < 0.01
+        if quiet and quiet_sent:
+            continue
+        quiet_sent = quiet
+        sys.stdout.write(json.dumps({"ev": "spec", "b": [round(v, 3) for v in bars], "p": [round(v, 3) for v in peaks]}) + "\n")
+        sys.stdout.flush()
+
+
+PIDFILE = os.path.join(DATA, "helper.pid")
+
+
+def take_over():
+    """Only one helper at a time. One left behind by a shell that was cut off (its input never closed) kept running and held the output;
+    this one asks it to stop (it gives the default output back as it goes) and takes its place."""
+    try:
+        old = int(open(PIDFILE).read().strip())
+        if old != os.getpid() and "vitreus-eq" in open("/proc/%d/cmdline" % old).read():
+            os.kill(old, signal.SIGTERM)
+            for _ in range(50):
+                if not os.path.exists("/proc/%d" % old):
+                    break
+                time.sleep(0.1)
+            else:
+                os.kill(old, signal.SIGKILL)         # (stuck, for instance on a pactl that never answered: it ignores the polite one)
+                time.sleep(0.3)
+    except Exception:
+        pass
+    try:
+        os.makedirs(DATA, exist_ok=True)
+        with open(PIDFILE, "w") as f:
+            f.write(str(os.getpid()))
+    except Exception:
+        pass
+
+
+def shutdown(*_):
+    """Give the default output back and stop the filter, in a few seconds at most: at a system shutdown the sound server is going or gone,
+    each pactl waits out its timeout, and the other threads may hold the lock for as long. Whatever is not done by then is left (the next start copes)."""
+    stopping.set()
+
+    def tidy():
+        if lock.acquire(timeout=2):
+            stop_chain(target)
+
+    t = threading.Thread(target=tidy, daemon=True)
+    t.start()
+    t.join(6)
+    c = chain
+    if c is not None:
+        try:
+            c.kill()
+        except Exception:
+            pass
+    sys.stdout.flush()
+    os._exit(0)                 # (not sys.exit: from the handler it can land inside a `with lock` of the main thread, and wait on the daemon threads' pactl)
+
+
+def main():
+    global want_on, gains, boost, spec_on, claim
+    if "--missing" in sys.argv:         # the Arch packages the Boost still needs, one a line (Settings > Add-ons shows them): nothing else runs
+        for name in missing_plugins():
+            print(name + "-lv2")
+        return
+    take_over()
+    signal.signal(signal.SIGTERM, shutdown)
+    signal.signal(signal.SIGHUP, shutdown)
+
+    def watch():
+        while True:
+            recon.wait(IDLE_LOOK)
+            recon.clear()
+            time.sleep(0.3)                    # (a headset coming and going is a burst of events: one pass for all of it)
+            recon.clear()
+            try:
+                reconcile()
+            except Exception:
+                pass
+
+    threading.Thread(target=listen, daemon=True).start()
+    threading.Thread(target=watch, daemon=True).start()
+    threading.Thread(target=volume_loop, daemon=True).start()
+    if np is not None:
+        threading.Thread(target=spectrum_loop, daemon=True).start()
+    emit(on=False, active=False, target="", error="", missing=missing_plugins())
+    for line in sys.stdin:
+        try:
+            m = json.loads(line)
+        except Exception:
+            continue
+        cmd = m.get("cmd")
+        if cmd == "stop":
+            break
+        if cmd == "spectrum":
+            spec_on = bool(m.get("on"))
+        if cmd == "apply":
+            gs = m.get("gains")
+            if isinstance(gs, list) and len(gs) == len(BANDS):
+                new = [max(-MAXDB, min(MAXDB, float(g))) for g in gs]
+                with lock:
+                    gains = new
+                    try:
+                        boost = max(0.0, min(MAXBOOST, float(m.get("boost", 0))))
+                    except (TypeError, ValueError):
+                        boost = 0.0
+                    live = want_on and chain is not None
+                    if live:
+                        push_params()
+            with lock:
+                changed = bool(m.get("on")) != want_on
+                want_on = bool(m.get("on"))
+                if changed and want_on:
+                    claim = True
+            if changed:
+                reconcile()
+        if cmd == "claim":
+            with lock:
+                claim = True
+            reconcile()
+    shutdown()
+
+
+if __name__ == "__main__":
+    main()

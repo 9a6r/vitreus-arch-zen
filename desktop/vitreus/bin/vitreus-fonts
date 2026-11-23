@@ -1,0 +1,181 @@
+#!/usr/bin/env python3
+"""vitreus-fonts DATADIR: which typeface the shell is drawn in. pleamar draws every text in "Space Grotesk" (a name fixed in the scenes), so any other
+typeface is shown by starting the shell with a font setup in which that name is the typeface wanted: copies of its files with the family renamed, and
+the real Space Grotesk left out. The choice is the Theme page's (`fonts.json`: {theme id: name}); with none, the theme's own `font` (themes/*.toml, themes.json) is used. Prints the path of the fontconfig file to start pleamar with, or nothing (the shell keeps its own font).
+
+vitreus-fonts DATADIR --lean: the same, for a scene that only draws in "Space Grotesk" (one that says `// vitreus-fonts: lean`, see bin/vitreus-keep). pleamar
+does not use fontconfig's cache: every process opens and reads every font in the folders fontconfig names (1035 faces, ~940 MB, here), which is
+nothing with the files in memory and several seconds each at login, when they are not and every scene starts at once. A lean setup names only the
+person's own fonts (~/.local/share/fonts: Space Grotesk and the themes' faces, or the renamed copies), a sans, an emoji and a CJK font for
+anything else (links to what fontconfig picks, in DATADIR/lean-fonts): a few dozen faces. Always prints a path."""
+import glob, json, os, shutil, struct, subprocess, sys
+
+data = sys.argv[1]
+lean = "--lean" in sys.argv[2:]
+home = os.path.expanduser("~")
+# (where the installer puts them: with XDG_DATA_HOME set that is not ~/.local/share/fonts, and the lean scenes had no Space Grotesk)
+root = (os.environ.get("XDG_DATA_HOME") or home + "/.local/share") + "/fonts"
+
+def write_conf(name, dirs):
+    # (written aside and moved in place: every keeper runs this at login, at once)
+    conf = os.path.join(data, name)
+    tmp = "%s.%d" % (conf, os.getpid())
+    with open(tmp, "w") as f:
+        f.write('<?xml version="1.0"?>\n<!DOCTYPE fontconfig SYSTEM "fonts.dtd">\n<fontconfig>\n')
+        for p in dirs:
+            f.write("  <dir>%s</dir>\n" % p)
+        f.write("</fontconfig>\n")
+    os.replace(tmp, conf)
+    return conf
+
+def finish(renamed):
+    """`renamed`: the folder of the renamed typeface, or None for Space Grotesk itself."""
+    if not lean:
+        if renamed:
+            dirs = ["/usr/share/fonts", "/usr/local/share/fonts", renamed]
+            if os.path.isdir(root):
+                dirs += [root + "/" + e for e in sorted(os.listdir(root)) if "grotesk" not in e.lower()]
+            print(write_conf("retro-fonts.conf", dirs))
+        sys.exit(0)
+    fb = os.path.join(data, "lean-fonts")
+    os.makedirs(fb, exist_ok=True)
+    keep = set()
+    env = dict(os.environ, FONTCONFIG_FILE="/etc/fonts/fonts.conf")
+    def fc(args):
+        try:
+            return subprocess.run(args, capture_output=True, text=True, env=env).stdout
+        except Exception:
+            return ""
+    # (a media title or a name may come in any of these. fc-match answers a sans for `sans:lang=ja` even when it has no Japanese: the CJK one is
+    # looked for among the faces that cover it, a Noto CJK first)
+    cjk = sorted(set(fc(["fc-list", ":lang=ja:style=Regular", "-f", "%{file}\n"]).split()), key=lambda f: ("CJK" not in f, "Regular" not in os.path.basename(f), len(f), f))
+    picks = [("sans", fc(["fc-match", "sans", "-f", "%{file}"]).strip()),
+             ("emoji", fc(["fc-match", "emoji", "-f", "%{file}"]).strip()),
+             ("cjk", cjk[0] if cjk else "")]
+    # (a Space Grotesk installed for the whole system, by a package, is not under `root`: it is linked in like the others, or a lean scene drew in the sans)
+    if not renamed:
+        picks += [("grotesk%d" % i, f) for i, f in enumerate(sorted(set(fc(["fc-list", ":family=Space Grotesk", "-f", "%{file}\n"]).splitlines())))]
+    for what, got in picks:
+        if not got or not os.path.isfile(got) or got.startswith(root + "/"):
+            continue
+        link = os.path.join(fb, what + os.path.splitext(got)[1])
+        keep.add(os.path.basename(link))
+        tmp = "%s.%d" % (link, os.getpid())
+        try:
+            os.symlink(got, tmp)
+            os.replace(tmp, link)
+        except OSError:
+            pass
+    for e in os.listdir(fb):                       # (a link left from an older pick: cjk.ttf for cjk.ttc)
+        if e not in keep and "." in e and not e.split(".")[-1].isdigit():
+            try:
+                os.remove(os.path.join(fb, e))
+            except OSError:
+                pass
+    dirs = [fb]
+    if renamed:
+        dirs.append(renamed)
+        if os.path.isdir(root):
+            dirs += [root + "/" + e for e in sorted(os.listdir(root)) if "grotesk" not in e.lower()]
+    elif os.path.isdir(root):
+        dirs.append(root)
+    print(write_conf("lean-fonts.conf", dirs))
+    sys.exit(0)
+
+def load(name):
+    try:
+        with open(os.path.join(data, name)) as f:
+            got = json.load(f)
+    except Exception:
+        return {}
+    return got if isinstance(got, dict) else {}      # pleamar writes an empty table as []
+
+iris = load("iris.json")
+preset = iris.get("look", iris.get("preset"))      # an older file has only the look (Retro 8, UwU 9, Cyber 10)
+theme = iris.get("theme") or {8: "retro", 9: "uwu", 10: "cyber"}.get(preset, "glass")      # the theme's id: its file name in themes/ (or the person's folder)
+themes = {t.get("id"): t for t in load("themes.json").get("themes", []) if isinstance(t, dict)}     # bin/vitreus-themes makes it
+if themes and theme not in themes:
+    theme = "glass"
+choice = load("fonts.json").get(theme)
+family = choice or (themes.get(theme) or {}).get("font")
+if not family or family == "Space Grotesk":
+    finish(None)
+
+# Typefaces that run wide are drawn a little smaller, so the shell's fixed-width labels still fit.
+SCALE = {"Audiowide": 1.1, "Bitcount Prop Single": 0.95, "Press Start 2P": 1.7, "DotGothic16": 1.0, "SUPER-VCR MONO": 1.1, "Better VCR-JP": 1.15, "Mochiy Pop One": 1.08, "Orbitron": 1.12, "Cherry Bomb One": 1.12}.get(family, 1.0)
+WEIGHTS = ((300, "Light"), (400, "Regular"), (500, "Medium"), (600, "SemiBold"), (700, "Bold"))
+
+def faces():
+    out = subprocess.run(["fc-list", "-f", "%{file}\t%{weight}\n", ":family=" + "".join("\\" + c if c in "-:,=\\" else c for c in family)], capture_output=True, text=True).stdout
+    found = []
+    for line in out.splitlines():
+        path, _, weight = line.partition("\t")
+        if path.lower().endswith((".ttf", ".otf")):
+            try:
+                w = float(weight)                 # fontconfig's weight: 80 regular, 100 medium, 180 bold ...
+            except ValueError:
+                w = 80.0
+            found.append((path, w))
+    return found
+
+def css_weight(fc):
+    return 300 if fc <= 50 else 400 if fc <= 85 else 500 if fc <= 120 else 600 if fc <= 190 else 700
+
+def build(path, weight, style):
+    raw = open(path, "rb").read()
+    n = struct.unpack(">H", raw[4:6])[0]
+    tables = {}
+    for i in range(n):
+        tag, _, off, ln = struct.unpack(">4sIII", raw[12 + 16 * i: 28 + 16 * i])
+        tables[tag] = bytearray(raw[off:off + ln])
+    head = tables[b"head"]
+    upem = struct.unpack(">H", head[18:20])[0]
+    head[18:20] = struct.pack(">H", round(upem * SCALE))
+    head[8:12] = b"\0\0\0\0"
+    if b"OS/2" in tables:
+        tables[b"OS/2"][4:6] = struct.pack(">H", weight)
+    if weight == 400:
+        names = {1: "Space Grotesk", 2: "Regular", 4: "Space Grotesk", 6: "SpaceGrotesk-Regular"}
+    else:
+        names = {1: "Space Grotesk", 2: style, 4: "Space Grotesk " + style, 6: "SpaceGrotesk-" + style}
+    recs, strings = b"", b""
+    for nid in sorted(names):
+        s = names[nid].encode("utf-16-be")
+        recs += struct.pack(">HHHHHH", 3, 1, 0x409, nid, len(s), len(strings))
+        strings += s
+    tables[b"name"] = bytearray(struct.pack(">HHH", 0, len(names), 6 + 12 * len(names)) + recs + strings)
+    tags = sorted(tables)
+    out = bytearray(raw[:4] + struct.pack(">HHHH", len(tags), 0, 0, 0))
+    off = 12 + 16 * len(tags)
+    body = b""
+    for t in tags:
+        d = bytes(tables[t])
+        pad = d + b"\0" * (-len(d) % 4)
+        csum = sum(struct.unpack(">%dI" % (len(pad) // 4), pad)) & 0xFFFFFFFF
+        out += struct.pack(">4sIII", t, csum, off + len(body), len(d))
+        body += pad
+    return bytes(out) + body
+
+found = faces()
+if not found:
+    finish(None)
+
+d = os.path.join(data, "retro-fonts")
+marker = os.path.join(d, ".family")
+stamp = "%s %s" % (family, SCALE)
+try:
+    same = open(marker).read() == stamp
+except Exception:
+    same = False
+if not same:
+    shutil.rmtree(d, ignore_errors=True)
+    os.makedirs(d, exist_ok=True)
+    # Every weight the shell asks for is a face of its own, drawn from the nearest weight the typeface has.
+    for weight, style in WEIGHTS:
+        path, _ = min(found, key=lambda f: abs(css_weight(f[1]) - weight))
+        with open(os.path.join(d, "SpaceGrotesk-%s.ttf" % style), "wb") as f:
+            f.write(build(path, weight, style))
+    with open(marker, "w") as f:
+        f.write(stamp)
+
+finish(d)

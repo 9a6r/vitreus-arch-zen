@@ -1,0 +1,349 @@
+#!/bin/sh
+# vitreus-report: gather what is needed to look into a problem with Vitreus, into one text file you can read before you send it.
+#
+# It does not need the shell to be installed or running: it is for when it will not install, will not start, or shows nothing.
+#
+#   curl -fsSL https://raw.githubusercontent.com/natepayn3/Vitreus/main/bin/vitreus-report | sh
+#   vitreus-report              (the same, when Vitreus is installed)
+#   vitreus-report --stdout     print the report instead of writing a file
+#
+# What it reads, and nothing else: the system's name and version, the graphics card and its Vulkan driver, the monitors' sizes, which Vitreus and pleamar
+# versions are there, whether their files are in place, what is running, and the ends of Vitreus's log, the installer's log and the
+# system's warnings about it. It does NOT read your notifications, clipboard, calendar, weather place, wallpapers, window titles,
+# browser or any file of yours. Afterwards your user name, home folder, computer name, network addresses, e-mail addresses and the
+# monitors' connector names are blanked out of the file. Read it before you send it: it is plain text.
+set -u
+
+# Where a report can be sent. One place, so it is easy to change.
+REPORT_TO="natepayn3@gmail.com"
+REPO_URL="https://github.com/natepayn3/Vitreus/issues/new"
+
+to_stdout=false
+for a in "$@"; do
+    case "$a" in
+        --stdout) to_stdout=true ;;
+        -h|--help) sed -n '2,14p' "$0" 2> /dev/null | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) printf 'vitreus-report: unknown option %s\n' "$a" >&2; exit 2 ;;
+    esac
+done
+
+conf="${XDG_CONFIG_HOME:-$HOME/.config}"
+data="${XDG_DATA_HOME:-$HOME/.local/share}"
+state="${XDG_STATE_HOME:-$HOME/.local/state}"
+cache="${XDG_CACHE_HOME:-$HOME/.cache}"
+dest="$conf/pleamar/shells/vitreus"
+vdata="$data/pleamar/vitreus"
+export PATH="$HOME/.local/bin:$PATH"
+
+say() { printf '%s\n' "$*" >&2; }
+have() { command -v "$1" > /dev/null 2>&1; }
+# Prompts go to the terminal, not to stdin: when this is piped from curl, stdin is the script itself.
+tty_ok=false
+if [ -r /dev/tty ] && [ -w /dev/tty ] && ( : < /dev/tty ) 2> /dev/null; then tty_ok=true; fi
+ask() { # ask "question" -> the answer on one line, or nothing
+    $tty_ok || return 0
+    printf '%s ' "$1" > /dev/tty
+    IFS= read -r ans < /dev/tty || ans=""
+    printf '%s' "$ans"
+}
+tmo() { if have timeout; then timeout 10 "$@"; else "$@"; fi; }
+
+stamp="$(date +%Y%m%d-%H%M%S 2> /dev/null || echo now)"
+if $to_stdout; then
+    out=/dev/stdout
+else
+    desk="$(xdg-user-dir DESKTOP 2> /dev/null || true)"
+    [ -n "$desk" ] && [ -d "$desk" ] || desk="$HOME"
+    out="$desk/vitreus-report-$stamp.txt"
+fi
+raw="$(mktemp 2> /dev/null || echo "/tmp/vitreus-report.$$")"
+# Blank out what is personal: the user, the home folder, the computer's name, network and e-mail addresses, the monitors' connector names.
+# (Up here, before the trap that uses it: what on_exit shows of a run that stopped went out as it was gathered, names and addresses and all.)
+host="$( (hostname 2> /dev/null || cat /etc/hostname 2> /dev/null) | head -1)"
+# (`+ ? ( ) { }` too: the names go into extended patterns, where a user called `a+b` matched nothing and stayed in the report)
+esc() { printf '%s' "$1" | sed 's/[][\.*^$/|&+?(){}]/\\&/g'; }
+user_name="$(id -un 2> /dev/null || echo "${USER:-}")"
+redact() {
+    w='[^[:alnum:]_]'
+    hx='[0-9a-fA-F]{1,4}'
+    oct='(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])'
+    n_user='s/^//'; n_host='s/^//'
+    if [ -n "$user_name" ] && [ "$user_name" != root ]; then n_user="s/(^|$w)$(esc "$user_name")($w|\$)/\\1<user>\\2/g"; fi
+    if [ -n "$host" ]; then n_host="s/(^|$w)$(esc "$host")($w|\$)/\\1<host>\\2/g"; fi
+    # The longer of the two names first: with the user first, the host `john-pc` of the user `john` came out as `<user>-pc`.
+    if [ "${#host}" -ge "${#user_name}" ]; then n1=$n_host; n2=$n_user; else n1=$n_user; n2=$n_host; fi
+    # An IPv4 part is 0 to 255: any four numbers also blanked a driver's version (NVIDIA's 570.86.16.0). The short IPv6 forms (fe80::1, ::1)
+    # were not matched at all; they must stand alone, so that `serde::de::Error` in a log is not taken for one. The connectors now include
+    # DSI, HEADLESS and HDMI-1. (Each pattern that eats the character before and after it runs twice, for two matches side by side.)
+    sed -E \
+        -e "s|$(esc "$HOME")|~|g" \
+        -e "s/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/<email>/g" \
+        -e "s/\b$oct\.$oct\.$oct\.$oct\b/<ip>/g" \
+        -e 's/\b([0-9a-fA-F]{1,4}:){3,7}[0-9a-fA-F]{1,4}\b/<ip6>/g' \
+        -e "s/(^|[^[:alnum:]_:])($hx:){1,7}:($hx(:$hx){0,6})?(\$|[^[:alnum:]_:])/\\1<ip6>\\5/g" \
+        -e "s/(^|[^[:alnum:]_:])($hx:){1,7}:($hx(:$hx){0,6})?(\$|[^[:alnum:]_:])/\\1<ip6>\\5/g" \
+        -e "s/(^|[^[:alnum:]_:])::$hx(:$hx){0,6}(\$|[^[:alnum:]_:])/\\1<ip6>\\3/g" \
+        -e "s/(^|[^[:alnum:]_:])::$hx(:$hx){0,6}(\$|[^[:alnum:]_:])/\\1<ip6>\\3/g" \
+        -e 's/\b([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}\b/<mac>/g' \
+        -e 's/\b(e?DP|HDMI(-[A-Z])?|DVI(-[A-Z])?|VGA|LVDS|DSI|DPI|HEADLESS|Virtual|WL|X11)-[0-9]+\b/<output>/g' \
+        -e "$n1" -e "$n1" -e "$n2" -e "$n2"
+}
+# If anything stops it before the end, say so and show where, instead of leaving without a word (the error is in $raw, which is not shown otherwise).
+# fd 3 is the real stderr: the trap can run inside the block below, where stderr goes into $raw.
+exec 3>&2
+finished=false
+on_exit() {
+    if ! $finished; then
+        {
+            printf '\nvitreus-report stopped before it finished, and wrote no report. The last lines it got to:\n'
+            tail -n 5 "$raw" 2> /dev/null | redact
+            printf 'Please send these lines (a photo of the screen is fine) to %s\n' "$REPORT_TO"
+        } >&3
+    fi
+    rm -f "$raw" "$raw.run"
+}
+trap on_exit EXIT
+trap 'exit 130' INT TERM
+
+if ! $to_stdout; then
+    say ""
+    say "Vitreus report"
+    say "This gathers information about your computer and Vitreus into one text file."
+    say "Nothing is sent anywhere: it only writes a file, which you can read, and then send yourself if you want to."
+    say ""
+fi
+what="$(ask "In a sentence or two: what were you doing, and what went wrong?
+>")"
+reply="$(ask "Your e-mail, if you want an answer (leave empty to skip):")"
+
+sec() { printf '\n==== %s ====\n' "$1"; }
+# run a command, show its output (or that it is not there), never fail
+try() {
+    if have "$1"; then tmo "$@" 2>&1 || printf '(%s ended with an error)\n' "$1"; else printf '(%s is not installed)\n' "$1"; fi
+}
+tailf() { # tailf file lines [filter-out-regex]
+    if [ -r "$1" ]; then
+        if [ -n "${3:-}" ]; then grep -v -E "$3" "$1" | tail -n "$2"; else tail -n "$2" "$1"; fi
+    else
+        printf '(no %s)\n' "$(basename "$1")"
+    fi
+}
+
+{
+    printf 'Vitreus report, %s\n' "$(date 2> /dev/null)"
+
+    sec "What happened (in the person's words)"
+    if [ -n "$what" ]; then printf '%s\n' "$what"; else printf '(not given)\n'; fi
+
+    sec "System"
+    sed -n 's/^PRETTY_NAME=//p' /etc/os-release 2> /dev/null | tr -d '"'
+    uname -srm 2> /dev/null
+    printf 'session: %s / %s / %s\n' "${XDG_SESSION_TYPE:-?}" "${XDG_CURRENT_DESKTOP:-?}" "${XDG_SESSION_DESKTOP:-?}"
+    printf 'compositors running:'
+    for p in Hyprland pleamar-wm sway niri river labwc wayfire kwin_wayland gnome-shell quickshell; do pgrep -x "$p" > /dev/null 2>&1 && printf ' %s' "$p"; done
+    printf '\n'
+    if have lspci; then lspci -nnk 2> /dev/null | grep -A3 -E 'VGA|3D controller|Display controller'; else printf '(lspci is not installed)\n'; fi
+    lsmod 2> /dev/null | awk '$1 ~ /^(nvidia|nouveau|amdgpu|i915|xe)$/ { printf "kernel module: %s\n", $1 }'
+    printf 'AQ_DRM_DEVICES=%s  PLEAMAR_GPU=%s\n' "${AQ_DRM_DEVICES:-}" "${PLEAMAR_GPU:-}"
+    awk '/MemTotal/ { printf "memory: %d MB\n", $2 / 1024 }' /proc/meminfo 2> /dev/null
+
+    # pleamar draws with Vulkan, and needs the card's own driver for it (vulkan-radeon, vulkan-intel, NVIDIA's): with none it finds no adapter and the shell does not start.
+    sec "Vulkan (the shell draws with it: it needs a driver for the card)"
+    printf 'driver files (a card with none of its own cannot be drawn on):\n'
+    ls /usr/share/vulkan/icd.d /etc/vulkan/icd.d 2> /dev/null | sed 's/^/  /' | head -20
+    if [ -z "$(ls /usr/share/vulkan/icd.d /etc/vulkan/icd.d 2> /dev/null)" ]; then printf '  NONE: no Vulkan driver is installed\n'; fi
+    if have pacman; then
+        pacman -Q mesa vulkan-icd-loader vulkan-radeon vulkan-intel nvidia-utils nvidia nvidia-open 2> /dev/null | sed 's/^/  package: /'
+        for p in vulkan-radeon vulkan-intel; do pacman -Q "$p" > /dev/null 2>&1 || printf '  not installed: %s\n' "$p"; done
+    elif have dpkg; then
+        dpkg -l mesa-vulkan-drivers libvulkan1 2> /dev/null | awk '/^ii/ { printf "  package: %s %s\n", $2, $3 }'
+    elif have rpm; then
+        rpm -q mesa-vulkan-drivers vulkan-loader 2> /dev/null | sed 's/^/  package: /'
+    fi
+    if have vulkaninfo; then
+        printf 'what Vulkan can see:\n'
+        tmo vulkaninfo --summary 2>&1 | grep -E '^(GPU[0-9]+|Devices|Instance)|apiVersion|driverVersion|deviceType|deviceName|driverName|driverInfo|ERROR|error|No ' | head -30 | sed 's/^/  /'
+    else
+        printf '(vulkaninfo is not installed: vulkan-tools on Arch, to see what Vulkan finds)\n'
+    fi
+
+    sec "Monitors"
+    if have hyprctl; then
+        tmo hyprctl monitors 2>&1 | grep -E '^Monitor|@.* at |physical size|^\s*(scale|transform|focused|disabled|mirrorOf|vrr|currentFormat|dpmsStatus):' | head -40
+    else
+        printf '(hyprctl is not installed or not running)\n'
+    fi
+
+    sec "Versions"
+    try pleamar --version
+    if [ -d "$dest/.git" ] && have git; then
+        printf 'Vitreus: %s (%s)\n' "$(git -C "$dest" describe --tags --always 2> /dev/null)" "$(git -C "$dest" log -1 --format=%cd --date=short 2> /dev/null)"
+        git -C "$dest" status --short 2> /dev/null | head -10 | sed 's/^/  changed here: /'
+    elif [ -d "$dest" ]; then
+        printf 'Vitreus: the folder is there but is not a git checkout\n'
+    else
+        printf 'Vitreus: NOT installed (no %s)\n' "$dest"
+    fi
+    # under pleamar-wm and niri `hyprctl` is Vitreus's stand-in, which has no `version`: its error says nothing
+    if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then try hyprctl version | head -4; fi
+
+    sec "Programs it uses"
+    for c in pleamar hyprctl git curl jq python3 socat magick cava playerctl nmcli bluetoothctl brightnessctl hypridle hyprsunset wlsunset awww iris notify-send xdg-open wl-copy cliphist pactl ffmpeg; do
+        if have "$c"; then printf '  ok       %s\n' "$c"; else printf '  MISSING  %s\n' "$c"; fi
+    done
+
+    # Not a program but the portal's permission prompts and file pickers (the journal's "requires an access impl" when it is missing).
+    if [ -f /usr/share/xdg-desktop-portal/portals/gtk.portal ]; then printf '  ok       xdg-desktop-portal-gtk\n'; else printf '  MISSING  xdg-desktop-portal-gtk\n'; fi
+
+    sec "Files in place"
+    for h in vitreus-keep vitreus-sysmon vitreus-polkit-agent vitreus-clipimg vitreus-term vitreus-files; do
+        if [ -e "$HOME/.local/bin/$h" ]; then printf '  ok       ~/.local/bin/%s\n' "$h"; else printf '  MISSING  ~/.local/bin/%s\n' "$h"; fi
+    done
+    printf 'autostart lines that mention vitreus:\n'
+    grep -n -i vitreus "$conf/pleamar/autostart" 2> /dev/null | cut -c1-200 || printf '  (none, or no autostart file)\n'
+    printf 'compositor config lines that mention vitreus:\n'
+    grep -n -i vitreus "$conf/hypr/hyprland.lua" "$conf/hypr/hyprland.conf" 2> /dev/null | cut -c1-200 || printf '  (none)\n'
+    printf 'Vitreus files in the compositor folder: %s\n' "$(ls "$conf/hypr" 2> /dev/null | grep -i vitreus | tr '\n' ' ')"
+    printf 'login-screen entry: '
+    if [ -f /usr/share/wayland-sessions/pleamar-wm.desktop ]; then printf 'pleamar-wm is installed\n'; else printf 'none\n'; fi
+
+    sec "Does each scene load?"
+    if have pleamar && [ -d "$dest" ]; then
+        for s in vitreus.plm lockscreen/lockscreen.plm wptrans/wptrans.plm desktopclock/desktopclock.plm desktopsysmon/desktopsysmon.plm;  do
+            [ -f "$dest/$s" ] || { printf '%s: missing\n' "$s"; continue; }
+            tmo pleamar --check "$dest/$s" 2>&1 | grep -v '^note' | tail -4
+        done
+    else
+        printf '(cannot check: pleamar or Vitreus is not installed)\n'
+    fi
+
+    sec "What is running"
+    pgrep -a pleamar 2> /dev/null | cut -c1-200 || printf '(no pleamar process)\n'
+    pgrep -af vitreus-keep 2> /dev/null | cut -c1-160 | head -12
+    # Two surfaces of one process on one monitor is the stale surface left after a wake (pleamar #104): this is where it shows.
+    # Asked of whichever compositor is running; when it cannot be asked, the report says why instead of leaving the heading empty.
+    printf 'surfaces on screen, by pleamar process:\n'
+    if pgrep -x pleamar-wm > /dev/null 2>&1 && have pleamar-wm; then
+        # One line a surface: number, program and scene, «name», size, place, monitor, level, pid. Needs `agent on` in session.conf.
+        # (`lay`, not `out`: this group is not a subshell, and `out` is where the whole report is written when the group closes)
+        lay="$(tmo pleamar-wm agent layers 2>&1)"
+        if printf '%s\n' "$lay" | grep -q ' pid [0-9]'; then
+            printf '%s\n' "$lay" | cut -c1-160 | head -40 | sed 's/^/  /'
+            printf '%s\n' "$lay" | awk '/ pid [0-9]/ { for (i = 1; i <= NF; i++) if ($i == "pid") n[$(i + 1)]++ } END { for (p in n) printf "  pid %s: %d\n", p, n[p] }'
+        else
+            printf '  (pleamar-wm did not say: its agent is off, so it cannot be asked; `agent on` in ~/.config/pleamar/session.conf turns it on)\n'
+        fi
+    elif [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && have hyprctl; then
+        lay="$(tmo hyprctl layers 2>&1 | awk '/namespace: pleamar/ { for (i = 1; i <= NF; i++) if ($i == "pid:") n[$(i + 1)]++ } END { for (p in n) printf "  pid %s: %d\n", p, n[p] }')"
+        printf '%s\n' "${lay:-  (Hyprland shows no pleamar surface)}"
+    else
+        printf '  (cannot be asked: neither Hyprland nor pleamar-wm is running here)\n'
+    fi
+
+    log="$vdata/vitreus.log"
+    sec "How long the shell has been running"
+    pid="$(pgrep -f 'pleamar --scene .*/vitreus\.plm' 2> /dev/null | head -1)"
+    if [ -n "$pid" ]; then printf 'running for %s (a short time means it restarted lately)\n' "$(ps -o etime= -p "$pid" 2> /dev/null | tr -d ' ')"; else printf '(the Vitreus scene is not running)\n'; fi
+
+    # What keeps the shell drawing when nothing is touched (`need_clock` in vitreus.plm; the log's "alive:" line only names the bindings).
+    # One question, answered in order; a shell that does not answer in 5 s is said to.
+    if [ -n "$pid" ] && have pleamar; then
+        sec "What keeps the shell drawing (asked of the running shell)"
+        names="fr_wv glass_live glass_x media.playing rec_on ws.sp ds dl dk do dsh_rise dsh_hv adk_hot"
+        set --; for n in $names; do set -- "$@" "get $n"; done
+        if ans="$(timeout 5 pleamar --say vitreus "$@" 2> /dev/null)" && [ -n "$ans" ]; then
+            printf '%s\n' "$ans" | awk -v names="$names" 'BEGIN { split(names, k, " ") } { printf "  %-14s %s\n", k[NR], $0 }'
+            printf '  (fr_wv 1: the frame ripples with the music (the visualiser); ws.sp, media.playing, rec_on: something moves on purpose)\n'
+        else
+            printf '(the shell did not answer in 5 s)\n'
+        fi
+    fi
+
+    sec "Problems in Vitreus's log, since it last started (each different line once, with how many times)"
+    if [ -r "$log" ]; then
+        # from the last start: the lines before it belong to an earlier run
+        awk '/^pleamar · decoupled/ { n = NR } { l[NR] = $0 } END { for (i = (n ? n : 1); i <= NR; i++) print l[i] }' "$log" > "$raw.run"
+        grep -i -E 'error|panic|failed|cannot|nothing called|does not keep up|stays as it was|no permission|warning|not plugged in|is gone|went away|not showing|unknown' "$raw.run" |
+            grep -v -E '^(note|cycle) *·' | sed -E 's/ at [0-9.]+ s$//; s/[0-9.]+ ms/N ms/g' |
+            awk '{ if (!($0 in c)) o[++n] = $0; c[$0]++ } END { for (i = 1; i <= n; i++) printf "%4dx %s\n", c[o[i]], o[i] }' | tail -40
+        sl="$(grep -c 'slow frame' "$raw.run")"
+        if [ "$sl" -gt 0 ]; then
+            printf '\n%s slow frames in this run, the worst %s ms\n' "$sl" "$(sed -n 's/.*slow frame: \([0-9]*\) ms.*/\1/p' "$raw.run" | sort -n | tail -1)"
+        else
+            printf '\nno slow frames in this run\n'
+        fi
+        sec "Vitreus log, the last lines (without slow frames, notes, timings and the long permission lists)"
+        grep -v -E '^(note|cycle) *·|slow frame|logic  · permissions|render · scene:|^ *$' "$raw.run" | tail -40 | cut -c1-260
+    else
+        printf '(no %s: the shell has not run, or ran with no log)\n' "$(basename "$log")"
+    fi
+    rm -f "$raw.run"
+    sec "Earlier runs: the kinds of errors, with how many times"
+    if [ -r "$vdata/vitreus.log.1" ]; then
+        grep -i -E 'error|panic|failed|cannot|is gone|went away|not showing' "$vdata/vitreus.log.1" | grep -v -E '^(note|cycle) *·' | sed -E 's/[0-9.]+ ms/N ms/g' |
+            awk '{ if (!($0 in c)) o[++n] = $0; c[$0]++ } END { for (i = 1; i <= n; i++) printf "%4dx %s\n", c[o[i]], o[i] }' | tail -15
+    else
+        printf '(none)\n'
+    fi
+
+    sec "The compositor's own log: its errors"
+    hl="$(ls -t "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"/hypr/*/hyprland.log 2> /dev/null | head -1)"
+    if [ -n "$hl" ]; then
+        grep -E 'ERR|CRIT|WARN' "$hl" | sed -E 's/^\[[^]]*\] *//' | awk '{ if (!($0 in c)) o[++n] = $0; c[$0]++ } END { for (i = 1; i <= n; i++) printf "%4dx %s\n", c[o[i]], o[i] }' | tail -20 | cut -c1-240
+    else
+        printf '(no Hyprland log: another compositor, or none running)\n'
+    fi
+
+    sec "The installer's log (the end)"
+    tailf "$state/vitreus/install.log" 120
+
+    sec "pleamar's last build"
+    b="$(ls -t "$cache"/pleamar*/build.log 2> /dev/null | head -1)"
+    if [ -z "$b" ]; then
+        printf '(none: pleamar was not built here)\n'
+    elif [ "$(tail -n 1 "$b")" = "exit 0" ]; then
+        printf 'finished fine on %s\n' "$(date -r "$b" '+%Y-%m-%d' 2> /dev/null)"
+    else
+        printf 'FAILED (%s):\n' "$(date -r "$b" '+%Y-%m-%d' 2> /dev/null)"
+        grep -v '^ *Compiling' "$b" | tail -40
+    fi
+
+    sec "The system's warnings about it, this boot"
+    if have journalctl; then
+        tmo journalctl --user -b -p warning --no-pager 2> /dev/null | grep -i -E 'pleamar|vitreus|hyprland|portal|polkit|notification' | awk '{ k = $0; sub(/^[A-Z][a-z]+ +[0-9]+ [0-9:]+ /, "", k); if (!seen[k]++) print }' | tail -30
+        printf 'crashes (pleamar or the compositor, last 7 days):\n'
+        cd_out="$(tmo coredumpctl list --no-pager --since '7 days ago' 2> /dev/null | grep -i -E 'pleamar|hyprland' | tail -5)"
+        if [ -n "$cd_out" ]; then printf '%s\n' "$cd_out"; else printf '  (none)\n'; fi
+    else
+        printf '(journalctl is not available)\n'
+    fi
+
+    sec "End of report"
+} > "$raw" 2>&1
+
+{
+    redact < "$raw"
+    if [ -n "$reply" ]; then printf '\nReply to: %s\n' "$reply"; fi
+} > "$out"
+
+finished=true
+$to_stdout && exit 0
+
+say ""
+say "Done. Your report is this file:"
+say ""
+say "    $out"
+say ""
+say "It is plain text: open it with any text editor to see exactly what it holds. Your user name, computer name,"
+say "network addresses and monitors' names have been blanked out of it."
+say ""
+say "To get help, send that file in one of two ways:"
+say ""
+say "  1. On GitHub (needs a free account): open a new issue at"
+say "         $REPO_URL"
+say "     describe what went wrong, and drag the file into the box."
+say ""
+say "  2. By e-mail (no account needed): write to"
+say "         $REPORT_TO"
+say "     with a few words about what went wrong, and attach the file."
+say ""

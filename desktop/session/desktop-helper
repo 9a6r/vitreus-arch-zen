@@ -1,0 +1,5 @@
+#!/bin/sh
+# Desktop entries and D-Bus service files invoke an absolute system path.
+set -eu
+helper=${0##*/}
+exec "$HOME/.config/pleamar/shells/vitreus/bin/$helper" "$@"

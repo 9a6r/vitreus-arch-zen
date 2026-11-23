@@ -1,0 +1,224 @@
+language 0.1
+import "addon-palette.plm"
+import "addon-pencil.plm"                          // the pencil components (see STYLE.md): PLn, PCir, PRound, PSwitch, PFill, PSlider, PSliderMini, PIcon
+import "addon-theme.plm"                           // the theme's own pieces (see STYLE.md, "Themes"): PThumb, PPick
+
+//  A Vitreus add-on with a PANEL: the shell puts the add-on's icon on the add-on pill (the pill of icons in the corner the app dock is not in) and draws a panel out of it
+//  (the same glass as its own drawers) and this scene draws what is in it. A click on the icon opens the panel (or `pleamar --say vitreus "emit ax_toggle"`, which a key can run).
+//
+//  What the shell does, and an add-on cannot change or leave out:
+//    - The icon: a panel needs one (`icon` in addon.toml, with `[drawer]`); without it the add-on is left out of the list, with that said under it.
+//    - The title bar across the top: the add-on's name (`name` in addon.toml), a grip to pull the panel by (it can be pulled away from the pill and left anywhere) and the X in
+//      the top corner that shuts it. The panel also shuts with its icon. This scene draws only below the bar.
+//    - The glass, which stands against the frame like the Desk does: wherever a side is within a hand of the frame it reaches on into it, and lets go as it is pulled away.
+//    - Resizing: a handle in each corner (the cursor shows it). The size in addon.toml is the first one (width 240 to 1600, height 160 to 1600; 0 for the shell's choice); once
+//      the panel has been resized the new size is kept for the next time it opens. It cannot get smaller than 240 x 160 or bigger than the room inside the frame.
+//
+//  What it tells this scene, as facts, as the panel settles: `slot_x`, `slot_y` the middle of the content, `slot_w`, `slot_h` its size, in pixels of the screen (below the
+//  title bar), and `slot_open` (true while the panel is out and not being pulled or resized: the content waits and appears at its new place and size). Draw inside that
+//  rectangle only, and work everything out from `slot_w` and `slot_h`, never from a fixed size: the user can change it. It also tells it the palette (`pal_*`), the bar's room
+//  (`room_*`), the theme's shape (`look`) and the forecast (`wx_*`), and the monitor the panel is on: its name (`slot_mon`, matched to a copy by the logic in addon.luau) and its size (`slot_sw`, `slot_sh`).
+//
+//  One monitor: the scene has a copy on each monitor (`screens: each`), and only the copy on the panel's monitor should draw; `shown` below is 1 only there. A copy is told
+//  apart by its monitor's size, not its number (a scene numbers its monitors in its own order, not the shell's). Hide with `shown` (which stays on while the content fades out as the panel shuts), and make zones `active: here > 0.5` (only while the panel is out).
+//
+//  Text fields: this scene does not take the keyboard (no `keyboard:` on its surface: asked of every copy at once, Hyprland gave it, and the pointer with it, to a
+//  copy on the wrong monitor). The shell takes the keys for it instead: the logic tells the shell where the field is (`axf_*`, see addon.luau and logic/addons.luau in
+//  Vitreus), this scene leaves that rectangle without a zone of its own, so a click there reaches the shell, and the shell sends back what is written (`field_q`), whether
+//  it is being typed in (`field_kb`: draw the caret) and Enter and Escape (`field_enter`, `field_esc`). One field at a time, one line, the caret at its end; it takes the
+//  keys only from a click on it (a field given the keys without one would take the pointer from this scene until it let go).
+//
+//  The logic is addon.luau beside this file (the scene's name with .luau): it keeps what it must in the scene's own data folder with the `files` services below, and any
+//  program it runs (`run("wl-paste", ...)`, `curl`, a helper of your own) has to be named in `permissions` (`pleamar`, to talk to the shell about the field). The shell sets `wx_*` texts on a scene that declares them: name your own weather facts something else (the News & Weather add-on uses `nw_*`).
+//
+//  Style: read STYLE.md beside this file (an add-on included in Vitreus itself has to follow it; one you write on your own is free to look as you like). It says how a panel should look and move (the boiled pencil, the Control Center's switches and sliders, even margins, how the content arrives, how
+//  input is stacked), and addon-pencil.plm holds the drawing, imported above; the sample card below uses every piece. The boiled pencil is preferred for an add-on's icons and graphics (hand-drawn lines, each drawn twice, the second fainter and a hair off, an accent wash inside, strokes
+//  redrawn about eight times a second with `floor(ax_clk * 8)`, a clock that runs only while the panel shows (`time` would keep the scene awake for good): see PCup, PBell and PEnvelope in vitreus.plm). SVGs or images of your own are allowed in its place.
+
+scene MyDrawer {
+    surface { size: full, full; anchor: top_left; margin: 0; level: top, overlay while slot_open; screens: each max 4; open: shown > 0.5 }
+
+    permissions {
+        services: "files", "files.write"          // what addon.luau uses to keep `clicks`
+        run: "pleamar"                           // the programs the logic may run, by name: `pleamar --say vitreus ...` places the field (add "wl-paste", "curl"... as you need them)
+    }
+
+    fact pal_ink_r = 0.9608
+    fact pal_ink_g = 0.9686
+    fact pal_ink_b = 0.9608
+    fact pal_faint_r = 0.7608
+    fact pal_faint_g = 0.7804
+    fact pal_faint_b = 0.8000
+    fact pal_mint_r = 0.6196
+    fact pal_mint_g = 0.8392
+    fact pal_mint_b = 0.7412
+    fact pal_mintlo_r = 0.4235
+    fact pal_mintlo_g = 0.7373
+    fact pal_mintlo_b = 0.6118
+    fact pal_minthi_r = 0.8627
+    fact pal_minthi_g = 0.9725
+    fact pal_minthi_b = 0.9255
+    fact pal_onmint_r = 0.0627
+    fact pal_onmint_g = 0.0863
+    fact pal_onmint_b = 0.1020
+    fact pal_tint_r = 0.1059
+    fact pal_tint_g = 0.1294
+    fact pal_tint_b = 0.1529
+    fact pal_panel_r = 0.0863
+    fact pal_panel_g = 0.1020
+    fact pal_panel_b = 0.1216
+    fact pal_deep_r = 0.0431
+    fact pal_deep_g = 0.0549
+    fact pal_deep_b = 0.0667
+    fact pal_off_r = 0.2275
+    fact pal_off_g = 0.2510
+    fact pal_off_b = 0.2824
+    fact pal_alert_r = 0.9373
+    fact pal_alert_g = 0.2667
+    fact pal_alert_b = 0.2667
+
+    fact room_t = 0
+    fact room_r = 0
+    fact room_b = 0
+    fact room_l = 0
+    fact look = 0                                     // the theme's shape, set by Vitreus: 0 Glass, 1 Retro, 2 UwU, 3 Cyber, 4 Milkbox, 5 Proxy (PThumb reads it)
+    fact wx_ok = false
+    text wx_temp = ""
+    text wx_desc = ""
+
+    fact slot_open = false
+    fact slot_sw = 0                                  // the size of the monitor the panel is on: the scene has a copy on each (`screens: each`, numbered in its own order) and only the copy of that size draws (0: not told yet, every copy does)
+    fact slot_sh = 0
+    text slot_mon = ""                                // the name of that monitor (DP-1...), told before `slot_open`; the logic (addon.luau) finds which copy has it, since a text cannot be compared here
+    fact mon_known = false                            // some copy has that name: then the copy that does draws, and two monitors of the same size are told apart; if none does, the size decides
+    fact mon_c0 = false
+    fact mon_c1 = false
+    fact mon_c2 = false
+    fact mon_c3 = false
+    fact slot_x = 0
+    fact slot_y = 0
+    fact slot_w = 0
+    fact slot_h = 0
+    let mon_here = if(screen.index == 0, if(mon_c0, 1, 0), if(screen.index == 1, if(mon_c1, 1, 0), if(screen.index == 2, if(mon_c2, 1, 0), if(mon_c3, 1, 0))))
+    let onmon = if(mon_known, mon_here > 0.5, slot_sw == 0 or screen.width == slot_sw)       // this copy is on the panel's monitor (still told while it shuts)
+    let here = if(slot_open and onmon, 1, 0)       // 1 on the copy on the panel's monitor, while the panel is out
+    let shown = if(onmon and (slot_open or en1 > 0.004 or tail > 0.004), 1, 0)       // what is drawn: as `here`, and on after it while the content fades out with the glass (the window stays until it has). `en1` is one for every copy: the monitor test keeps the others shut
+
+    //  What the pencil library (addon-pencil.plm) expects of the scene: the unit, and the frame its lines are drawn on (it rests while the panel is shut).
+    let u = 1.1
+    //  The pencil's clock, running only while the panel shows: naming pleamar's `time` keeps a scene awake for good, about fifty rounds a second
+    //  with the panel shut (pleamar --report: "animating 100%"). Stopped, the scene rests.
+    prop ax_clk = 0
+    spin ax_clk by if(shown > 0.5, 1, 0)
+    let fr = if(shown > 0.5 and look < 4.5, floor(ax_clk * 8), 0)       // (the pencil holds still on the Proxy theme: its HUD is crisp)
+
+    //  What is inside arrives as the Control Center's does: one piece after another (each its own spring, the later ones slower), each rising a little as it
+    //  fades in (they start 200 ms after the panel is out: a scene that was shut draws nothing, so its first frame is a long one and a spring started in it would be over at once; they go out at once). `shown` goes down while the panel is pulled or resized and comes back where it lands, so the content arrives again there. Give the pieces of
+    //  your own content `opacity: en1` and `move: 0, (1 - en1) * 12` (and `en2`, `en3` for the ones that come after).
+    prop wk = 0 ~595ms                                // (moves while the content waits to arrive, so the scene keeps drawing frames: it draws none while shut)
+    prop en1 = 0 ~170ms
+    prop en2 = 0 ~323ms
+    prop en3 = 0 ~442ms
+    on change here while here > 0.5 { wk: 1; en1: 1 after 200ms; en2: 1 after 200ms; en3: 1 after 200ms }
+    on change here while here < 0.5 { wk: 0 ~68ms; en1: 0 ~68ms; en2: 0 ~68ms; en3: 0 ~68ms; en1: 0 ~68ms after 205ms; en2: 0 ~68ms after 205ms; en3: 0 ~68ms after 205ms }
+    every 500ms while here > 0.5 and en1 < 0.002 { en1: 1 after 200ms; en2: 1 after 200ms; en3: 1 after 200ms }     // (a scene that starts, or is saved, with its panel already out has no change to wait for)
+    //  The same again, by the clock: a close whose change was never seen (the panel was shut in the frame the content was still arriving, or two says landed
+    //  together) left `en1` at 1, so `shown` held and the content stayed drawn over bare wallpaper with the glass already gone. The rule above has always had
+    //  this backstop for the way in; this is the one for the way out.
+    every 250ms while here < 0.5 and en1 > 0.004 { wk: 0 ~68ms; en1: 0 ~68ms; en2: 0 ~68ms; en3: 0 ~68ms }
+    //  The last frame has to be an empty one. When `shown` stops holding, the surface is closed and the scene stops painting, but what it painted last stays
+    //  on the monitor: the content was left over bare wallpaper, the glass already gone. `tail` keeps the scene awake for a breath after the content has
+    //  faded (`en1` is over in 80 ms, this in ~400), so the frames painted meanwhile are empty ones, and that is what stays.
+    prop tail = 0 ~340ms
+    on change here while here > 0.5 { tail: 1 ~0ms }
+    on change here while here < 0.5 { tail: 0 ~340ms }
+    every 250ms while here < 0.5 and en1 < 0.004 and tail > 0.004 { tail: 0 ~340ms }
+    //  Where the content is: it glides to `slot_x`, `slot_y` on the glass's own spring (Vitreus's `ax_sp`), so it moves with the panel as it is pulled, and is put
+    //  there at once while it is not drawn yet (the panel opening, or a resize).
+    spring ax_sp = 415, 24
+    prop slx = 0 ~ax_sp
+    prop sly = 0 ~ax_sp
+    on change slot_x { slx: slot_x }
+    on change slot_y { sly: slot_y }
+    on change slot_x while en1 < 0.01 { slx: slot_x ~0ms }
+    on change slot_y while en1 < 0.01 { sly: slot_y ~0ms }
+    every 500ms while here > 0.5 and en1 < 0.01 { slx: slot_x ~0ms; sly: slot_y ~0ms }
+
+    fact clicks = 0
+    fact sw_on = 1                                    // the sample card's switch, and its level (a drag on the card's foot)
+    fact lvl = 0.6
+    fact mode = 1                                     // the sample picker's choice (PPick)
+    text field_q = ""                                 // the field: what is written in it (the shell sends it), whether it is being typed in, and its Enter and Escape
+    fact field_kb = false
+    event field_enter ->
+    event field_esc ->
+    text hello = ""                                   // what Enter kept (addon.luau)
+    measure fq
+    //  The rectangle the shell gives (`slot_*`) is already inside the glass by the shell's one margin (30 px, `mg` in vitreus.plm): draw to its edges, with no padding of your own.
+    let left = slx - slot_w / 2
+    let top = sly - slot_h / 2
+    group {
+        opacity: en1
+        move: 0, (1 - en1) * 12
+
+        //  The content follows the panel's size: this bar is as wide as the panel, and the dots keep to its right edge.
+        box { at: left + slot_w / 2, top + slot_h - 2; size: slot_w, 4; corner: 2; color: mint; opacity: 40% * shown }
+        text "Your panel goes here" { at: left, top + 28; anchor: left center; size: 18; weight: 700; color: ink; opacity: shown; family: "Space Grotesk" }
+        text wx_temp { at: left, top + 56; anchor: left center; size: 16; color: faint; opacity: shown; family: "Space Grotesk" }
+        //  ── A card in the shell's style ──  Its outline is in pencil (inside the card by half its stroke and its wobble, so the wobble is never cut by a clip), its switch and its slider are the
+        //  Control Center's, the fill rises from the switch, the icon is drawn from a shared set of strokes, and the text is centred on the card. Each piece of drawing rests (`f: 0`) unless the card
+        //  is on or under the pointer, which is the shell's rule: only what is being used moves.
+        let cx0 = left
+        let cy0 = top + 76
+        let cw0 = slot_w
+        let ch0 = 88 * u
+        let con = sw_on
+        let chot = if(con > 0.5 or card_z.hover > 0.5, 1, 0)
+        box { from: cx0, cy0; size: cw0, ch0; corner: 12 * u; color: mint; opacity: 5% * card_z.hover * shown }
+        PFill(tx: cx0, ty: cy0, tw: cw0, th: ch0, sx: cx0 + cw0 - 26 * u, sy: cy0 + 17 * u, on: con, av: shown)
+        PRound(x: cx0 + 2.6 * u, y: cy0 + 2.6 * u, w: cw0 - 5.2 * u, h: ch0 - 5.2 * u, r: 9.7 * u, s: 1, wd: 1.7 * u, c: mix(faint, mint, con), a: (0.5 + 0.45 * con) * shown, f: chot * fr)
+        PSwitch(sx: cx0 + cw0 - 26 * u, sy: cy0 + 17 * u, on: con, av: shown, s: 7, f: chot * fr)
+        PIcon(k: 0, cx: cx0 + 32 * u, cy: cy0 + ch0 / 2, lit: con, c: mix(faint, mint, con), a: shown, s: 3, f: chot * fr, z: 1.35)
+        text "Lamp" { at: cx0 + 62 * u, cy0 + ch0 / 2 - 8.5 * u; anchor: left center; size: 13.5 * u; weight: 700; width: cw0 - 110 * u; lines: 1; color: ink; opacity: shown; family: "Space Grotesk" }
+        text pick(con, "Off", "On") { at: cx0 + 62 * u, cy0 + ch0 / 2 + 8.5 * u; anchor: left center; size: 11 * u; weight: 600; color: mix(faint, mint, con); opacity: shown; family: "Space Grotesk" }
+        PSliderMini(x0: cx0 + 16 * u, y: cy0 + ch0 - 15 * u, w: cw0 - 32 * u, lv: lvl, h: 10 * u, f: if(sl_z.hover > 0.5, fr, 0))
+        zone box card_z { from: cx0, cy0; size: cw0, ch0; corner: 12 * u; cursor: pointer; label: "Lamp"; active: here > 0.5 }
+        on press card_z { sw_on = 1 - sw_on }
+        zone box sl_z { from: cx0 + 8 * u, cy0 + ch0 - 30 * u; size: cw0 - 16 * u, 26 * u; cursor: pointer; label: "Level"; active: here > 0.5 }
+        on press sl_z { lvl = clamp((pointer.x - (cx0 + 16 * u)) / (cw0 - 32 * u), 0, 1) }
+        on drag sl_z { lvl = clamp((pointer.x - (cx0 + 16 * u)) / (cw0 - 32 * u), 0, 1) }
+        box { at: left + 62, top + 210; size: 124, 36; corner: 18; color: mint; opacity: 80% * shown }
+        text "Press me" { at: left + 62, top + 210; anchor: center; size: 15; weight: 700; color: onmint; opacity: shown; family: "Space Grotesk" }
+        zone box press_me { at: left + 62, top + 210; size: 124, 36; corner: 18; cursor: pointer; active: here > 0.5 }
+        on press press_me { clicks = clicks + 1 }
+        repeat i in 0..8 {
+            ellipse { at: left + slot_w - 5 - (7 - i) * 16, top + 210; radius: 5; color: mint; opacity: if(clicks > i, 1, 0.2) * shown }
+        }
+        //  The field: as wide as the content, 246 down, 36 tall (what addon.luau tells the shell). Drawn here; no zone over it, so the click is the shell's.
+        box { at: left + slot_w / 2, top + 264; size: slot_w, 36; corner: 18; color: ink; opacity: (8% + 6% * if(field_kb, 1, 0)) * shown }
+        text "Type your name, then Enter" { at: left + 18, top + 264; anchor: left center; size: 15; color: faint; opacity: 70% * shown * if(fq.width < 1, 1, 0); family: "Space Grotesk" }
+        text field_q { at: left + 18, top + 264; anchor: left center; size: 15; color: ink; opacity: shown; family: "Space Grotesk"; measure: fq }
+        box { at: left + 19 + fq.width, top + 264; size: 2, 20; color: mint; opacity: shown * if(field_kb, 1, 0) }
+        text hello { at: left, top + 302; anchor: left center; size: 15; weight: 700; color: mint; opacity: shown; family: "Space Grotesk" }
+        //  ── Pick one of several ──  PPick draws the slot and the thumb; the words, their hover and their zones are yours. One zone over the whole slot, declared before the choices' (the last one declared gets the press), tells it the pointer is there.
+        let pk0 = left + slot_w / 6
+        let pkp = slot_w / 3
+        PPick(x0: pk0, y: top + 344, pitch: pkp, n: 3, h: 30 * u, sel: mode, hot: if(pick_z.hover > 0.5, 1, 0), a: shown)
+        zone box pick_z { at: left + slot_w / 2, top + 344; size: slot_w, 30 * u; active: here > 0.5 }
+        repeat i in 0..3 {
+            box { at: pk0 + i * pkp, top + 344; size: pkp - 4 * u, 30 * u; corner: 11 * u; color: ink; opacity: 7% * pick_c.$i.hover * shown }
+            text pick(i, "Warm", "Neutral", "Cool") { at: pk0 + i * pkp, top + 344; anchor: center; size: 14; weight: 700; color: mix(ink, mint, if(mode == i, 1, 0)); opacity: shown; family: "Space Grotesk" }
+            zone box pick_c.$i { at: pk0 + i * pkp, top + 344; size: pkp, 30 * u; cursor: pointer; label: pick(i, "Warm", "Neutral", "Cool"); active: here > 0.5 }
+            on press pick_c.$i { mode = i }
+        }
+    }
+
+    //  A desktop widget (`[widget]` in addon.toml, which has the messages): a surface of its own on the desktop, under the windows and over them while the desktop editor
+    //  is open, on each monitor. The scene declares what it is told and keeps its place itself:
+    //      fact widget_shown = false        fact widget_edit = false        text widget_place = ""        fact glide = false
+    //      fact room_t = 0 (and room_r, room_b, room_l: the grid is 28 x 16 cells from 16 px inside them, the editor's dots)
+    //      surface desk { size: full, full; anchor: top_left; margin: 0; level: bottom, top while widget_edit; screens: each max 4; reserve: -1
+    //          ...the card, while widget_shown, and while widget_edit the cells it takes and the zones that drag and resize it...
+    //      }
+    //  The Home Assistant add-on (addons/homeassistant, widget.luau and the end of homeassistant.plm) has them: a card for each entity chosen from its menu.
+}

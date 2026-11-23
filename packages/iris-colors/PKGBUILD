@@ -1,0 +1,22 @@
+pkgname=iris-colors
+pkgver=0.1.1
+pkgrel=1
+pkgdesc='Semantic wallpaper palette generator'
+arch=(any)
+url='https://github.com/Harman1307/iris'
+license=(MIT)
+depends=(python python-numpy python-pillow)
+makedepends=(python-build python-hatchling python-installer)
+source=("$pkgname-$pkgver.tar.gz::https://codeload.github.com/Harman1307/iris/tar.gz/refs/tags/v$pkgver")
+sha256sums=('4aa00afdae88111bf176b7f7375945daea57f33f3a5cf65725f03eeb31d8f901')
+
+build() {
+    cd "iris-$pkgver"
+    python -m build --wheel --no-isolation
+}
+
+package() {
+    cd "iris-$pkgver"
+    python -m installer --destdir="$pkgdir" dist/*.whl
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

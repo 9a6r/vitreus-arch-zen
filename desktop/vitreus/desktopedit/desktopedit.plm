@@ -1,0 +1,391 @@
+language 0.1
+// vitreus-fonts: lean   (it draws only in "Space Grotesk": bin/vitreus-keep starts it without the system's other fonts, see bin/vitreus-fonts)
+import "../palette-live.plm"
+
+//  The desktop editor: a shelf along the bottom of the screen with a tile for each thing that lives on the desktop, over everything (overlay layer), and the grid's dots on the desktop.
+//  A click on a tile puts that widget on the desktop or takes it off (the sticky-notes tile adds a note); the widgets that can be moved (the clock, the system monitor) show the cells they
+//  take and are dragged in place on the desktop itself, by their own scenes (`edit`, see desktopclock.plm); Done or Escape ends it. Nothing here catches the mouse unless it is open.
+//  Open it with a right press on the bare wallpaper (wptrans/), or by hand:   pleamar --say desktopedit "fact open true"
+//  The logic (desktopedit.luau) does what the tiles say, by telling Vitreus and the widgets' scenes.
+
+scene DesktopEdit {
+    //  Motion: pleamar's house springs, made about 18% quicker (stiffness x1.38, damping x1.18: the same overshoot, sooner).
+    spring calm = 208, 27
+    surface { size: full, full; anchor: top_left; margin: 0; level: overlay; screens: each max 4; reserve: -1; keyboard: on_demand while open }
+
+    permissions { run: "pleamar", "sh" }
+
+    shader paper = file "../paper.wgsl"
+    shader dsh_underwater = file "../dashboard/underwater.wgsl"   // the dashboard's surfacing: seen through water, then ripples that bulge the rim
+
+    fact pal_ink_r = 0.9608   // #f5f7f5
+    fact pal_ink_g = 0.9686
+    fact pal_ink_b = 0.9608
+    fact pal_faint_r = 0.7608   // #c2c7cc
+    fact pal_faint_g = 0.7804
+    fact pal_faint_b = 0.8000
+    fact pal_mint_r = 0.6196   // #9ed6bd
+    fact pal_mint_g = 0.8392
+    fact pal_mint_b = 0.7412
+    fact pal_mintlo_r = 0.4235   // #6cbc9c
+    fact pal_mintlo_g = 0.7373
+    fact pal_mintlo_b = 0.6118
+    fact pal_minthi_r = 0.8627   // #dcf8ec
+    fact pal_minthi_g = 0.9725
+    fact pal_minthi_b = 0.9255
+    fact pal_onmint_r = 0.0627   // #10161a
+    fact pal_onmint_g = 0.0863
+    fact pal_onmint_b = 0.1020
+    fact pal_tint_r = 0.1059   // #1b2127
+    fact pal_tint_g = 0.1294
+    fact pal_tint_b = 0.1529
+    fact pal_panel_r = 0.0863   // #161a1f
+    fact pal_panel_g = 0.1020
+    fact pal_panel_b = 0.1216
+    fact pal_deep_r = 0.0431   // #0b0e11
+    fact pal_deep_g = 0.0549
+    fact pal_deep_b = 0.0667
+    fact pal_off_r = 0.2275   // #3a4048
+    fact pal_off_g = 0.2510
+    fact pal_off_b = 0.2824
+    fact pal_alert_r = 0.9373   // #ef4444
+    fact pal_alert_g = 0.2667
+    fact pal_alert_b = 0.2667
+
+    fact open = false          // the editor is out
+    fact shx = 0               // how far the shelf has been dragged from its place (along the bottom, in the middle), and where it was when the press began
+    fact shy = 0
+    fact shx0 = 0
+    fact shy0 = 0
+    fact emon = -1             // which monitor shows the shelf (`screen.index`; -1: the first)
+    fact hov = -1              // the tile under the pointer (-1 none, 5 Done)
+    fact on0 = false           // what each tile shows: the clock, the system monitor, the audio visualiser, (3, the webcam: no longer a tile)
+    fact on1 = false
+    fact on2 = false
+    fact on3 = false
+    fact on4 = false          // the calendar
+    fact on5 = false          // the reminders
+    fact obs = false           // Vitreus has its glass off: the shelf is flat obsidian
+    event tile_do ->           // a tile, by position
+    //  Add-ons with a desktop widget (`[widget]` in their addon.toml): a tile each after the shell's own, with the add-on's name and picture (the logic reads the list from
+    //  Vitreus when the editor opens). A click shows or hides the add-on's widget; while the editor is open the add-on is told `widget_edit`, as the shell's widgets are told `edit`.
+    model aw max 4 { name: text; icon: image 64, 64; on: bool }
+    event aw_do ->             // an add-on's tile, by position
+    fact awx = 0               // where it was pressed: the middle of that tile and the top of the shelf, in pixels of this copy (an add-on's menu opens over it)
+    fact awy = 0
+    //  An add-on whose widgets come and go on its own (from its menu) says so, so its tile is ticked or not without being asked:
+    //  pleamar --say desktopedit "text aw_said <its scene>" "fact aw_said_on true|false" "emit aw_say"
+    text aw_said = ""
+    fact aw_said_on = false
+    event aw_say ->
+
+    //  Opens and closes as the dashboard does (vitreus.plm, pages/dashboard.plm): no slide, nothing overshoots. The shelf is there from the start just under the water and comes up
+    //  through it, ripples run round its rim as it breaks the surface, and the tiles firm up one after another; closing runs it backwards, a little faster.
+    prop eo = 0 ~459ms                   // how much of it shows, and its size
+    prop ed_under = 1 ~663ms             // how much water is still over it (1 just under, 0 out)
+    prop ed_rq = 0 ~850ms               // the ripples round its rim: how far they have run…
+    prop ed_rh = 0 ~1ms                  // …and how strong they started
+    repeat i in 0..8 {
+        prop ec.$i = 0 ~357ms            // each tile firming up (the seventh is Done)
+    }
+    on change open while open {
+        eo: 1 after 40ms
+        ed_under: 0 after 70ms
+        ed_rq: 0 ~1ms
+        ed_rh: 12
+        ed_rq: 1 after 250ms
+        ec.0: 1 after 200ms
+        ec.1: 1 after 235ms
+        ec.2: 1 after 270ms
+        ec.3: 1 after 305ms
+        ec.4: 1 after 340ms
+        ec.5: 1 after 375ms
+        ec.6: 1 after 410ms
+        ec.7: 1 after 445ms
+    }
+    on change open while not open {
+        ec.7: 0 ~272ms
+        ec.6: 0 ~272ms after 30ms
+        ec.5: 0 ~272ms after 60ms
+        ec.4: 0 ~272ms after 90ms
+        ec.3: 0 ~272ms after 120ms
+        ec.2: 0 ~272ms after 150ms
+        ec.1: 0 ~272ms after 180ms
+        ec.0: 0 ~272ms after 210ms
+        ed_under: 1 ~497ms after 75ms
+        ed_rq: 0 ~1ms
+        ed_rh: 12
+        ed_rq: 1 ~638ms after 190ms
+        eo: 0 ~344ms after 250ms
+    }
+    prop ob = 0 ~calm
+    fact look = 0              // the shell's theme (Vitreus says so, as it does to the widgets): 1 Retro, 2 UwU, 4 Milkbox, 5 Proxy, 6 Paper draw the shelf as a plate of their own
+    prop pl = 0 ~calm
+    follow pl = if(look == 1 or look == 2 or look == 4 or look == 5 or look == 6 or look == 7, 1, 0)
+    prop uk = 0 ~calm
+    follow uk = if(look == 2, 1, 0)
+    prop mk = 0 ~calm
+    follow mk = if(look == 4, 1, 0)
+    prop pxk = 0 ~calm
+    follow pxk = if(look == 5, 1, 0)
+    prop ppk = 0 ~calm
+    follow ppk = if(look == 6, 1, 0)
+    follow ob = if(obs or pl > 0.5, 1, 0)
+    repeat i in 0..6 {
+        prop tn.$i = 0 ~calm
+    }
+    follow tn.0 = if(on0, 1, 0)
+    follow tn.1 = if(on1, 1, 0)
+    follow tn.2 = if(on2, 1, 0)
+    follow tn.3 = if(on3, 1, 0)
+    follow tn.4 = if(on4, 1, 0)
+    follow tn.5 = if(on5, 1, 0)
+
+    let mine = if(emon < 0, screen.index == 0, screen.index == emon)
+    let sw = max(screen.width, 800)
+    let sh = max(screen.height, 600)
+    //  The add-ons' tiles (up to four): the shelf grows by a tile for each, up to the screen's width less 80 px. Past that the tiles get narrower, down to 74 px
+    //  (84 a tile); an add-on that would need them narrower still has no tile, and a line over Done says how many (Vitreus's log names add-ons past the fourth).
+    //  The shelf is 422 px of its own (the hints, the gaps and Done) and a pitch for each tile: 1220 with the shell's seven at 114.
+    let awn = clamp(min(aw.count, floor((sw - 80 - 422) / 84) - 6), 0, 4)
+    let shw = min(sw - 80, 1106 + 114 * awn)           // (six tiles: the webcam is the Desk's Camera now, not a widget)
+    let shh = 150
+    let sx0 = clamp((sw - shw) / 2 + shx, 8, max(8, sw - shw - 8))      // dragged by its bare parts (`shx`, `shy`), and kept on the screen
+    let sy0 = clamp(sh - shh - 48 + shy, 8, max(8, sh - shh - 8))
+    let tp = min(114, (shw - 422) / (6 + awn))       // a tile's pitch: 114, less on a narrow monitor
+    let tw = tp - 10
+    let tx0 = sx0 + 262
+    let ed.still = ed_under < 0.002 and (ed_rh < 0.01 or ed_rq >= 0.999)
+    let ed.wr = pal_deep_r * 0.7 + pal_mint_r * 0.3
+    let ed.wg = pal_deep_g * 0.7 + pal_mint_g * 0.3
+    let ed.wb = pal_deep_b * 0.7 + pal_mint_b * 0.3
+
+    //  The grid: a dot at each corner of the cells (28 columns, 16 rows), from the bar's frame (`room_*`, which Vitreus tells) plus a 16 px margin: what the widgets snap to.
+    fact room_t = 0
+    fact room_r = 0
+    fact room_b = 0
+    fact room_l = 0
+    let gl = 16 + room_l
+    let gt = 16 + room_t
+    let eg.w = (sw - gl - 16 - room_r) / 28
+    let eg.h = (sh - gt - 16 - room_b) / 16
+    group {
+        show: eo > 0.01 and mine
+        opacity: eo
+        repeat i in 0..493 {
+            ellipse { at: gl + mod(i, 29) * eg.w, gt + floor(i / 29) * eg.h; radius: 1.8; color: ink; opacity: 24% }
+        }
+    }
+
+    //  The shelf's own zone first (a press on the bare shelf goes nowhere), then the tiles and Done over it.
+    zone box shelf { at: sx0 + shw / 2, sy0 + shh / 2; size: shw, shh; cursor: if(shelf.pressed > 0.5, grabbing, grab); active: open and eo > 0.6 and mine; label: "Desktop editor: drag to move it" }
+    //  A right click does nothing here, on purpose: a scene that never names the right button is closed by one (pleamar's way out of a prototype with no
+    //  keyboard), and the keeper starts it again a moment later, out of Edit mode: the widget went away and came back stuck.
+    on press right shelf { }
+    on press shelf { shx0 = shx; shy0 = shy }
+    on drag shelf { shx = clamp(shx0 + drag.dx, 8 - (sw - shw) / 2, (sw - shw) / 2 - 8); shy = clamp(shy0 + drag.dy, 8 - (sh - shh - 48), sh - shh - 8 - (sh - shh - 48)) }
+    repeat i in 0..7 {
+        zone box tz.$i { at: tx0 + (i - if(i > 3, 1, 0)) * tp + tw / 2, sy0 + 26 + 52; size: tw, 104; corner: 16; cursor: pointer; active: open and eo > 0.6 and mine and i != 3; label: pick(i, "Clock", "System monitor", "Audio visualiser", "Webcam", "Calendar", "Reminders", "New sticky note") }
+        on press tz.$i { emit tile_do(i) }
+        on hover tz.$i for 1ms { hov = i }
+        on leave tz.$i { hov = -1 }
+    }
+    repeat k in 0..4 {
+        zone box atz.$k { at: tx0 + (6 + k) * tp + tw / 2, sy0 + 26 + 52; size: tw, 104; corner: 16; cursor: pointer; active: open and eo > 0.6 and mine and k < awn; label: "{aw.$k.name}" }
+        on press atz.$k { awx = round(tx0 + (6 + k) * tp + tw / 2); awy = round(sy0); emit aw_do(k) }
+        on hover atz.$k for 1ms { hov = 8 + k }
+        on leave atz.$k { hov = -1 }
+    }
+    zone box donez { at: sx0 + shw - 82, sy0 + shh / 2; size: 124, 44; corner: 22; cursor: pointer; active: open and eo > 0.6 and mine; label: "Done" }
+    on press donez { open = false }
+    on hover donez for 1ms { hov = 7 }
+    on leave donez { hov = -1 }
+    on key Escape while open { open = false }
+
+    group {
+        show: eo > 0.01 and mine
+        pivot: sx0 + shw / 2, sy0 + shh / 2
+        scale: 0.96 + 0.04 * eo
+        opacity: clamp(eo * 1.5, 0, 1)
+        shader: dsh_underwater, ed_under, ed.wr, ed.wg, ed.wb, ed_rq, ed_rh, shw / 2 while not ed.still
+        //  A little larger than the shelf and all but invisible: it makes the group's box that big, so the ripples have room.
+        box { from: sx0 - 36, sy0 - 36; size: shw + 72, shh + 72; color: tint; opacity: 0.015; show: not ed.still }
+        body {
+            color: tint
+            glass: 1
+            lens: false
+            rim: 70%
+            shine: 0, 0
+            shadow: 0, 10, 26, 36%
+            opacity: 88% * (1 - ob)
+            show: ob < 0.996
+            box { from: sx0, sy0; size: shw, shh; corner: 26 }
+        }
+        body {
+            color: mix(mix(tint, #000000, 0.7), ink, 0.3)
+            rim: 0%
+            opacity: 100% * ob * (1 - pl)
+            shadow: 0, 10, 26, 45%, #000000
+            show: ob * (1 - pl) > 0.004
+            box { from: sx0, sy0; size: shw, shh; corner: 26 }
+        }
+        //  The themes that are plates (Retro, UwU, Milkbox, Proxy, Paper): the shelf is one, as the desktop widgets are.
+        body {
+            color: tint
+            rim: 0%
+            border: (2 + 1.2 * uk - 0.8 * ppk - 0.6 * pxk) * (1 - mk) * pl, mix(mix(deep, tint, 0.55 * ppk), mix(#e8f1f5, tint, 0.4), pxk)
+            shadow: (4 - 2.5 * ppk - mk - 1.5 * pxk) * pl, (5 - 1.5 * ppk - mk - 2 * pxk) * pl, 9 * ppk + 10 * mk, 55% - 13% * ppk - 27% * mk + 30% * pxk + 35% * uk, mix(deep, #ff6ec7, 0.75 * uk)
+            opacity: pl
+            show: pl > 0.004
+            box { from: sx0, sy0; size: shw, shh; corner: 26 - 14 * ppk }
+        }
+        //  Milkbox: the white light of the raised plate.
+        body {
+            color: tint
+            rim: 0%
+            shadow: -3 * mk, -3 * mk, 8 * mk, 38% * mk, #ffffff
+            opacity: mk
+            show: mk > 0.004
+            box { from: sx0, sy0; size: shw, shh; corner: 26 }
+        }
+        //  Paper: the worn, torn edge and two strips of tape.
+        group {
+            show: ppk > 0.01
+            opacity: ppk
+            shader paper { at: sx0 - 8, sy0 - 8; size: shw + 16, shh + 16; values: 1, 11.3, 8, 12; colors: tint, deep }
+            box { at: sx0 + 40, sy0 - 2; size: 66, 19; rotate: -7deg; color: #e8b9b4; opacity: 86% }
+            box { at: sx0 + 40, sy0 - 2; size: 66, 19; rotate: -7deg; stroke: 1; color: deep; opacity: 22% }
+            box { at: sx0 + shw - 52, sy0 + 3; size: 60, 19; rotate: 5deg; color: #cfe0bf; opacity: 86% }
+            box { at: sx0 + shw - 52, sy0 + 3; size: 60, 19; rotate: 5deg; stroke: 1; color: deep; opacity: 22% }
+        }
+
+        //  a grip at the top: the shelf is dragged by any bare part of it
+        repeat q in 0..3 {
+            ellipse { at: sx0 + shw / 2 - 10 + q * 10, sy0 + 11; radius: 2; color: ink; opacity: 38% }
+        }
+        //  what it is, and what the mouse does
+        box { at: sx0 + 34, sy0 + 34; size: 11, 11; corner: 2; rotate: 45deg; color: mint }
+        text "EDIT DESKTOP" { at: sx0 + 54, sy0 + 34; anchor: left center; size: 15; weight: 700; color: ink; family: "Space Grotesk" }
+        text "Pick it, place it, tweak it." { at: sx0 + 30, sy0 + 58; anchor: left center; size: 11; weight: 500; color: faint; family: "Space Grotesk" }
+        repeat r in 0..3 {
+            let ry = sy0 + 84 + r * 21
+            box { at: sx0 + 40, ry; size: 22, 17; corner: 5; color: mint; opacity: 20% }
+            text pick(r, "Tile", "Drag", "Esc") { at: sx0 + 40, ry; anchor: center center; size: 9; weight: 700; color: mint; family: "Space Grotesk" }
+            text pick(r, "Add it or take it off", "Move a widget", "Done") { at: sx0 + 60, ry; anchor: left center; size: 11; weight: 600; color: ink; opacity: 88%; family: "Space Grotesk" }
+        }
+        box { at: sx0 + 238, sy0 + shh / 2; size: 1.5, shh - 44; color: ink; opacity: 14% }
+        text if(aw.count - awn == 1, "1 add-on has no room here", "{aw.count - awn} add-ons have no room here") { at: sx0 + shw - 82, sy0 + 24; anchor: center center; size: 9.5; weight: 600; color: faint; show: aw.count > awn; family: "Space Grotesk" }
+
+        //  the tiles
+        repeat i in 0..7 {
+            let cx = tx0 + (i - if(i > 3, 1, 0)) * tp + tw / 2       // (tile 3, the webcam, is gone: the ones after it move up)
+            let cy = sy0 + 26 + 52
+            let hv = if(hov == i, 1, 0)
+            let on = pick(i, tn.0, tn.1, tn.2, tn.3, tn.4, tn.5, 0)
+            let ec = pick(i, ec.0, ec.1, ec.2, ec.3, ec.4, ec.5, ec.6)
+            group {
+            show: i != 3
+            pivot: cx, cy
+            scale: 0.9 + 0.1 * ec
+            opacity: ec
+            box { at: cx, cy; size: tw, 104; corner: 16; color: deep; opacity: 55% + 10% * hv }
+            box { at: cx, cy; size: tw, 104; corner: 16; stroke: 1.6; color: mint; opacity: 12% + 18% * hv + 70% * on }
+            //  the picture of each (small shapes in the shell's colours)
+            group {
+                //  clock: the digits
+                show: i == 0
+                text "10" { at: cx, cy - 18; anchor: center center; size: 26; weight: 700; color: mix(faint, mint, on); family: "Space Grotesk" }
+                text "09" { at: cx, cy + 6; anchor: center center; size: 26; weight: 700; color: mix(faint, mint, on); family: "Space Grotesk" }
+            }
+            group {
+                //  system monitor: three meters
+                show: i == 1
+                repeat q in 0..3 {
+                    box { at: cx - 3, cy - 20 + q * 14; size: 44, 6; corner: 3; color: ink; opacity: 18% }
+                    box { from: cx - 25, cy - 23 + q * 14; size: 44 * pick(q, 0.7, 0.45, 0.85), 6; corner: 3; color: mix(faint, mint, on) }
+                    text pick(q, "C", "M", "G") { at: cx - 36, cy - 20 + q * 14; anchor: center center; size: 8; weight: 700; color: faint; family: "Space Grotesk" }
+                }
+            }
+            group {
+                //  visualiser: bars
+                show: i == 2
+                repeat q in 0..7 {
+                    box { at: cx - 24 + q * 8, cy - 8; size: 5, 8 + pick(q, 14, 30, 20, 38, 26, 16, 24); corner: 2.5; color: mix(faint, mint, on) }
+                }
+            }
+            group {
+                //  webcam: a round lens
+                show: i == 3
+                ellipse { at: cx, cy - 8; radius: 24; stroke: 3; color: mix(faint, mint, on) }
+                ellipse { at: cx, cy - 8; radius: 9; color: mix(faint, mint, on) }
+                ellipse { at: cx + 14, cy - 22; radius: 2.5; color: ink; opacity: 80% }
+            }
+            group {
+                //  sticky note: a square with a plus
+                //  calendar: a page with a grid of dots and a lit day
+                show: i == 4
+                box { at: cx, cy - 8; size: 46, 44; corner: 7; stroke: 2; color: mix(faint, mint, on) }
+                box { at: cx, cy - 22; size: 46, 9; corner: 4; color: mix(faint, mint, on) }
+                repeat q in 0..12 {
+                    ellipse { at: cx - 15 + mod(q, 4) * 10, cy - 10 + floor(q / 4) * 10; radius: 2.2; color: if(q == 6, mint, ink); opacity: if(q == 6, 100%, 45%) }
+                }
+            }
+            group {
+                //  reminders: ticked and unticked lines
+                show: i == 5
+                repeat q in 0..3 {
+                    box { at: cx - 20, cy - 22 + q * 15; size: 10, 10; corner: 3; stroke: 1.6; color: mix(faint, mint, on); }
+                    box { at: cx + 6, cy - 22 + q * 15; size: 28, 4; corner: 2; color: ink; opacity: 40% }
+                }
+                box { at: cx - 20, cy - 22; size: 10, 10; corner: 3; color: mix(faint, mint, on) }
+            }
+            group {
+                //  sticky note: a square with a plus
+                show: i == 6
+                box { at: cx, cy - 8; size: 46, 46; corner: 6; color: faint; opacity: 20% }
+                box { at: cx, cy - 8; size: 46, 46; corner: 6; stroke: 1.6; color: faint }
+                box { at: cx, cy - 8; size: 18, 3; corner: 1.5; color: ink }
+                box { at: cx, cy - 8; size: 3, 18; corner: 1.5; color: ink }
+            }
+            text pick(i, "CLOCK", "SYSTEM", "VISUALISER", "WEBCAM", "CALENDAR", "REMINDERS", "STICKY NOTE") { at: cx, cy + 38; anchor: center center; size: 10; weight: 700; color: mix(ink, mint, on); family: "Space Grotesk" }
+            //  the badge at the corner: a tick when it is on the desktop, a plus when it is not (the sticky note always has the plus)
+            let bon = if(i == 6, 0, on)
+            ellipse { at: cx + tw / 2 - 6, cy - 46; radius: 11; color: mix(deep, mint, 0.2 + 0.8 * bon); }
+            ellipse { at: cx + tw / 2 - 6, cy - 46; radius: 11; stroke: 1.5; color: mint }
+            text "✓" { at: cx + tw / 2 - 6, cy - 46; anchor: center center; size: 13; weight: 700; color: onmint; opacity: bon; family: "Space Grotesk" }
+            text "+" { at: cx + tw / 2 - 6, cy - 46; anchor: center center; size: 15; weight: 700; color: mint; opacity: 1 - bon; family: "Space Grotesk" }
+            }
+        }
+
+        //  the add-ons' tiles: their own picture (tinted like the shell's pictures) and name, and the same badge
+        repeat k in 0..4 {
+            let cx = tx0 + (6 + k) * tp + tw / 2
+            let cy = sy0 + 26 + 52
+            let hv = if(hov == 8 + k, 1, 0)
+            let on = if(aw.$k.on, 1, 0)
+            group {
+                show: k < awn
+                pivot: cx, cy
+                scale: 0.9 + 0.1 * ec.6
+                opacity: ec.6
+                box { at: cx, cy; size: tw, 104; corner: 16; color: deep; opacity: 55% + 10% * hv }
+                box { at: cx, cy; size: tw, 104; corner: 16; stroke: 1.6; color: mint; opacity: 12% + 18% * hv + 70% * on }
+                image aw.$k.icon { at: cx - 22, cy - 30; size: 44, 44; tint: mix(faint, mint, on) }
+                text aw.$k.name { at: cx, cy + 38; anchor: center center; align: center; size: 10; weight: 700; width: tw - 12; lines: 1; color: mix(ink, mint, on); family: "Space Grotesk" }
+                ellipse { at: cx + tw / 2 - 6, cy - 46; radius: 11; color: mix(deep, mint, 0.2 + 0.8 * on); }
+                ellipse { at: cx + tw / 2 - 6, cy - 46; radius: 11; stroke: 1.5; color: mint }
+                text "✓" { at: cx + tw / 2 - 6, cy - 46; anchor: center center; size: 13; weight: 700; color: onmint; opacity: on; family: "Space Grotesk" }
+                text "+" { at: cx + tw / 2 - 6, cy - 46; anchor: center center; size: 15; weight: 700; color: mint; opacity: 1 - on; family: "Space Grotesk" }
+            }
+        }
+
+        //  Done
+        group {
+            pivot: sx0 + shw - 82, sy0 + shh / 2
+            scale: 0.9 + 0.1 * ec.7
+            opacity: ec.7
+            box { at: sx0 + shw - 82, sy0 + shh / 2; size: 124, 44; corner: 22; color: mint; opacity: 80% + 20% * if(hov == 7, 1, 0) }
+            text "✓  DONE" { at: sx0 + shw - 82, sy0 + shh / 2; anchor: center center; size: 14; weight: 700; color: onmint; family: "Space Grotesk" }
+        }
+    }
+}

@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+# The scenes read the current wallpaper from awww for the lens and Iris palette.
+state="${XDG_STATE_HOME:-$HOME/.local/state}/vitreus-iso"
+mkdir -p "$state"
+for attempt in $(seq 1 60); do
+    if awww query >/dev/null 2>&1; then
+        if [ -f "$state/wallpaper-initialized" ]; then
+            exec awww restore
+        fi
+        awww img "$HOME/Pictures/Wallpapers/Vitreus.jpeg" --transition-type none
+        touch "$state/wallpaper-initialized"
+        exit 0
+    fi
+    sleep 0.5
+done
+echo "awww did not become ready" >&2
+exit 1

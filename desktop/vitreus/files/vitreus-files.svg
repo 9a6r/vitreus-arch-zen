@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <title>Files</title>
+  <!-- Peek, View's cat, as a folder. Made to sit beside View's icon: the same smoky glass, rim and pink. -->
+  <defs>
+    <linearGradient id="bk" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#eef1f3" stop-opacity="0.92"/><stop offset="0.55" stop-color="#a7afb6" stop-opacity="0.86"/><stop offset="1" stop-color="#788188" stop-opacity="0.92"/></linearGradient>
+    <linearGradient id="bkrim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0.85"/><stop offset="0.5" stop-color="#eef1f3" stop-opacity="0.25"/><stop offset="1" stop-color="#ffffff" stop-opacity="0.35"/></linearGradient>
+    <linearGradient id="fr" x1="0.1" y1="0" x2="0.8" y2="1"><stop offset="0" stop-color="#fbfcfc" stop-opacity="0.92"/><stop offset="0.45" stop-color="#e6e9ec" stop-opacity="0.78"/><stop offset="1" stop-color="#c3c9ce" stop-opacity="0.72"/></linearGradient>
+    <linearGradient id="frrim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0.98"/><stop offset="0.35" stop-color="#f2f4f6" stop-opacity="0.5"/><stop offset="0.7" stop-color="#d5dadd" stop-opacity="0.22"/><stop offset="1" stop-color="#ffffff" stop-opacity="0.6"/></linearGradient>
+    <linearGradient id="paw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbfcfc"/><stop offset="1" stop-color="#cfd4d8"/></linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffffff" stop-opacity="0"/><stop offset="0.5" stop-color="#ffffff" stop-opacity="0.34"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
+    <linearGradient id="top" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffffff" stop-opacity="0"/><stop offset="0.18" stop-color="#ffffff" stop-opacity="0.95"/><stop offset="0.75" stop-color="#ffffff" stop-opacity="0.55"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="1" r="0.75"><stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
+    <clipPath id="cf"><path d="M24 104Q24 88 40 88H216Q232 88 232 104V196Q232 214 214 214H42Q24 214 24 196Z"/></clipPath>
+  </defs>
+  <g transform="translate(128 128) scale(1.02) translate(-143 -129)">
+  <!-- no soft shadow under it: at dock sizes it only blurred the feet -->
+  <!-- the tail, from behind its right side, curling up -->
+  <path d="M224 190Q250 204 256 180Q262 158 246 140" stroke="#1f2428" stroke-opacity="0.85" stroke-width="27"/>
+  <path d="M224 190Q250 204 256 180Q262 158 246 140" stroke="url(#bk)" stroke-width="19"/>
+  <path d="M236 200Q254 204 258 184" stroke="#ffffff" stroke-opacity="0.5" stroke-width="2.2"/>
+  <!-- the back, with its tab -->
+  <path d="M36 64Q36 49 51 49H97Q106 49 111 55L124 71H205Q220 71 220 86V190Q220 205 205 205H51Q36 205 36 190Z" fill="url(#bk)"/>
+  <path d="M36 64Q36 49 51 49H97Q106 49 111 55L124 71H205Q220 71 220 86V190Q220 205 205 205H51Q36 205 36 190Z" stroke="#1f2428" stroke-opacity="0.8" stroke-width="8"/>
+  <path d="M36 64Q36 49 51 49H97Q106 49 111 55L124 71H205Q220 71 220 86V190Q220 205 205 205H51Q36 205 36 190Z" stroke="url(#bkrim)" stroke-width="3"/>
+  <path d="M43 60Q43 55 49 55H96Q101 55 104 59" stroke="#ffffff" stroke-opacity="0.75" stroke-width="2.2"/>
+  <!-- the ears, on the front's top corners, pink inside -->
+  <path d="M30 100L56 32L104 98Z" fill="url(#bk)"/><path d="M30 100L56 32L104 98Z" stroke="#1f2428" stroke-opacity="0.8" stroke-width="8"/><path d="M30 100L56 32L104 98Z" stroke="url(#bkrim)" stroke-width="3"/>
+  <path d="M152 98L200 32L226 100Z" fill="url(#bk)"/><path d="M152 98L200 32L226 100Z" stroke="#1f2428" stroke-opacity="0.8" stroke-width="8"/><path d="M152 98L200 32L226 100Z" stroke="url(#bkrim)" stroke-width="3"/>
+  <path d="M45 92L58 54L86 91Z" fill="#ff9bb3" fill-opacity="0.7"/><path d="M170 91L198 54L211 92Z" fill="#ff9bb3" fill-opacity="0.7"/>
+  <!-- the front: frosted, the back shows through it -->
+  <path d="M24 104Q24 88 40 88H216Q232 88 232 104V196Q232 214 214 214H42Q24 214 24 196Z" fill="#20262b" fill-opacity="0.22" transform="translate(0 4)"/>
+  <path d="M24 104Q24 88 40 88H216Q232 88 232 104V196Q232 214 214 214H42Q24 214 24 196Z" fill="url(#fr)"/>
+  <g clip-path="url(#cf)">
+    <rect x="0" y="150" width="256" height="80" fill="url(#glow)"/>
+    <path d="M-10 230L78 70H122L34 230Z" fill="url(#sheen)"/>
+    <path d="M118 230L206 70H226L138 230Z" fill="url(#sheen)" opacity="0.55"/>
+  </g>
+  <path d="M24 104Q24 88 40 88H216Q232 88 232 104V196Q232 214 214 214H42Q24 214 24 196Z" stroke="#1f2428" stroke-opacity="0.8" stroke-width="8"/>
+  <path d="M24 104Q24 88 40 88H216Q232 88 232 104V196Q232 214 214 214H42Q24 214 24 196Z" stroke="url(#frrim)" stroke-width="2.8"/>
+  <path d="M40 94H212" stroke="url(#top)" stroke-width="3.4"/>
+  <path d="M36 99Q30 101 30 112V176" stroke="#ffffff" stroke-opacity="0.55" stroke-width="2.2"/>
+  <!-- the face: happy, eyes shut in arches, cheeks, a nose and a «ω», bold enough to read at 32 px -->
+  <path d="M70 148Q88 120 106 148" stroke="#262b30" stroke-width="9"/><ellipse cx="54" cy="166" rx="17" ry="10" fill="#ff8fc0" fill-opacity="0.6"/>
+  <path d="M150 148Q168 120 186 148" stroke="#262b30" stroke-width="9"/><ellipse cx="202" cy="166" rx="17" ry="10" fill="#ff8fc0" fill-opacity="0.6"/>
+  <path d="M119 155H137L128 165Z" fill="#ff8fab" stroke="#ff8fab" stroke-width="2"/>
+  <path d="M112 170Q120 181 128 170Q136 181 144 170" stroke="#262b30" stroke-width="5.5"/>
+  <!-- the paws, over the front's lower edge -->
+  <rect x="62" y="199" width="44" height="26" rx="13" fill="url(#paw)"/><rect x="62" y="199" width="44" height="26" rx="13" stroke="#1f2428" stroke-opacity="0.8" stroke-width="6.5"/><path d="M77 211V219M91 211V219" stroke="#1f2428" stroke-opacity="0.7" stroke-width="4.5"/>
+  <rect x="150" y="199" width="44" height="26" rx="13" fill="url(#paw)"/><rect x="150" y="199" width="44" height="26" rx="13" stroke="#1f2428" stroke-opacity="0.8" stroke-width="6.5"/><path d="M165 211V219M179 211V219" stroke="#1f2428" stroke-opacity="0.7" stroke-width="4.5"/>
+  </g>
+</svg>

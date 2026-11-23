@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <title>View</title>
+  <!-- Peek, View's cat (view.plm, «nothing to show»): a picture frame that is a cat. Made to sit beside Files' icon: the same smoky glass, rim and pink.
+       Drawn in Peek's own units (its middle at 0, 0), scaled into the square. Bold enough to read at a dock's 32 px: thick outlines, a big face, no
+       whiskers or soft shadow (they only blurred). -->
+  <defs>
+    <linearGradient id="bk" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#eef1f3" stop-opacity="0.95"/><stop offset="0.55" stop-color="#a7afb6" stop-opacity="0.9"/><stop offset="1" stop-color="#788188" stop-opacity="0.95"/></linearGradient>
+    <linearGradient id="frrim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0.98"/><stop offset="0.35" stop-color="#f2f4f6" stop-opacity="0.5"/><stop offset="0.7" stop-color="#d5dadd" stop-opacity="0.22"/><stop offset="1" stop-color="#ffffff" stop-opacity="0.6"/></linearGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#262c31"/><stop offset="1" stop-color="#3e464d"/></linearGradient>
+    <linearGradient id="paw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbfcfc"/><stop offset="1" stop-color="#cfd4d8"/></linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffffff" stop-opacity="0"/><stop offset="0.5" stop-color="#ffffff" stop-opacity="0.3"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
+    <clipPath id="fr"><rect x="-116" y="-92" width="232" height="184" rx="34"/></clipPath>
+    <clipPath id="pic"><rect x="-98" y="-74" width="196" height="146" rx="18"/></clipPath>
+  </defs>
+  <g transform="translate(115 136) scale(0.9)">
+  <!-- the tail, from behind the frame's right side, curling up -->
+  <path d="M100 70Q134 88 142 62Q152 38 134 18" stroke="#1f2428" stroke-opacity="0.85" stroke-width="30"/>
+  <path d="M100 70Q134 88 142 62Q152 38 134 18" stroke="url(#bk)" stroke-width="21"/>
+  <!-- the ears, on its top corners, pink inside -->
+  <path d="M-50 -78L-82 -130L-114 -80Z" fill="url(#bk)"/><path d="M-50 -78L-82 -130L-114 -80Z" stroke="#1f2428" stroke-opacity="0.8" stroke-width="9"/><path d="M-50 -78L-82 -130L-114 -80Z" stroke="url(#frrim)" stroke-width="3.4"/>
+  <path d="M50 -78L82 -130L114 -80Z" fill="url(#bk)"/><path d="M50 -78L82 -130L114 -80Z" stroke="#1f2428" stroke-opacity="0.8" stroke-width="9"/><path d="M50 -78L82 -130L114 -80Z" stroke="url(#frrim)" stroke-width="3.4"/>
+  <path d="M-64 -86L-81 -112L-100 -88Z" fill="#ff9bb3" fill-opacity="0.85"/><path d="M64 -86L81 -112L100 -88Z" fill="#ff9bb3" fill-opacity="0.85"/>
+  <!-- the frame -->
+  <rect x="-116" y="-92" width="232" height="184" rx="34" fill="url(#bk)"/>
+  <g clip-path="url(#fr)"><path d="M-150 120L-40 -120H10L-100 120Z" fill="url(#sheen)"/></g>
+  <rect x="-116" y="-92" width="232" height="184" rx="34" stroke="#1f2428" stroke-opacity="0.8" stroke-width="9"/>
+  <rect x="-116" y="-92" width="232" height="184" rx="34" stroke="url(#frrim)" stroke-width="3.6"/>
+  <!-- the picture in it: a night sky, a moon, a few stars, two hills -->
+  <g clip-path="url(#pic)">
+    <rect x="-98" y="-74" width="196" height="146" fill="url(#sky)"/>
+    <circle cx="64" cy="-44" r="19" fill="#f3ead2"/>
+    <circle cx="73" cy="-51" r="16" fill="#292f34"/>
+    <circle cx="-66" cy="-50" r="3.4" fill="#ffffff" fill-opacity="0.8"/><circle cx="-26" cy="-62" r="2.6" fill="#ffffff" fill-opacity="0.65"/><circle cx="22" cy="-46" r="2.8" fill="#ffffff" fill-opacity="0.6"/>
+    <path d="M-104 72V34L-54 4L-12 32L30 14L104 48V72Z" fill="#5f686f"/>
+    <path d="M-104 72V52L-30 38L40 54L104 44V72Z" fill="#7e878e"/>
+  </g>
+  <rect x="-98" y="-74" width="196" height="146" rx="18" stroke="#1f2428" stroke-opacity="0.7" stroke-width="5"/>
+  <!-- the face: round eyes with a glint, cheeks, a nose and a «ω» -->
+  <rect x="-58" y="-28" width="30" height="36" rx="15" fill="#fbfcfc"/><circle cx="-38" cy="-18" r="5.5" fill="#262c31"/>
+  <rect x="28" y="-28" width="30" height="36" rx="15" fill="#fbfcfc"/><circle cx="48" cy="-18" r="5.5" fill="#262c31"/>
+  <ellipse cx="-72" cy="18" rx="17" ry="10" fill="#ff8fc0" fill-opacity="0.6"/><ellipse cx="72" cy="18" rx="17" ry="10" fill="#ff8fc0" fill-opacity="0.6"/>
+  <path d="M-9 10H9L0 20Z" fill="#ff9bb3" stroke="#ff9bb3" stroke-width="2"/>
+  <path d="M-16 24Q-8 35 0 24Q8 35 16 24" stroke="#fbfcfc" stroke-width="5.5"/>
+  <!-- the paws, over the frame's lower edge -->
+  <rect x="-74" y="76" width="52" height="30" rx="15" fill="url(#paw)"/><rect x="-74" y="76" width="52" height="30" rx="15" stroke="#1f2428" stroke-opacity="0.8" stroke-width="7"/>
+  <rect x="22" y="76" width="52" height="30" rx="15" fill="url(#paw)"/><rect x="22" y="76" width="52" height="30" rx="15" stroke="#1f2428" stroke-opacity="0.8" stroke-width="7"/>
+  <path d="M-56 91V99M-40 91V99M40 91V99M56 91V99" stroke="#1f2428" stroke-opacity="0.7" stroke-width="5"/>
+  </g>
+</svg>

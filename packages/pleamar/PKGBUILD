@@ -1,0 +1,30 @@
+pkgname=pleamar
+pkgver=0.7.31
+pkgrel=1
+pkgdesc='Vulkan desktop shell runtime used by Vitreus'
+arch=(x86_64)
+url='https://github.com/k4ditano/pleamar'
+license=(BSD-3-Clause)
+depends=(fontconfig gcc-libs glibc libxkbcommon pam vulkan-icd-loader wayland)
+makedepends=(rust pkgconf)
+options=(!debug !lto)
+_commit=2cadc88310ff7cb2560a2f4b329be03db741d019
+source=("$pkgname-$_commit.tar.gz::https://codeload.github.com/k4ditano/pleamar/tar.gz/$_commit")
+sha256sums=('78d5b5a034a9bce25140073964c722263069d515db11b78e376f2a346e5c5ec3')
+
+build() {
+    cd "pleamar-$_commit"
+    cargo build --release --locked
+}
+
+check() {
+    cd "pleamar-$_commit"
+    target/release/pleamar --version
+}
+
+package() {
+    cd "pleamar-$_commit"
+    install -Dm755 target/release/pleamar "$pkgdir/usr/bin/pleamar"
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    install -Dm644 THIRD-PARTY.md "$pkgdir/usr/share/licenses/$pkgname/THIRD-PARTY.md"
+}

@@ -1,0 +1,488 @@
+part PanelFrame {
+    // ── the panel ────────────────────────────────────────────────
+    group {
+        //  The calendar's content is clipped to the calendar's shape.
+        opacity: pown
+        move: rt * (screen.width - 2 * pcx), bt * (yo + vb - 2 * (th.t + lp.hd / 2))
+        clip inset 2 box { at: mix(mix(mix(pcx, dc.gx, lm), 2 * pcx - mix(pcx, dc.gx, lm), rt), dc.tex, tu), mix(mix(bar.y + dc.hh / 2, lp.cy, lm), dc.tey, tu) + bt * (2 * (th.t + lp.hd / 2) - 2 * mix(mix(bar.y + dc.hh / 2, lp.cy, lm), dc.tey, tu)); size: mix(mix(dc.w, dc.gw, lm), dc.tew, tu), mix(mix(dc.hh, dc.gh, lm), dc.teh, tu); corner: 26 * cu * (1 - 0.73 * sq) }
+        //  Down the left it comes out of the strip: what is inside grows with the drawer's shape (`dc.lf`), from the strip's edge at the panel's middle, instead of waiting still under the clip.
+        group {
+            shader: pixelate, px.dc while px.dc > 1.5          // (only while it pixelates: a shader at rest still costs its pass, and the moving sky inside would make the whole panel pay it every frame)
+            pivot: mix(mix(lp.xl, 2 * pcx - lp.xl, rt), pcx, tu), mix(lp.cy, bar.y + bar.h / 2 + bt * lp.hd, tu)
+            scale: mix(1, max(dc.lf, 0.05), att)
+        //  ── the Calendar tab ──
+        group {
+            show: tf.cal > 0.005
+            opacity: tf.cal
+            move: 0, 44 * cu
+        //  Two plates like the volume and media ones, each 8% white and 12 from the panel's edges, under the weather card:
+        //  the chosen day with its reminders and the field to add one, and the month. They share a top and a bottom.
+        group {
+            opacity: f1
+            move: 0, (1 - f1) * 12 * cu + floor(194 * cu + 0.5)
+            //  One card down the left, as tall as the month beside it: the chosen day, its reminders, and at its foot the field to write a new one.
+            //  Obsidian: a solid plate a step lighter than the shell, with a small tight shadow, in place of the veil.
+            body { color: mix(mix(obsidian, ink, (veil) * 1.6), dd_p1, dd_k); opacity: (obs) * (1 - dd_k); border: 2.4 * cu * dd_k, ink; shadow: 0, 2 * cu, 7 * cu, 40% * (1 - dd_k), #000000; show: obs > 0.004; box { at: pcx - 130 * cu, cy + 4 * cu; size: 166 * cu, 232 * cu; corner: pr } }
+            DdCard(pcx - 130 * cu, cy + 4 * cu, 166 * cu, 232 * cu, 576.5, mix(mix(obsidian, ink, (veil) * 1.6), dd_p1, dd_k), (obs) * dd_k, cu) { show: dd_k > 0.004 and (obs > 0.004) }      // Doodle: the hand-drawn card
+            box { at: pcx - 130 * cu, cy + 4 * cu; size: 166 * cu, 232 * cu; corner: pr; color: obsidian; opacity: card_fill * (1 - obs) }      // a deeper backing under the veil: a card with content is less see-through than the panel
+            box { at: pcx - 130 * cu, cy + 4 * cu; size: 166 * cu, 232 * cu; corner: pr; color: ink; opacity: (veil) * (1 - obs) }
+            box { at: pcx - 130 * cu, cy + 4 * cu; size: 166 * cu, 232 * cu; corner: pr; stroke: 1 * cu; color: ink; opacity: hair * (1 - dd_k) }
+            text cal.sel_title { at: floor(pcx - 201 * cu + 0.5), floor(cy - 92 * cu + 0.5); anchor: left center; size: 15; weight: 600; width: 142 * cu; lines: 1; color: ink; family: "Space Grotesk" }
+            text cal.sel_sub { at: floor(pcx - 201 * cu + 0.5), floor(cy - 77 * cu + 0.5); anchor: left center; size: 12; width: 142 * cu; lines: 1; color: faint; opacity: 75%; family: "Space Grotesk" }
+            column cal_list {
+                at: floor(pcx - 207 * cu + 0.5), floor(cy - 64 * cu + 0.5)
+                view: 154 * cu, 144 * cu
+                gap: 4
+                for e in cal_events { CalRow(e, tick: cal_check, gone: cal_delete) }
+            }
+            text "Add one below" { at: floor(pcx - 201 * cu + 0.5), floor(cy - 50 * cu + 0.5); anchor: left center; size: 13; color: faint; opacity: 55%; family: "Space Grotesk"; show: cal_events.count < 1 }
+            //  Writing one: the field and its button, on a soft pill at the card's foot. Enter saves it as well.
+            box { at: pcx - 130 * cu, cy + 101 * cu; size: 152 * cu, 28 * cu; corner: 14 * cu * (1 - 0.85 * sq); color: ink; opacity: 8% }
+            box { at: pcx - 130 * cu, cy + 101 * cu; size: 152 * cu, 28 * cu; corner: 14 * cu * (1 - 0.85 * sq); stroke: 1 * cu; color: ink; opacity: 12% }
+            //  An input's `at` is not its middle: it is lifted 6.3 so its text sits on the row's centre.
+            input cal_new { at: floor(pcx - 196 * cu + 0.5), floor(cy + 95 * cu + 0.5); width: 98 * cu; size: 13; color: ink; family: "Space Grotesk"
+                            placeholder: "3pm Call mom"; selection: mintlo }
+            box { at: pcx - 76 * cu, cy + 101 * cu; size: 38 * cu, 20 * cu; corner: (10 * cu) * (1 - 0.85 * dd_k); color: mint; opacity: 80% + 20% * cal_add_btn.hover }
+            PPillOutline(pcx - 76 * cu, cy + 101 * cu, 38 * cu, 20 * cu, 10 * cu, cal_add_btn.hover, clamp(3 * (80% + 20% * cal_add_btn.hover), 0, 1), cu)
+            text "Add" { at: floor(pcx - 76 * cu + 0.5), floor(cy + 101 * cu + 0.5); anchor: center; size: 12.5; weight: 700; color: onmint; family: "Space Grotesk" }
+            zone box cal_add_btn { at: pcx - 76 * cu, cy + 101 * cu; size: 42 * cu, 24 * cu; corner: 12 * cu; cursor: pointer; label: "Add the reminder" }
+            on press cal_add_btn { emit cal_add }
+        }
+        group {
+            opacity: f4
+            move: 0, (1 - f4) * 12 * cu
+            let cal.cw = 33 * cu
+            let cal.ch = 27 * cu
+            let cal.gx = pcx - 13 * cu                 // the middle of the first column
+            let cal.gy = cy - 42 * cu                 // the middle of the first row
+            group {
+                move: 0, floor(194 * cu + 0.5)       // the month sits 194 lower, under the weather card (a whole number of pixels)
+            //  Obsidian: a solid plate a step lighter than the shell, with a small tight shadow, in place of the veil.
+            body { color: mix(mix(obsidian, ink, (veil) * 1.6), dd_cream, dd_k); opacity: (obs) * (1 - dd_k); border: 2.4 * cu * dd_k, ink; shadow: 0, 2 * cu, 7 * cu, 40% * (1 - dd_k), #000000; show: obs > 0.004; box { at: pcx + 86 * cu, cy + 4 * cu; size: 254 * cu, 232 * cu; corner: pr } }
+            DdCard(pcx + 86 * cu, cy + 4 * cu, 254 * cu, 232 * cu, 814.5, mix(mix(obsidian, ink, (veil) * 1.6), dd_cream, dd_k), (obs) * dd_k, cu) { show: dd_k > 0.004 and (obs > 0.004) }      // Doodle: the hand-drawn card
+            box { at: pcx + 86 * cu, cy + 4 * cu; size: 254 * cu, 232 * cu; corner: pr; color: obsidian; opacity: card_fill * (1 - obs) }      // a deeper backing under the veil: a card with content is less see-through than the panel
+            box { at: pcx + 86 * cu, cy + 4 * cu; size: 254 * cu, 232 * cu; corner: pr; color: ink; opacity: (veil) * (1 - obs) }
+            box { at: pcx + 86 * cu, cy + 4 * cu; size: 254 * cu, 232 * cu; corner: pr; stroke: 1 * cu; color: ink; opacity: hair * (1 - dd_k) }
+            //  Month, and the three buttons that move it.
+            //  The month's name changes letter by letter: they go out with the grid, and come in from the side the month comes from, one after another.
+            let cal.e = 1 - cal_inn
+            text cal.month { at: floor(pcx - 30 * cu + 0.5), floor(cy - 92 * cu + 0.5); anchor: left center; size: 17; weight: 600; color: ink; family: "Space Grotesk"
+                             letter_opacity: clamp(cal.e * 2.2 - letter * 0.07, 0, 1) * (1 - cal_out)
+                             letter_move: cal_dir * (16 * pow(1 - clamp(cal.e * 2.2 - letter * 0.07, 0, 1), 2) - 10 * cal_out) * cu, -6 * cu * cal_out
+                             letter_scale: 1 + 0.25 * (1 - clamp(cal.e * 2.2 - letter * 0.07, 0, 1)) }
+            path { at: pcx + 141.5 * cu, cy - 92 * cu; color: ink; stroke: 1.6 * cu; opacity: 55% + 45% * cal_prev_btn.hover; move 2.5 * cu, -5 * cu; line -2.5 * cu, 0; line 2.5 * cu, 5 * cu }
+            box { at: pcx + 170.5 * cu, cy - 92 * cu; size: 40 * cu, 20 * cu; corner: (10 * cu) * (1 - 0.85 * dd_k); color: ink; opacity: 8% + 10% * cal_today_btn.hover }
+            PPillOutline(pcx + 170.5 * cu, cy - 92 * cu, 40 * cu, 20 * cu, 10 * cu, cal_today_btn.hover, clamp(3 * (8% + 10% * cal_today_btn.hover), 0, 1), cu)
+            text "Today" { at: floor(pcx + 170.5 * cu + 0.5), floor(cy - 92 * cu + 0.5); anchor: center; size: 13; weight: 600; color: ink; opacity: 80%; family: "Space Grotesk" }
+            path { at: pcx + 199.5 * cu, cy - 92 * cu; color: ink; stroke: 1.6 * cu; opacity: 55% + 45% * cal_next_btn.hover; move -2.5 * cu, -5 * cu; line 2.5 * cu, 0; line -2.5 * cu, 5 * cu }
+            zone box cal_prev_btn { label: "Previous month"; at: pcx + 141.5 * cu, cy - 92 * cu; size: 26 * cu, 26 * cu; corner: 13 * cu; cursor: pointer }
+            zone box cal_today_btn { at: pcx + 170.5 * cu, cy - 92 * cu; size: 42 * cu, 24 * cu; corner: 12 * cu; cursor: pointer }
+            zone box cal_next_btn { label: "Next month"; at: pcx + 199.5 * cu, cy - 92 * cu; size: 26 * cu, 26 * cu; corner: 13 * cu; cursor: pointer }
+            on press cal_prev_btn { emit cal_prev }
+            on press cal_today_btn { emit cal_today }
+            on press cal_next_btn { emit cal_next }
+            //  The weekdays.
+            repeat w in 1..8 {
+                text cal.wd.$w { at: floor(cal.gx + (w - 1) * cal.cw + 0.5), floor(cy - 66 * cu + 0.5); anchor: center; size: 11; weight: 600; color: faint; opacity: 65%; family: "Space Grotesk" }
+            }
+            //  The wheel over the month moves it a month a notch (it is under the days, so they keep their clicks).
+            zone box cal_grid_z { at: cal.gx + 3 * cal.cw, cal.gy + 2.5 * cal.ch; size: 7 * cal.cw + 8 * cu, 6 * cal.ch + 8 * cu; label: "The month: the wheel changes it" }
+            on scroll cal_grid_z { emit cal_wheel(wheel) }
+            //  The chosen day's bubble: one disc that travels from day to day, stretching along the way it goes, and a ring that a pressed day sends out.
+            let cal.sx = cal.gx + mod(cal.sel, 7) * cal.cw
+            let cal.sy = cal.gy + floor(cal.sel / 7) * cal.ch
+            //  (it travels in the grid's own steps, a column and a row at a time, so it lands right on whichever monitor the panel is on)
+            follow cal_bx = mod(cal.sel, 7)
+            follow cal_by = floor(cal.sel / 7)
+            let cal.bxp = cal.gx + cal_bx * cal.cw
+            let cal.byp = cal.gy + cal_by * cal.ch
+            let cal.bv = clamp(length(vel(cal_bx) * cal.cw, vel(cal_by) * cal.ch) * 0.0016, 0, 0.45)
+            group {
+                opacity: (1 - cal_out) * clamp(cal.e * 1.6 - 0.3, 0, 1)
+                pivot: cal.bxp, cal.byp
+                rotate: atan2(vel(cal_by) * cal.ch, vel(cal_bx) * cal.cw + 0.0001) * 1deg
+                ellipse { at: cal.bxp, cal.byp; radius: 12 * cu; scale: 1 + cal.bv, 1 - 0.5 * cal.bv; color: mint }
+            }
+            ellipse { at: cal.sx, cal.sy; radius: (12 + 16 * cal_rip) * cu; stroke: 2 * cu * (1 - cal_rip) + 0.5; color: mint; opacity: 70% * (1 - cal_rip) }
+            //  The days. When the month changes they leave one way and the new ones come in from the other, a column at a time from the side they come from.
+            repeat k in 0..42 {
+                let dx0 = cal.gx + mod(k, 7) * cal.cw
+                let dy = cal.gy + floor(k / 7) * cal.ch
+                let cd = if(cal_dir > 0, 6 - mod(k, 7), mod(k, 7)) * 0.05 + floor(k / 7) * 0.025
+                let lp = clamp((cal.e - cd) / 0.62, 0, 1)
+                let ez = 1 - pow(1 - lp, 3)
+                let dx = dx0 + cal_dir * (38 * (1 - ez) - 22 * cal_out) * cu
+                let dop = ez * (1 - cal_out)
+                prop cal.pick.$k = 0 ~lively
+                follow cal.pick.$k = if(cal.sel == k, 1, 0)
+                group {
+                    opacity: (38% + 62% * if(cal.in.$k, 1, 0)) * dop
+                    pivot: dx, dy
+                    scale: (1 + 0.08 * cal.pick.$k) * (0.8 + 0.2 * ez)
+                    ellipse { at: dx, dy; radius: 12 * cu; color: ink; opacity: 9% * cal_cell.$k.hover * (1 - cal.pick.$k) }
+                    ellipse { at: dx, dy; radius: 13 * cu; stroke: 4.5 * cu; color: mint; opacity: 22% * (0.6 + 0.4 * sin(sk.t * 140)); show: cal.today.$k }
+                    ellipse { at: dx, dy; radius: 13 * cu; stroke: 1.5 * cu; color: mint; show: cal.today.$k }
+                    ellipse { at: dx, dy + 8.5 * cu; radius: 1.5 * cu; color: mix(mint, onmint, cal.pick.$k); opacity: if(cal.n.$k > 0, 100%, 0) }
+                }
+                //  The day's number is not inside the group that grows when it is picked: a scaled text is resampled and comes out soft, so it
+                //  stays its size (a text's `size` takes plain numbers only: a prop or a `let` in it counts as 1), and is drawn on whole pixels.
+                text number(cal.day.$k, 0) { at: floor(dx + 0.5), floor(dy - 0.5 * cu + 0.5); anchor: center; size: 13; weight: 500 + 200 * if(cal.today.$k, 1, 0)
+                                             color: mix(ink, onmint, cal.pick.$k); opacity: (38% + 62% * if(cal.in.$k, 1, 0)) * dop; family: "Space Grotesk" }
+                zone box cal_cell.$k { at: dx0, dy; size: 30 * cu, 26 * cu; corner: 13 * cu; cursor: pointer }
+                on press cal_cell.$k { emit cal_pick(k); cal_rip: 0 ~0ms; cal_rip: 1 after 16ms }
+            }
+            }
+            //  ── The weather card, at the very top: the sky outside, alive ──
+            //  The real sky fills it (sky.wgsl): the sun on its arc from sunrise to sunset, the moon in tonight's phase and the stars, clouds that drift
+            //  with the wind, rain, snow, fog and lightning, each melting into the next. Over it, the temperature and what it is, the details down the
+            //  right, the next 24 hours as a curve the pointer can run along, and the week: a day under the pointer turns the sky into that day's.
+            let wx.x0 = pcx - 213 * cu
+            let wx.t = cy - 112 * cu
+            let wx.cy = cy - 19 * cu
+            let wx.ins = 1 + 3 * dd_k
+            let wx.il = 0.299 * pal_ink_r + 0.587 * pal_ink_g + 0.114 * pal_ink_b      // how light the theme's ink is: the sky keeps to the other side of it
+            let wx.sh = 45% * smooth(0.42, 0.58, wx.il) * (1 - max(dd_k, pp_k))       // a soft shadow under the words, where they are light over the sky
+            let wx.neon = max(cy_k, px_k)
+            let wx.sketch = max(dd_k, pp_k)
+            let wx.plastic = max(cas_k, uwu_k)                   // (Milk keeps the smooth sky: it is one soft material, not a print)
+            let wx.pack = (floor(wx.neon * 9 + 0.5) * 1000 + floor(wx.sketch * 9 + 0.5) * 100 + floor(wx.plastic * 9 + 0.5) * 10 + min(9, floor(wx_wind_n / 3))) * if(wx_wdir < 0, -1, 1)
+            //  Obsidian: a solid plate a step lighter than the shell, with a small tight shadow, in place of the veil.
+            body { color: mix(mix(obsidian, ink, (veil) * 1.6), dd_p3, dd_k); opacity: (obs) * (1 - dd_k); border: 2.4 * cu * dd_k, ink; shadow: 0, 2 * cu, 7 * cu, 40% * (1 - dd_k), #000000; show: obs > 0.004; box { at: pcx, wx.cy; size: 426 * cu, 186 * cu; corner: pr } }
+            DdCard(pcx, wx.cy, 426 * cu, 186 * cu, 139.5, mix(mix(obsidian, ink, (veil) * 1.6), dd_p3, dd_k), (obs) * dd_k, cu) { show: dd_k > 0.004 and (obs > 0.004) }      // Doodle: the hand-drawn card
+            box { at: pcx, wx.cy; size: 426 * cu, 186 * cu; corner: pr; color: obsidian; opacity: card_fill * (1 - obs) }      // a deeper backing under the veil: a card with content is less see-through than the panel
+            box { at: pcx, wx.cy; size: 426 * cu, 186 * cu; corner: pr; color: ink; opacity: (veil) * (1 - obs) }
+            shader sky {
+                at: wx.x0 + wx.ins, wx.t + wx.ins; size: 426 * cu - 2 * wx.ins, 186 * cu - 2 * wx.ins; corner: max(0, pr - wx.ins) * (1 - dd_k)
+                values: sk.cl, sk.rn, sk.sn, floor(clamp(sk.fg, 0, 1) * 999) + clamp(sk.st, 0, 0.999), sk.t, sk.dl, floor(clamp(sk.sun, 0, 1) * 1000) + clamp(wx_moon, 0, 0.999), wx.pack
+                colors: mint, ink
+                //  (its clock is `sk.t`, passed in: the scene's own `time` stands still while nothing else needs it, and so did the sky)
+                opacity: f4
+                show: wx_ok
+            }
+            box { at: pcx, wx.cy; size: 426 * cu, 186 * cu; corner: pr; stroke: 1 * cu; color: ink; opacity: hair * (1 - dd_k) }
+            text "Loading weather…" { at: floor(pcx + 0.5), floor(wx.cy + 0.5); anchor: center; align: center; size: 13; width: 300 * cu; lines: 1; color: faint; family: "Space Grotesk"; show: not wx_ok }
+            group {
+                show: wx_ok
+                //  where: a pin and the place
+                let wx.pin = wx.x0 + 22 * cu
+                ellipse { at: wx.pin, wx.t + 16 * cu; radius: 3.6 * cu; stroke: 1.5 * cu; color: ink; opacity: 85% }
+                path { at: wx.pin, wx.t + 16 * cu; color: ink; opacity: 85%; move -3.1 * cu, 1.9 * cu; line 0, 7 * cu; line 3.1 * cu, 1.9 * cu; close }
+                text wx_place { at: floor(wx.pin + 9 * cu + 0.5), floor(wx.t + 17 * cu + 0.5); anchor: left center; size: 12; weight: 600; width: 200 * cu; lines: 1; color: ink; opacity: 90%; family: "Space Grotesk"; shadow: 0, 1, 6, wx.sh }
+                //  the temperature, its digits rising in one after another as the card opens; with a day of the week under the pointer, that day's high
+                text wx_temp { at: floor(wx.x0 + 18 * cu + 0.5), floor(wx.t + 45 * cu + 0.5); anchor: left center; size: 50; weight: 700; color: ink; family: "Space Grotesk"; show: wx_hv < 0
+                               shadow: 0, 2, 12, wx.sh
+                               letter_opacity: clamp(wx_in * 4 - letter * 0.45, 0, 1)
+                               letter_move: 0, 22 * pow(1 - clamp(wx_in * 4 - letter * 0.45, 0, 1), 2) }
+                text "{wx_days[wx_hv].hi}" { at: floor(wx.x0 + 18 * cu + 0.5), floor(wx.t + 45 * cu + 0.5); anchor: left center; size: 50; weight: 700; color: ink; family: "Space Grotesk"; show: wx_hv >= 0; shadow: 0, 2, 12, wx.sh }
+                text wx_desc { at: floor(wx.x0 + 21 * cu + 0.5), floor(wx.t + 71 * cu + 0.5); anchor: left center; size: 14.5; weight: 700; width: 190 * cu; lines: 1; color: ink; family: "Space Grotesk"; shadow: 0, 1, 6, wx.sh
+                               opacity: clamp(wx_in * 3 - 0.6, 0, 1); show: wx_hv < 0 }
+                text "{wx_days[wx_hv].full} · {wx_days[wx_hv].desc}" { at: floor(wx.x0 + 21 * cu + 0.5), floor(wx.t + 71 * cu + 0.5); anchor: left center; size: 14.5; weight: 700; width: 190 * cu; lines: 1; color: ink; family: "Space Grotesk"; shadow: 0, 1, 6, wx.sh; show: wx_hv >= 0 }
+                text "High {wx_days[wx_hv].hi}  ·  Low {wx_days[wx_hv].lo}" { at: floor(wx.x0 + 21 * cu + 0.5), floor(wx.t + 86 * cu + 0.5); anchor: left center; size: 11.5; weight: 500; width: 190 * cu; lines: 1; color: ink; opacity: 75% * clamp(wx_in * 3 - 0.8, 0, 1); family: "Space Grotesk"; shadow: 0, 1, 6, wx.sh; show: wx_hv >= 0 }
+                text "High {wx_days[0].hi}  ·  Low {wx_days[0].lo}" { at: floor(wx.x0 + 21 * cu + 0.5), floor(wx.t + 86 * cu + 0.5); anchor: left center; size: 11.5; weight: 500; width: 190 * cu; lines: 1; color: ink; opacity: 75% * clamp(wx_in * 3 - 0.8, 0, 1); family: "Space Grotesk"; shadow: 0, 1, 6, wx.sh; show: wx_hv < 0 }
+                //  the details, down the right: each on a frosted pill
+                repeat r in 0..4 {
+                    let ry = wx.t + (17 + r * 17.5) * cu
+                    let rk = clamp(wx_in * 3 - 0.5 - r * 0.18, 0, 1)
+                    group {
+                        opacity: rk
+                        move: 16 * cu * (1 - rk), 0
+                        box { at: wx.x0 + 342 * cu, ry; size: 138 * cu, 15 * cu; corner: 7.5 * cu * (1 - 0.85 * sq); color: if(wx.il > 0.5, #000000, #ffffff); opacity: if(wx.il > 0.5, 18%, 45%) }
+                        text pick(r, "Feels like", "Humidity", "Wind", "Rain", "Sun") { at: floor(wx.x0 + 280 * cu + 0.5), floor(ry + 0.5); anchor: left center; size: 11; weight: 600; color: ink; opacity: 70%; family: "Space Grotesk" }
+                        text pick(r, wx_feels, wx_hum, wx_wind, wx_rain, wx_rise) { at: floor(wx.x0 + 404 * cu + 0.5), floor(ry + 0.5); anchor: right center; size: 11.5; weight: 700; width: 70 * cu; lines: 1; align: right; color: ink; family: "Space Grotesk"; show: r < 4 and (r != 3 or wx_hv < 0) }
+                        text "{wx_days[wx_hv].popt}" { at: floor(wx.x0 + 404 * cu + 0.5), floor(ry + 0.5); anchor: right center; size: 11.5; weight: 700; width: 70 * cu; lines: 1; align: right; color: ink; family: "Space Grotesk"; show: r == 3 and wx_hv >= 0 }
+                        text "{wx_rise} – {wx_set}" { at: floor(wx.x0 + 404 * cu + 0.5), floor(ry + 0.5); anchor: right center; size: 11; weight: 700; width: 90 * cu; lines: 1; align: right; color: ink; family: "Space Grotesk"; show: r == 4 }
+                    }
+                }
+                //  ── the next 24 hours: a curve of the temperature, drawn in from the left as the card opens ──
+                let hx0 = wx.x0 + 26 * cu
+                let hdx = 374 * cu / 24
+                let hsp = max(1, wx_hhi - wx_hlo)
+                let hb = wx.t + 124 * cu                              // the curve's floor: the coldest hour sits here, the warmest 18 higher
+                let hr.k = if(hr_z.hover > 0.5, clamp(round((pointer.x - hx0) / hdx), 0, 24), -1)
+                zone box hr_z { from: wx.x0, wx.t + 92 * cu; size: 426 * cu, 48 * cu; label: "The next 24 hours" }
+                group {
+                    show: wx_hn > 24
+                    clip box { from: wx.x0, wx.t + 86 * cu; size: 426 * cu * clamp(wx_in * 1.6 - 0.2, 0, 1), 56 * cu }
+                    //  the fill under it, a soft glow, and the line
+                    path { at: 0, 0; color: mint; opacity: 16%
+                        move hx0, hb + 10 * cu
+                        line hx0, hb - 18 * cu * (wx_hrs[0].t - wx_hlo) / hsp
+                        curve hx0 + 1.5 * hdx, hb - 9 * cu * (wx_hrs[1].t + wx_hrs[2].t - 2 * wx_hlo) / hsp via hx0 + 1 * hdx, hb - 18 * cu * (wx_hrs[1].t - wx_hlo) / hsp
+                        curve hx0 + 2.5 * hdx, hb - 9 * cu * (wx_hrs[2].t + wx_hrs[3].t - 2 * wx_hlo) / hsp via hx0 + 2 * hdx, hb - 18 * cu * (wx_hrs[2].t - wx_hlo) / hsp
+                        curve hx0 + 3.5 * hdx, hb - 9 * cu * (wx_hrs[3].t + wx_hrs[4].t - 2 * wx_hlo) / hsp via hx0 + 3 * hdx, hb - 18 * cu * (wx_hrs[3].t - wx_hlo) / hsp
+                        curve hx0 + 4.5 * hdx, hb - 9 * cu * (wx_hrs[4].t + wx_hrs[5].t - 2 * wx_hlo) / hsp via hx0 + 4 * hdx, hb - 18 * cu * (wx_hrs[4].t - wx_hlo) / hsp
+                        curve hx0 + 5.5 * hdx, hb - 9 * cu * (wx_hrs[5].t + wx_hrs[6].t - 2 * wx_hlo) / hsp via hx0 + 5 * hdx, hb - 18 * cu * (wx_hrs[5].t - wx_hlo) / hsp
+                        curve hx0 + 6.5 * hdx, hb - 9 * cu * (wx_hrs[6].t + wx_hrs[7].t - 2 * wx_hlo) / hsp via hx0 + 6 * hdx, hb - 18 * cu * (wx_hrs[6].t - wx_hlo) / hsp
+                        curve hx0 + 7.5 * hdx, hb - 9 * cu * (wx_hrs[7].t + wx_hrs[8].t - 2 * wx_hlo) / hsp via hx0 + 7 * hdx, hb - 18 * cu * (wx_hrs[7].t - wx_hlo) / hsp
+                        curve hx0 + 8.5 * hdx, hb - 9 * cu * (wx_hrs[8].t + wx_hrs[9].t - 2 * wx_hlo) / hsp via hx0 + 8 * hdx, hb - 18 * cu * (wx_hrs[8].t - wx_hlo) / hsp
+                        curve hx0 + 9.5 * hdx, hb - 9 * cu * (wx_hrs[9].t + wx_hrs[10].t - 2 * wx_hlo) / hsp via hx0 + 9 * hdx, hb - 18 * cu * (wx_hrs[9].t - wx_hlo) / hsp
+                        curve hx0 + 10.5 * hdx, hb - 9 * cu * (wx_hrs[10].t + wx_hrs[11].t - 2 * wx_hlo) / hsp via hx0 + 10 * hdx, hb - 18 * cu * (wx_hrs[10].t - wx_hlo) / hsp
+                        curve hx0 + 11.5 * hdx, hb - 9 * cu * (wx_hrs[11].t + wx_hrs[12].t - 2 * wx_hlo) / hsp via hx0 + 11 * hdx, hb - 18 * cu * (wx_hrs[11].t - wx_hlo) / hsp
+                        curve hx0 + 12.5 * hdx, hb - 9 * cu * (wx_hrs[12].t + wx_hrs[13].t - 2 * wx_hlo) / hsp via hx0 + 12 * hdx, hb - 18 * cu * (wx_hrs[12].t - wx_hlo) / hsp
+                        curve hx0 + 13.5 * hdx, hb - 9 * cu * (wx_hrs[13].t + wx_hrs[14].t - 2 * wx_hlo) / hsp via hx0 + 13 * hdx, hb - 18 * cu * (wx_hrs[13].t - wx_hlo) / hsp
+                        curve hx0 + 14.5 * hdx, hb - 9 * cu * (wx_hrs[14].t + wx_hrs[15].t - 2 * wx_hlo) / hsp via hx0 + 14 * hdx, hb - 18 * cu * (wx_hrs[14].t - wx_hlo) / hsp
+                        curve hx0 + 15.5 * hdx, hb - 9 * cu * (wx_hrs[15].t + wx_hrs[16].t - 2 * wx_hlo) / hsp via hx0 + 15 * hdx, hb - 18 * cu * (wx_hrs[15].t - wx_hlo) / hsp
+                        curve hx0 + 16.5 * hdx, hb - 9 * cu * (wx_hrs[16].t + wx_hrs[17].t - 2 * wx_hlo) / hsp via hx0 + 16 * hdx, hb - 18 * cu * (wx_hrs[16].t - wx_hlo) / hsp
+                        curve hx0 + 17.5 * hdx, hb - 9 * cu * (wx_hrs[17].t + wx_hrs[18].t - 2 * wx_hlo) / hsp via hx0 + 17 * hdx, hb - 18 * cu * (wx_hrs[17].t - wx_hlo) / hsp
+                        curve hx0 + 18.5 * hdx, hb - 9 * cu * (wx_hrs[18].t + wx_hrs[19].t - 2 * wx_hlo) / hsp via hx0 + 18 * hdx, hb - 18 * cu * (wx_hrs[18].t - wx_hlo) / hsp
+                        curve hx0 + 19.5 * hdx, hb - 9 * cu * (wx_hrs[19].t + wx_hrs[20].t - 2 * wx_hlo) / hsp via hx0 + 19 * hdx, hb - 18 * cu * (wx_hrs[19].t - wx_hlo) / hsp
+                        curve hx0 + 20.5 * hdx, hb - 9 * cu * (wx_hrs[20].t + wx_hrs[21].t - 2 * wx_hlo) / hsp via hx0 + 20 * hdx, hb - 18 * cu * (wx_hrs[20].t - wx_hlo) / hsp
+                        curve hx0 + 21.5 * hdx, hb - 9 * cu * (wx_hrs[21].t + wx_hrs[22].t - 2 * wx_hlo) / hsp via hx0 + 21 * hdx, hb - 18 * cu * (wx_hrs[21].t - wx_hlo) / hsp
+                        curve hx0 + 22.5 * hdx, hb - 9 * cu * (wx_hrs[22].t + wx_hrs[23].t - 2 * wx_hlo) / hsp via hx0 + 22 * hdx, hb - 18 * cu * (wx_hrs[22].t - wx_hlo) / hsp
+                        curve hx0 + 23.5 * hdx, hb - 9 * cu * (wx_hrs[23].t + wx_hrs[24].t - 2 * wx_hlo) / hsp via hx0 + 23 * hdx, hb - 18 * cu * (wx_hrs[23].t - wx_hlo) / hsp
+                        line hx0 + 24 * hdx, hb - 18 * cu * (wx_hrs[24].t - wx_hlo) / hsp
+                        line hx0 + 24 * hdx, hb + 10 * cu
+                        close }
+                    path { at: 0, 0; stroke: 7 * cu; color: mint; opacity: 16%
+                        move hx0, hb - 18 * cu * (wx_hrs[0].t - wx_hlo) / hsp
+                        curve hx0 + 1.5 * hdx, hb - 9 * cu * (wx_hrs[1].t + wx_hrs[2].t - 2 * wx_hlo) / hsp via hx0 + 1 * hdx, hb - 18 * cu * (wx_hrs[1].t - wx_hlo) / hsp
+                        curve hx0 + 2.5 * hdx, hb - 9 * cu * (wx_hrs[2].t + wx_hrs[3].t - 2 * wx_hlo) / hsp via hx0 + 2 * hdx, hb - 18 * cu * (wx_hrs[2].t - wx_hlo) / hsp
+                        curve hx0 + 3.5 * hdx, hb - 9 * cu * (wx_hrs[3].t + wx_hrs[4].t - 2 * wx_hlo) / hsp via hx0 + 3 * hdx, hb - 18 * cu * (wx_hrs[3].t - wx_hlo) / hsp
+                        curve hx0 + 4.5 * hdx, hb - 9 * cu * (wx_hrs[4].t + wx_hrs[5].t - 2 * wx_hlo) / hsp via hx0 + 4 * hdx, hb - 18 * cu * (wx_hrs[4].t - wx_hlo) / hsp
+                        curve hx0 + 5.5 * hdx, hb - 9 * cu * (wx_hrs[5].t + wx_hrs[6].t - 2 * wx_hlo) / hsp via hx0 + 5 * hdx, hb - 18 * cu * (wx_hrs[5].t - wx_hlo) / hsp
+                        curve hx0 + 6.5 * hdx, hb - 9 * cu * (wx_hrs[6].t + wx_hrs[7].t - 2 * wx_hlo) / hsp via hx0 + 6 * hdx, hb - 18 * cu * (wx_hrs[6].t - wx_hlo) / hsp
+                        curve hx0 + 7.5 * hdx, hb - 9 * cu * (wx_hrs[7].t + wx_hrs[8].t - 2 * wx_hlo) / hsp via hx0 + 7 * hdx, hb - 18 * cu * (wx_hrs[7].t - wx_hlo) / hsp
+                        curve hx0 + 8.5 * hdx, hb - 9 * cu * (wx_hrs[8].t + wx_hrs[9].t - 2 * wx_hlo) / hsp via hx0 + 8 * hdx, hb - 18 * cu * (wx_hrs[8].t - wx_hlo) / hsp
+                        curve hx0 + 9.5 * hdx, hb - 9 * cu * (wx_hrs[9].t + wx_hrs[10].t - 2 * wx_hlo) / hsp via hx0 + 9 * hdx, hb - 18 * cu * (wx_hrs[9].t - wx_hlo) / hsp
+                        curve hx0 + 10.5 * hdx, hb - 9 * cu * (wx_hrs[10].t + wx_hrs[11].t - 2 * wx_hlo) / hsp via hx0 + 10 * hdx, hb - 18 * cu * (wx_hrs[10].t - wx_hlo) / hsp
+                        curve hx0 + 11.5 * hdx, hb - 9 * cu * (wx_hrs[11].t + wx_hrs[12].t - 2 * wx_hlo) / hsp via hx0 + 11 * hdx, hb - 18 * cu * (wx_hrs[11].t - wx_hlo) / hsp
+                        curve hx0 + 12.5 * hdx, hb - 9 * cu * (wx_hrs[12].t + wx_hrs[13].t - 2 * wx_hlo) / hsp via hx0 + 12 * hdx, hb - 18 * cu * (wx_hrs[12].t - wx_hlo) / hsp
+                        curve hx0 + 13.5 * hdx, hb - 9 * cu * (wx_hrs[13].t + wx_hrs[14].t - 2 * wx_hlo) / hsp via hx0 + 13 * hdx, hb - 18 * cu * (wx_hrs[13].t - wx_hlo) / hsp
+                        curve hx0 + 14.5 * hdx, hb - 9 * cu * (wx_hrs[14].t + wx_hrs[15].t - 2 * wx_hlo) / hsp via hx0 + 14 * hdx, hb - 18 * cu * (wx_hrs[14].t - wx_hlo) / hsp
+                        curve hx0 + 15.5 * hdx, hb - 9 * cu * (wx_hrs[15].t + wx_hrs[16].t - 2 * wx_hlo) / hsp via hx0 + 15 * hdx, hb - 18 * cu * (wx_hrs[15].t - wx_hlo) / hsp
+                        curve hx0 + 16.5 * hdx, hb - 9 * cu * (wx_hrs[16].t + wx_hrs[17].t - 2 * wx_hlo) / hsp via hx0 + 16 * hdx, hb - 18 * cu * (wx_hrs[16].t - wx_hlo) / hsp
+                        curve hx0 + 17.5 * hdx, hb - 9 * cu * (wx_hrs[17].t + wx_hrs[18].t - 2 * wx_hlo) / hsp via hx0 + 17 * hdx, hb - 18 * cu * (wx_hrs[17].t - wx_hlo) / hsp
+                        curve hx0 + 18.5 * hdx, hb - 9 * cu * (wx_hrs[18].t + wx_hrs[19].t - 2 * wx_hlo) / hsp via hx0 + 18 * hdx, hb - 18 * cu * (wx_hrs[18].t - wx_hlo) / hsp
+                        curve hx0 + 19.5 * hdx, hb - 9 * cu * (wx_hrs[19].t + wx_hrs[20].t - 2 * wx_hlo) / hsp via hx0 + 19 * hdx, hb - 18 * cu * (wx_hrs[19].t - wx_hlo) / hsp
+                        curve hx0 + 20.5 * hdx, hb - 9 * cu * (wx_hrs[20].t + wx_hrs[21].t - 2 * wx_hlo) / hsp via hx0 + 20 * hdx, hb - 18 * cu * (wx_hrs[20].t - wx_hlo) / hsp
+                        curve hx0 + 21.5 * hdx, hb - 9 * cu * (wx_hrs[21].t + wx_hrs[22].t - 2 * wx_hlo) / hsp via hx0 + 21 * hdx, hb - 18 * cu * (wx_hrs[21].t - wx_hlo) / hsp
+                        curve hx0 + 22.5 * hdx, hb - 9 * cu * (wx_hrs[22].t + wx_hrs[23].t - 2 * wx_hlo) / hsp via hx0 + 22 * hdx, hb - 18 * cu * (wx_hrs[22].t - wx_hlo) / hsp
+                        curve hx0 + 23.5 * hdx, hb - 9 * cu * (wx_hrs[23].t + wx_hrs[24].t - 2 * wx_hlo) / hsp via hx0 + 23 * hdx, hb - 18 * cu * (wx_hrs[23].t - wx_hlo) / hsp
+                        line hx0 + 24 * hdx, hb - 18 * cu * (wx_hrs[24].t - wx_hlo) / hsp }
+                    path { at: 0, 0; stroke: 2.2 * cu; color: mint
+                        move hx0, hb - 18 * cu * (wx_hrs[0].t - wx_hlo) / hsp
+                        curve hx0 + 1.5 * hdx, hb - 9 * cu * (wx_hrs[1].t + wx_hrs[2].t - 2 * wx_hlo) / hsp via hx0 + 1 * hdx, hb - 18 * cu * (wx_hrs[1].t - wx_hlo) / hsp
+                        curve hx0 + 2.5 * hdx, hb - 9 * cu * (wx_hrs[2].t + wx_hrs[3].t - 2 * wx_hlo) / hsp via hx0 + 2 * hdx, hb - 18 * cu * (wx_hrs[2].t - wx_hlo) / hsp
+                        curve hx0 + 3.5 * hdx, hb - 9 * cu * (wx_hrs[3].t + wx_hrs[4].t - 2 * wx_hlo) / hsp via hx0 + 3 * hdx, hb - 18 * cu * (wx_hrs[3].t - wx_hlo) / hsp
+                        curve hx0 + 4.5 * hdx, hb - 9 * cu * (wx_hrs[4].t + wx_hrs[5].t - 2 * wx_hlo) / hsp via hx0 + 4 * hdx, hb - 18 * cu * (wx_hrs[4].t - wx_hlo) / hsp
+                        curve hx0 + 5.5 * hdx, hb - 9 * cu * (wx_hrs[5].t + wx_hrs[6].t - 2 * wx_hlo) / hsp via hx0 + 5 * hdx, hb - 18 * cu * (wx_hrs[5].t - wx_hlo) / hsp
+                        curve hx0 + 6.5 * hdx, hb - 9 * cu * (wx_hrs[6].t + wx_hrs[7].t - 2 * wx_hlo) / hsp via hx0 + 6 * hdx, hb - 18 * cu * (wx_hrs[6].t - wx_hlo) / hsp
+                        curve hx0 + 7.5 * hdx, hb - 9 * cu * (wx_hrs[7].t + wx_hrs[8].t - 2 * wx_hlo) / hsp via hx0 + 7 * hdx, hb - 18 * cu * (wx_hrs[7].t - wx_hlo) / hsp
+                        curve hx0 + 8.5 * hdx, hb - 9 * cu * (wx_hrs[8].t + wx_hrs[9].t - 2 * wx_hlo) / hsp via hx0 + 8 * hdx, hb - 18 * cu * (wx_hrs[8].t - wx_hlo) / hsp
+                        curve hx0 + 9.5 * hdx, hb - 9 * cu * (wx_hrs[9].t + wx_hrs[10].t - 2 * wx_hlo) / hsp via hx0 + 9 * hdx, hb - 18 * cu * (wx_hrs[9].t - wx_hlo) / hsp
+                        curve hx0 + 10.5 * hdx, hb - 9 * cu * (wx_hrs[10].t + wx_hrs[11].t - 2 * wx_hlo) / hsp via hx0 + 10 * hdx, hb - 18 * cu * (wx_hrs[10].t - wx_hlo) / hsp
+                        curve hx0 + 11.5 * hdx, hb - 9 * cu * (wx_hrs[11].t + wx_hrs[12].t - 2 * wx_hlo) / hsp via hx0 + 11 * hdx, hb - 18 * cu * (wx_hrs[11].t - wx_hlo) / hsp
+                        curve hx0 + 12.5 * hdx, hb - 9 * cu * (wx_hrs[12].t + wx_hrs[13].t - 2 * wx_hlo) / hsp via hx0 + 12 * hdx, hb - 18 * cu * (wx_hrs[12].t - wx_hlo) / hsp
+                        curve hx0 + 13.5 * hdx, hb - 9 * cu * (wx_hrs[13].t + wx_hrs[14].t - 2 * wx_hlo) / hsp via hx0 + 13 * hdx, hb - 18 * cu * (wx_hrs[13].t - wx_hlo) / hsp
+                        curve hx0 + 14.5 * hdx, hb - 9 * cu * (wx_hrs[14].t + wx_hrs[15].t - 2 * wx_hlo) / hsp via hx0 + 14 * hdx, hb - 18 * cu * (wx_hrs[14].t - wx_hlo) / hsp
+                        curve hx0 + 15.5 * hdx, hb - 9 * cu * (wx_hrs[15].t + wx_hrs[16].t - 2 * wx_hlo) / hsp via hx0 + 15 * hdx, hb - 18 * cu * (wx_hrs[15].t - wx_hlo) / hsp
+                        curve hx0 + 16.5 * hdx, hb - 9 * cu * (wx_hrs[16].t + wx_hrs[17].t - 2 * wx_hlo) / hsp via hx0 + 16 * hdx, hb - 18 * cu * (wx_hrs[16].t - wx_hlo) / hsp
+                        curve hx0 + 17.5 * hdx, hb - 9 * cu * (wx_hrs[17].t + wx_hrs[18].t - 2 * wx_hlo) / hsp via hx0 + 17 * hdx, hb - 18 * cu * (wx_hrs[17].t - wx_hlo) / hsp
+                        curve hx0 + 18.5 * hdx, hb - 9 * cu * (wx_hrs[18].t + wx_hrs[19].t - 2 * wx_hlo) / hsp via hx0 + 18 * hdx, hb - 18 * cu * (wx_hrs[18].t - wx_hlo) / hsp
+                        curve hx0 + 19.5 * hdx, hb - 9 * cu * (wx_hrs[19].t + wx_hrs[20].t - 2 * wx_hlo) / hsp via hx0 + 19 * hdx, hb - 18 * cu * (wx_hrs[19].t - wx_hlo) / hsp
+                        curve hx0 + 20.5 * hdx, hb - 9 * cu * (wx_hrs[20].t + wx_hrs[21].t - 2 * wx_hlo) / hsp via hx0 + 20 * hdx, hb - 18 * cu * (wx_hrs[20].t - wx_hlo) / hsp
+                        curve hx0 + 21.5 * hdx, hb - 9 * cu * (wx_hrs[21].t + wx_hrs[22].t - 2 * wx_hlo) / hsp via hx0 + 21 * hdx, hb - 18 * cu * (wx_hrs[21].t - wx_hlo) / hsp
+                        curve hx0 + 22.5 * hdx, hb - 9 * cu * (wx_hrs[22].t + wx_hrs[23].t - 2 * wx_hlo) / hsp via hx0 + 22 * hdx, hb - 18 * cu * (wx_hrs[22].t - wx_hlo) / hsp
+                        curve hx0 + 23.5 * hdx, hb - 9 * cu * (wx_hrs[23].t + wx_hrs[24].t - 2 * wx_hlo) / hsp via hx0 + 23 * hdx, hb - 18 * cu * (wx_hrs[23].t - wx_hlo) / hsp
+                        line hx0 + 24 * hdx, hb - 18 * cu * (wx_hrs[24].t - wx_hlo) / hsp }
+                    //  every third hour: its temperature over the curve and the hour under it; the pointer's hour instead, while it runs along
+                    repeat i in 0..25 {
+                        let px = hx0 + i * hdx
+                        let py = hb - 18 * cu * (wx_hrs[i].t - wx_hlo) / hsp
+                        let third = if(mod(i, 3) == 0, 1, 0)
+                        let near = if(hr.k >= 0, clamp(abs(i - hr.k) / 1.5, 0, 1), 1)
+                        ellipse { at: px, py; radius: 2.2 * cu; color: mint; opacity: third * near; show: i > 0 }
+                        text wx_hrs[i].deg { at: floor(px + 0.5), floor(py - 9 * cu + 0.5); anchor: center; size: 10.5; weight: 700; color: ink; opacity: third * near; family: "Space Grotesk"; shadow: 0, 1, 5, wx.sh; show: third > 0.5 }
+                        text wx_hrs[i].label { at: floor(px + 0.5), floor(wx.t + 135 * cu + 0.5); anchor: center; size: 10.5; weight: 500; color: ink; opacity: 70% * third * near; family: "Space Grotesk"; shadow: 0, 1, 5, wx.sh; show: third > 0.5 }
+                        group {
+                            show: hr.k == i
+                            line { from: px, wx.t + 92 * cu; to: px, wx.t + 139 * cu; width: 1 * cu; color: ink; opacity: 35% }
+                            ellipse { at: px, py; radius: 7 * cu; color: mint; opacity: 25% }
+                            ellipse { at: px, py; radius: 4 * cu; color: mint }
+                            box { at: px, py - 15 * cu; size: 40 * cu, 17 * cu; corner: 8.5 * cu * (1 - 0.85 * sq); color: mint }
+                            text wx_hrs[i].deg { at: floor(px + 0.5), floor(py - 15 * cu + 0.5); anchor: center; size: 11.5; weight: 700; color: onmint; family: "Space Grotesk" }
+                            text wx_hrs[i].label { at: floor(px + 0.5), floor(wx.t + 135 * cu + 0.5); anchor: center; size: 11; weight: 700; color: ink; family: "Space Grotesk"; shadow: 0, 1, 5, wx.sh }
+                        }
+                    }
+                    //  now: a dot that sends out a ring, over and over
+                    ellipse { at: hx0, hb - 18 * cu * (wx_hrs[0].t - wx_hlo) / hsp; radius: (4 + 9 * fract(sk.t * 0.6)) * cu; stroke: 1.5 * cu; color: mint; opacity: 80% * (1 - fract(sk.t * 0.6)) }
+                    ellipse { at: hx0, hb - 18 * cu * (wx_hrs[0].t - wx_hlo) / hsp; radius: 4 * cu; color: mint }
+                    ellipse { at: hx0, hb - 18 * cu * (wx_hrs[0].t - wx_hlo) / hsp; radius: 1.6 * cu; color: onmint }
+                }
+                //  ── the week: each day's name, its weather and where its low and high fall in the week's range ──
+                box { at: pcx, wx.t + 142 * cu; size: 402 * cu, 1 * cu; color: ink; opacity: 14% }
+                let wsp = max(1, wx_whi - wx_wlo)
+                repeat i in 0..7 {
+                    let dx = wx.x0 + 12 * cu + (i + 0.5) * 57.43 * cu
+                    let dk = clamp(wx_in * 2.4 - 0.6 - i * 0.12, 0, 1)
+                    let lx = dx - 9 * cu + 18 * cu * (wx_days[i].ln - wx_wlo) / wsp
+                    let hxr = dx - 9 * cu + 18 * cu * (wx_days[i].hn - wx_wlo) / wsp
+                    group {
+                        opacity: dk
+                        move: 0, 10 * cu * (1 - dk)
+                        show: i < wx_days.count
+                        box { at: dx, wx.t + 164 * cu; size: 53 * cu, 40 * cu; corner: 12 * cu * (1 - 0.85 * sq); color: if(wx_days[i].today, mint, ink); opacity: if(wx_days[i].today, 14%, 0) + 12% * wd_z.$i.hover }
+                        text wx_days[i].label { at: floor(dx + 0.5), floor(wx.t + 152 * cu + 0.5); anchor: center; size: 10.5; weight: 700; color: if(wx_days[i].today, mint, ink); opacity: 85%; family: "Space Grotesk"; shadow: 0, 1, 5, wx.sh }
+                        group {
+                            pivot: dx, wx.t + 165 * cu
+                            scale: 0.7 + 0.15 * wd_z.$i.hover
+                            move: 0, -2 * cu * wd_z.$i.hover
+                            column { at: dx - 13 * cu, wx.t + 155 * cu; WxIcon(wx_days[i].kind, ink, mint) }
+                        }
+                        box { at: dx, wx.t + 177 * cu; size: 18 * cu, 3 * cu; corner: 2 * cu; color: ink; opacity: 14% }
+                        body { gradient: dx - 9 * cu, 0 to dx + 9 * cu, 0, #6fb3ff, mint, #ffa25e; opacity: 95%
+                               box { from: lx, wx.t + 175.5 * cu; size: max(3 * cu, hxr - lx), 3 * cu; corner: 1.5 * cu } }
+                        text wx_days[i].lo { at: floor(dx - 19 * cu + 0.5), floor(wx.t + 177 * cu + 0.5); anchor: center; size: 10; weight: 500; color: ink; opacity: 65%; family: "Space Grotesk" }
+                        text wx_days[i].hi { at: floor(dx + 19 * cu + 0.5), floor(wx.t + 177 * cu + 0.5); anchor: center; size: 10; weight: 700; color: ink; family: "Space Grotesk" }
+                        zone box wd_z.$i { at: dx, wx.t + 164 * cu; size: 55 * cu, 42 * cu; corner: 12 * cu; label: "Show this day's sky" }
+                    }
+                }
+                //  the day under the pointer: cleared first, then set, so moving from one day to the next keeps the new one (see the skill's note on rule order)
+                repeat i in 0..7 { on leave wd_z.$i { wx_hv = -1 } }
+                repeat i in 0..7 { on enter wd_z.$i { wx_hv = i } }
+            }
+
+        }
+        }
+        //  ── the dashboard's tab row and the other two tabs ──
+        //  A recessed rail with an accent capsule that slides to the tab in use, stretching with its speed and overshooting a little; each tab has a small drawn
+        //  icon (a calendar, a note, a grid of apps) that takes the capsule's ink while it is under it.
+        group {
+            opacity: f1
+            move: 0, (1 - f1) * 12 * cu
+            let ty = ck + 26 * cu
+            let tv = clamp(abs(vel(dtab_x)) * 0.06, 0, 0.4)
+            box { at: pcx, ty; size: 356 * cu, 34 * cu; corner: (17 * cu) * (1 - 0.7 * dd_k); color: #000000; opacity: 22% }
+            box { at: pcx, ty; size: 356 * cu, 34 * cu; corner: (17 * cu) * (1 - 0.7 * dd_k); stroke: 1.2 * cu; color: ink; opacity: 14% }
+            box { at: pcx + (dtab_x - 1) * 118 * cu, ty; size: 122 * cu * (1 + tv), 38 * cu * (1 - 0.25 * tv); corner: (19 * cu) * (1 - 0.7 * dd_k); color: mint; opacity: 16% }
+            box { at: pcx + (dtab_x - 1) * 118 * cu, ty; size: 110 * cu * (1 + tv), 28 * cu * (1 - 0.25 * tv); corner: (14 * cu) * (1 - 0.7 * dd_k); color: mint }
+            repeat t in 0..3 {
+                let tx = pcx + (t - 1) * 118 * cu
+                let tk = if(t == 0, tf.cal, if(t == 1, tf.med, tf.app))
+                let ic = mix(ink, onmint, tk)
+                text pick(t, "Calendar", "Media", "Apps") { at: floor(tx + 7 * cu + 0.5), floor(ty + 0.5); anchor: center; align: center; size: 14; weight: 600 + 100 * tk; measure: dtw.$t; color: ic; opacity: 70% + 30% * max(tk, dtab_z.$t.hover); family: "Space Grotesk" }
+                let ix = floor(tx + 7 * cu - dtw.$t.width / 2 - 12 * cu + 0.5)
+                group {
+                    pivot: ix, ty
+                    scale: 1 + 0.12 * tk + 0.08 * dtab_z.$t.hover
+                    opacity: 70% + 30% * max(tk, dtab_z.$t.hover)
+                    //  Drawn in pencil like the other glyphs (pencil-glyphs.plm): it boils, redrawn about eight times a second, while the tab is in use or under the pointer.
+                    let tz = 0.7 * cu
+                    let tfm = if(tk > 0.5 or dtab_z.$t.hover > 0.5, floor(time * 8 * pn_rate), 0)
+                    group {
+                        show: t == 0
+                        GBox(ix, ty, -8, -6, 8, 9, 201, tz, ic, 1, tfm)
+                        GLn(ix, ty, -8, -1, 8, -1, 205, tz, ic, 1, tfm)
+                        GLn(ix, ty, -4, -9, -4, -4, 206, tz, ic, 1, tfm)
+                        GLn(ix, ty, 4, -9, 4, -4, 207, tz, ic, 1, tfm)
+                        GArc(ix, ty, 0, 4, 1.4, 0, 360, 208, tz, ic, 1, tfm)
+                    }
+                    group {
+                        show: t == 1
+                        //  The pair of beamed notes, the shape of the Music workspace's mark (PBNote).
+                        GLn(ix, ty, -4.5, 5, -4.5, -7, 211, tz, ic, 1, tfm)
+                        GLn(ix, ty, 4.5, 3, 4.5, -9, 212, tz, ic, 1, tfm)
+                        GLn(ix, ty, -4.5, -7, 4.5, -9, 213, tz, ic, 1, tfm)
+                        GLn(ix, ty, -4.5, -4.5, 4.5, -6.5, 214, tz, ic, 1, tfm)
+                        GArc(ix, ty, -7, 6, 2.6, 0, 360, 215, tz, ic, 1, tfm)
+                        GArc(ix, ty, -7, 6, 1.3, 0, 360, 216, tz, ic, 1, tfm)
+                        GArc(ix, ty, 2, 4, 2.6, 0, 360, 217, tz, ic, 1, tfm)
+                        GArc(ix, ty, 2, 4, 1.3, 0, 360, 218, tz, ic, 1, tfm)
+                    }
+                    group {
+                        show: t == 2
+                        GBox(ix, ty, -8, -8, -1, -1, 221, tz, ic, 1, tfm)
+                        GBox(ix, ty, 1, -8, 8, -1, 225, tz, ic, 1, tfm)
+                        GBox(ix, ty, -8, 1, -1, 8, 229, tz, ic, 1, tfm)
+                        GBox(ix, ty, 1, 1, 8, 8, 233, tz, ic, 1, tfm)
+                    }
+                }
+                zone box dtab_z.$t { at: tx, ty; size: 116 * cu, 32 * cu; corner: 16 * cu; cursor: pointer }
+            }
+            on press dtab_z.0 { dash_tab = dtab_cal }
+            on press dtab_z.1 { dash_tab = dtab_med }
+            on press dtab_z.2 { dash_tab = dtab_app }
+        }
+        //  The Media tab: the player's card centre stage (it is drawn on its own, made larger, see `MediaFloat`, with the spectrum in it; a plate says so here while there is none).
+        group {
+            show: tf.med > 0.005
+            opacity: tf.med * f1
+            move: 0, (1 - f1) * 12 * cu
+            let mty = ck + 52 * cu                                      // the tab's top
+            DmPlate(pcx, mty + 109.5 * cu, 426 * cu, md_ch * cu, 915.5, clamp(mfl, 0, 1))      // only while the card floats: with nothing playing the empty player is here
+            text "The player is floating" { at: floor(pcx + 0.5), floor(mty + 101.5 * cu + 0.5); anchor: center; align: center; size: 15; color: faint; opacity: 100% - 100% * mdk; family: "Space Grotesk"; show: media_open > 0.5 and mdk < 0.5 }
+            text "Drop it here to put it back" { at: floor(pcx + 0.5), floor(mty + 122.5 * cu + 0.5); anchor: center; align: center; size: 12.5; color: faint; opacity: 70% - 70% * mdk; family: "Space Grotesk"; show: media_open > 0.5 and mdk < 0.5 }
+        }
+        //  The Apps tab: the running windows as a map of the workspaces, a row for each one that has windows, with its number in a pill and an icon for each window (the one
+        //  under the pointer opens out to show its title); then the apps that only live in the tray as a row of icons the wheel moves.
+        group {
+            show: tf.app > 0.005
+            opacity: tf.app * f1
+            move: 0, (1 - f1) * 12 * cu
+            text "RUNNING WINDOWS" { at: floor(pcx - 207 * cu + 0.5), floor(ck + (aw_y + 10) * cu + 0.5); anchor: left center; size: 13.5; weight: 700; color: ink; family: "Space Grotesk" }
+            text number(tasks.count, 0, " open") { at: floor(pcx + 207 * cu + 0.5), floor(ck + (aw_y + 10) * cu + 0.5); anchor: right center; align: right; size: 12; weight: 600; color: faint; family: "Space Grotesk" }
+            text "No active windows" { at: floor(pcx + 0.5), floor(ck + (aw_g + 20) * cu + 0.5); anchor: center; size: 14; color: faint; family: "Space Grotesk"; show: wv_n < 1 }
+            row {
+                at: floor(pcx - 213 * cu + 0.5), floor(ck + aw_g * cu + 0.5)
+                wrap: 2
+                gap: floor(12 * cu + 0.5)
+                repeat k in 1..9 {
+                    group {
+                        size: floor(207 * cu + 0.5), floor(wh.all * cu + 0.5)
+                        show: tw.$k > 0
+                        let wka = if(tw_map, if(twa.$k, 1, 0), if(ws.active == k, 1, 0))
+                        box { from: 0, 0; size: 207 * cu, 128 * cu; corner: 12 * cu; color: ink; opacity: 7% + 6% * wka + 4% * wc_z.$k.hover }
+                        box { from: 0, 0; size: 207 * cu, 128 * cu; corner: 12 * cu; stroke: 1.6 * cu; color: mix(ink, mint, wka); opacity: 20% + 80% * wka }
+                        box { from: 6 * cu, 6 * cu; size: 195 * cu, 100 * cu; corner: 7 * cu; color: #000000; opacity: 38% }
+                        box { at: 103.5 * cu, 134 * cu; size: 16 * cu, 12 * cu; corner: 2 * cu; color: ink; opacity: 12% }
+                        box { at: 103.5 * cu, 138.5 * cu; size: 70 * cu, 5 * cu; corner: 2.5 * cu; color: ink; opacity: 16% }
+                        zone box wc_z.$k { from: 0, 0; size: 207 * cu, 140 * cu; corner: pr; cursor: pointer; label: "Go to workspace" }
+                        on press wc_z.$k { emit wcard(k) }
+                        text twl.$k { at: floor(16 * cu + 0.5), floor(117 * cu + 0.5); anchor: left center; size: 14; weight: 700; color: mix(faint, mint, wka); family: "Space Grotesk" }
+                        ellipse { at: 34 * cu, 117 * cu; radius: 3 * cu; color: alert; opacity: if(ws.$k.urgent and not tw_map, 100%, 0%) }
+                        text number(tw.$k, 0, " windows") { at: floor(193 * cu + 0.5), floor(117 * cu + 0.5); anchor: right center; align: right; size: 11.5; weight: 600; color: faint; show: tw.$k > 1; family: "Space Grotesk" }
+                        text "1 window" { at: floor(193 * cu + 0.5), floor(117 * cu + 0.5); anchor: right center; align: right; size: 11.5; weight: 600; color: faint; show: tw.$k == 1; family: "Space Grotesk" }
+                        for w in tasks { MiniWin(w, k, tw.$k, focus: task_focus, kill: task_close) { show: w.wsn == k } }
+                    }
+                }
+            }
+            group {
+                show: tw.9 > 0
+                let wo_y = ck + (aw_g + wg_h + 12) * cu
+                box { at: pcx, wo_y + wo_h * cu / 2; size: 426 * cu, wo_h * cu; corner: pr; color: ink; opacity: 6% }
+                text "Other" { at: floor(pcx - 199 * cu + 0.5), floor(wo_y + 15 * cu + 0.5); anchor: left center; size: 14; weight: 700; color: faint; family: "Space Grotesk" }
+                row {
+                    at: floor(pcx - 203 * cu + 0.5), floor(wo_y + 30 * cu + 0.5)
+                    wrap: 10
+                    gap: floor(6 * cu + 0.5)
+                    for w in tasks { WinChip(w, 9, focus: task_focus, kill: task_close) { show: w.wsn == 9 } }
+                }
+            }
+            group {
+                show: trays.count > 0
+                text "BACKGROUND APPS" { at: floor(pcx - 207 * cu + 0.5), floor(ck + (at_y + 10) * cu + 0.5); anchor: left center; size: 13.5; weight: 700; color: ink; family: "Space Grotesk" }
+                box { at: pcx + 168 * cu, ck + (at_y + 10) * cu; size: 86 * cu, 20 * cu; corner: (10 * cu) * (1 - 0.85 * dd_k); color: if(tray_only_pinned, mint, ink); opacity: if(tray_only_pinned, 22%, 8% + 10% * tray_mode_hit.hover) }
+                PPillOutline(pcx + 168 * cu, ck + (at_y + 10) * cu, 86 * cu, 20 * cu, 10 * cu, tray_mode_hit.hover, clamp(3 * (if(tray_only_pinned, 22%, 8% + 10% * tray_mode_hit.hover)), 0, 1), cu)
+                text "Bar: pinned" { at: floor(pcx + 168 * cu + 0.5), floor(ck + (at_y + 10) * cu + 0.5); anchor: center; align: center; size: 13; weight: 600; width: 82 * cu; lines: 1; color: mint; show: tray_only_pinned; family: "Space Grotesk" }
+                text "Bar: all" { at: floor(pcx + 168 * cu + 0.5), floor(ck + (at_y + 10) * cu + 0.5); anchor: center; align: center; size: 11.5; weight: 600; width: 82 * cu; lines: 1; color: ink; opacity: 85%; show: not tray_only_pinned; family: "Space Grotesk" }
+                zone box tray_mode_hit { at: pcx + 168 * cu, ck + (at_y + 10) * cu; size: 88 * cu, 22 * cu; corner: 11 * cu; cursor: pointer }
+                on press tray_mode_hit { emit tray_mode }
+                row tray_row {
+                    at: floor(pcx - 213 * cu + 0.5), floor(ck + at_g * cu - 26 * cu + 0.5)
+                    view: 426 * cu, 60 * cu
+                    align: end
+                    gap: floor(6 * cu + 0.5)
+                    for a in trays { TrayIcon(a, click: tray_click, pin: tray_pin, menu: tray_menu_open) }
+                }
+            }
+        }
+        //  Opening the calendar puts the cursor in the field and the grid back on today.
+        on change panel while panel == calendar { focus cal_new; emit cal_open; wx_in: 0 ~0ms; wx_in: 1 after 240ms; cal_bx: mod(cal.sel, 7) ~0ms; cal_by: floor(cal.sel / 7) ~0ms; cal_out: 0 ~0ms; cal_inn: 0 ~0ms }
+        on change dash_tab while dash_tab == dtab_cal { wx_in: 0 ~0ms; wx_in: 1 after 120ms }
+        on change panel while panel != calendar { wx_hv = -1 }
+        //  The month changing (the logic says which way, and when the new one is painted).
+        on cal_leave(d) { cal_dir = d; cal_out: 1 }
+        on cal_flip(d) { cal_dir = d; cal_out: 0 ~0ms; cal_inn: 1 ~0ms; cal_inn: 0 after 16ms }
+        }
+    }
+}

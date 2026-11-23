@@ -1,0 +1,389 @@
+-- The Desk's Clip tab: the clipboard history (cliphist), with pins. A pin keeps the text itself, in desk-clip-pins.json, so it outlives the history; pinned
+-- entries are listed first. Clicking a row copies it again; a row can be pinned, asked about (it goes to the Ask tab as an attachment) or deleted.
+-- Images stay in the history and copy back through vitreus-clipimg; they cannot be asked about. A pinned picture is saved as a file (and a thumbnail of it)
+-- in clip-pins, in the data folder, so it outlives the history as a text pin does. A row for one shows a small thumbnail (made once,
+-- in the cache, one at a time) and what cliphist knows of it: its format, size in pixels and weight. cliphist keeps no file name for a picture.
+-- Clear wipes the history (every pin stays, pictures too), after a second press.
+return function(with_dirs)
+    local MAX_RECENT = 40                         -- entries read from cliphist
+    local MAX_PINS = 12
+    local pins = {}                               -- { text } or { image = true, file, thumb, label, sub, mime, key }, newest first
+    local pdir = nil                              -- where pinned pictures are kept
+    local recent = {}                             -- { id, label, sub, key, image } from cliphist, newest first
+    local thumbs = {}                             -- key -> the thumbnail's path, once made (the key is the id and the picture's size, ids start again after a wipe)
+    local queue, making = {}, false
+    local tdir = nil
+    local shown = {}                              -- what the list shows: { label, pinned, image, id, text (a pin's) }
+    local flat                                    -- (below)
+
+    function flat(s)
+        s = s:gsub("[\r\n\t]+", " "):gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+        if #s > 160 then
+            -- Cut between characters: half of one is not a string the scene can take, and one such entry emptied the whole list.
+            local cut = 160
+            while cut > 0 do
+                local b = s:byte(cut + 1)
+                if b and b >= 0x80 and b < 0xC0 then cut = cut - 1 else break end
+            end
+            s = s:sub(1, cut)
+        end
+        return s
+    end
+
+    local function save() pcall(sys.call, "files.write", "desk-clip-pins.json", { items = pins }) end
+
+    local function render()
+        shown = {}
+        local pinned_key = {}
+        for _, p in ipairs(pins) do
+            if p.image then
+                pinned_key["img:" .. (p.key or "")] = true
+                shown[#shown + 1] = { label = p.label, sub = p.sub, pinned = true, image = true, hasthumb = p.thumb ~= nil, thumb = p.thumb or "", file = p.file, mime = p.mime }
+            else
+                pinned_key[flat(p.text):sub(1, 100)] = true
+                shown[#shown + 1] = { label = flat(p.text), sub = "", pinned = true, image = false, hasthumb = false, thumb = "", text = p.text }
+            end
+        end
+        for _, c in ipairs(recent) do
+            if (c.image and not pinned_key["img:" .. c.key]) or (not c.image and not pinned_key[c.label:sub(1, 100)]) then
+                local t = c.image and thumbs[c.key] or nil
+                shown[#shown + 1] = { label = c.label, sub = c.sub, pinned = false, image = c.image, hasthumb = t ~= nil, thumb = t or "", id = c.id, key = c.key, mime = c.mime }
+            end
+        end
+        model.clip_rows = shown
+        fact.clip_n = #shown
+    end
+
+    local refresh
+    local function make_next()
+        if making or #queue == 0 or not tdir then return end
+        making = true
+        local c = table.remove(queue, 1)
+        local out = tdir .. "/" .. c.key .. ".png"
+        run("vitreus-clipimg", { "thumb", c.id, out, "96x64" }, function(_, code)
+            making = false
+            if code == 0 then thumbs[c.key] = out; render() end
+            make_next()
+        end)
+    end
+
+    function refresh()
+        run("cliphist", { "list" }, function(out)
+            recent = {}
+            for line in (out or ""):gmatch("[^\n]+") do
+                local id, txt = line:match("^(%d+)\t(.*)$")
+                if id then
+                    local image = txt:find("^%[%[ binary data") ~= nil
+                    local label, sub, key = flat(txt), "", id
+                    if image then
+                        local size, fmt, w, h = txt:match("binary data ([%d%.]+ %a+) (%a+) (%d+)x(%d+)")
+                        label = fmt and string.format("%s image", fmt:upper()) or "Image"
+                        sub = w and string.format("%s × %s  ·  %s", w, h, size) or ""
+                        key = id .. "-" .. (size or "") .. "-" .. (w or "") .. "x" .. (h or "")
+                        key = key:gsub("[^%w%-x]", "")
+                    end
+                    recent[#recent + 1] = { id = id, label = label, sub = sub, key = key, image = image, mime = image and ("image/" .. ((txt:match("binary data [%d%.]+ %a+ (%a+)") or "png"):lower():gsub("^jpg$", "jpeg"))) or nil }
+                    if #recent >= MAX_RECENT then break end
+                end
+            end
+            render()
+            for _, c in ipairs(recent) do
+                -- (`false`: asked for, or tried and not made. The mark was on the row, and the rows are made again at every refresh, so each
+                -- picture was queued again every 3 s, and one that cannot be made was tried again without end.)
+                if c.image and thumbs[c.key] == nil then thumbs[c.key] = false; queue[#queue + 1] = c end
+            end
+            make_next()
+        end)
+    end
+
+    -- The whole text of a history entry (the list only carries a line of it), as `cliphist decode` prints it for an id on its input.
+    local function decode(id, done)
+        local lines = {}
+        spawn("cliphist", { "decode" }, function(line) lines[#lines + 1] = line end, function()
+            done(table.concat(lines, "\n"))
+        end, { input = id .. "\t" })
+    end
+
+    local flash = 0
+    local function msg(t)
+        text.clip_msg = t
+        fact.clip_flash = true
+        flash = flash + 1
+        local mine = flash
+        after(1600, function() if mine == flash then fact.clip_flash = false end end)
+    end
+
+    local function with_text(r, fn)
+        if r.text then return fn(r.text) end
+        if r.id and not r.image then decode(r.id, fn) end
+    end
+
+    -- A pinned picture's files go with it.
+    local function drop_files(p)
+        if p and p.image then
+            if p.file then run("find", { p.file, "-delete" }, function() end) end
+            if p.thumb then run("find", { p.thumb, "-delete" }, function() end) end
+        end
+    end
+    -- Unpinning puts the item back in the history (`cliphist store`: it is the newest there), so that it does not vanish when the history had been
+    -- cleared and the pin was the only copy. Deleting a pinned row (its cross) does not: it goes for good.
+    local function unpin(r, restore)
+        for k, p in ipairs(pins) do
+            if (r.image and p.file == r.file) or (not r.image and not p.image and p.text == r.text) then
+                local gone = table.remove(pins, k)
+                if restore and gone.image then
+                    run("cliphist", { "store" }, function() drop_files(gone); refresh() end, { stdin = gone.file })
+                else
+                    if restore then spawn("cliphist", { "store" }, function() end, function() refresh() end, { input = gone.text }) end
+                    drop_files(gone)
+                end
+                break
+            end
+        end
+        save()
+        render()
+    end
+    local function add_pin(p)
+        table.insert(pins, 1, p)
+        while #pins > MAX_PINS do drop_files(table.remove(pins)) end
+        save()
+        render()
+    end
+
+    on("clip_copy", function(i)
+        local r = shown[(tonumber(i) or -1) + 1]
+        if not r then return end
+        if r.image then
+            if r.file then
+                run("vitreus-clipimg", { "copyfile", r.file, r.mime or "image/png" }, function() msg("Copied") end)
+            else
+                run("vitreus-clipimg", { "copy", r.id, r.mime or "image/png" }, function() msg("Copied") end)
+            end
+        else
+            with_text(r, function(t) run("wl-copy", {}, function() msg("Copied") end, { input = t, output = false }) end)
+        end
+    end)
+    on("clip_pin", function(i)
+        local r = shown[(tonumber(i) or -1) + 1]
+        if not r then return end
+        if r.pinned then return unpin(r, true) end
+        if r.image then
+            -- the picture is written to a file of its own, with a thumbnail, so that it outlives the history
+            if not pdir then return end
+            local ext = ((r.mime or "image/png"):match("/(%w+)") or "png"):gsub("^jpeg$", "jpg")
+            local name = os.time() .. "-" .. r.id
+            local file, thumb = pdir .. "/" .. name .. "." .. ext, pdir .. "/" .. name .. ".thumb.png"
+            run("vitreus-clipimg", { "save", r.id, file }, function(_, code)
+                if code ~= 0 then return msg("Could not pin it") end
+                run("vitreus-clipimg", { "thumbfile", file, thumb, "96x64" }, function(_, c2)
+                    add_pin({ image = true, file = file, thumb = c2 == 0 and thumb or nil, label = r.label, sub = r.sub, mime = r.mime, key = r.key })
+                end)
+            end)
+            return
+        end
+        decode(r.id, function(t)
+            if t == "" then return end
+            for k, p in ipairs(pins) do if not p.image and p.text == t then table.remove(pins, k) break end end
+            add_pin({ text = t })
+        end)
+    end)
+    on("clip_del", function(i)
+        local r = shown[(tonumber(i) or -1) + 1]
+        if not r then return end
+        if r.pinned then
+            unpin(r, false)
+        else
+            spawn("cliphist", { "delete" }, function() end, function() refresh() end, { input = r.id .. "\t" })
+        end
+    end)
+    on("clip_ask", function(i)
+        local r = shown[(tonumber(i) or -1) + 1]
+        if not r or r.image then return end
+        with_text(r, function(t) ask_attach_from("Clipboard history", t) end)
+    end)
+    local confirm = 0
+    -- ── What can be done with an entry (its ••• in the Desk's Clip tab), `clip_act(row * 10 + what)` ──
+    -- A text is changed and copied back (it is the newest entry then): 0 UPPER, 1 lower, 2 trimmed, 3 tidy JSON, 4 a URL decoded, 5 Base64
+    -- decoded; 7 kept as a note. A picture: 6 the text in it (tesseract), copied.
+    local B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    local function unb64(t)
+        t = t:gsub("[^%w%+/=_%-]", ""):gsub("%-", "+"):gsub("_", "/")
+        local bits, out = 0, {}
+        local acc = 0
+        for i = 1, #t do
+            local c = t:sub(i, i)
+            if c == "=" then break end
+            local v = B64:find(c, 1, true)
+            if not v then return nil end
+            acc = acc * 64 + (v - 1)
+            bits = bits + 6
+            if bits >= 8 then
+                bits = bits - 8
+                local b = math.floor(acc / 2 ^ bits) % 256
+                out[#out + 1] = string.char(b)
+                acc = acc % (2 ^ bits)
+            end
+        end
+        return table.concat(out)
+    end
+    -- An empty object and an empty list decode to the same empty table, so "Tidy JSON" printed `{}` as `[]`. Each `{}` outside a string is
+    -- given this one key before decoding, and `pretty` prints a table holding only it as `{}`.
+    local EMPTY = "__vitreus_empty_object__"
+    local function mark_empty(t)
+        local out, i, n = {}, 1, #t
+        while i <= n do
+            local c = t:sub(i, i)
+            if c == '"' then
+                local j = i + 1
+                while j <= n and t:sub(j, j) ~= '"' do j = j + (t:sub(j, j) == "\\" and 2 or 1) end
+                out[#out + 1] = t:sub(i, j)
+                i = j + 1
+            else
+                local e = c == "{" and t:match("^{%s*}()", i)
+                if e then out[#out + 1] = '{"' .. EMPTY .. '":0}'; i = e
+                else out[#out + 1] = c; i = i + 1 end
+            end
+        end
+        return table.concat(out)
+    end
+    local function pretty(v, ind)
+        ind = ind or ""
+        local nx = ind .. "  "
+        if type(v) == "table" then
+            if v[EMPTY] == 0 and next(v, EMPTY) == nil and next(v) == EMPTY then return "{}" end
+            if #v > 0 or next(v) == nil then
+                if next(v) == nil then return "[]" end
+                local parts = {}
+                for _, x in ipairs(v) do parts[#parts + 1] = nx .. pretty(x, nx) end
+                return "[\n" .. table.concat(parts, ",\n") .. "\n" .. ind .. "]"
+            end
+            local keys = {}
+            for k in pairs(v) do keys[#keys + 1] = tostring(k) end
+            table.sort(keys)
+            local parts = {}
+            for _, k in ipairs(keys) do parts[#parts + 1] = nx .. json.encode(k) .. ": " .. pretty(v[k], nx) end
+            return "{\n" .. table.concat(parts, ",\n") .. "\n" .. ind .. "}"
+        end
+        return json.encode(v)
+    end
+    on("clip_menu_open", function(i)
+        i = tonumber(i) or -1
+        local r = shown[i + 1]
+        if not r or tonumber(fact.clip_menu) == i then fact.clip_menu = -1; return end
+        fact.clip_menu_img = r.image == true
+        fact.clip_menu = i
+    end)
+    on("clip_act", function(v)
+        v = tonumber(v) or -1
+        local i, what = math.floor(v / 10), v % 10
+        local r = shown[i + 1]
+        fact.clip_menu = -1
+        if not r then return end
+        if r.image then
+            if what ~= 6 then return end
+            local function ocr(file)
+                run("tesseract", { file, "-", "--psm", "3" }, function(out, c)
+                    local t = ((out or ""):gsub("\f", ""):gsub("^%s+", ""):gsub("%s+$", ""))
+                    if c ~= 0 or t == "" then msg("No text found"); return end
+                    run("wl-copy", {}, function() msg("Text copied") end, { input = t, output = false })
+                end)
+            end
+            if r.file then ocr(r.file)
+            else
+                with_dirs(function(d)
+                    local f = (d.cache:gsub("/wp$", "")) .. "/clip-ocr.png"
+                    run("vitreus-clipimg", { "save", r.id, f }, function(_, c) if c == 0 then ocr(f) else msg("It could not be read") end end)
+                end)
+            end
+            return
+        end
+        with_text(r, function(t)
+            if what == 7 then
+                if not desk_note_add then return end
+                -- (cut between letters: a plain `sub` could leave half an accented one, which shows as a box)
+                local function cut(str, n)
+                    if #str <= n then return str end
+                    while n > 0 and (str:byte(n + 1) or 0) >= 0x80 and (str:byte(n + 1) or 0) < 0xC0 do n = n - 1 end
+                    return str:sub(1, n)
+                end
+                local first = cut(t:match("[^\n]+") or t, 40)
+                local lines = {}
+                for line in (t .. "\n"):gmatch("([^\n]*)\n") do if #lines < 9 then lines[#lines + 1] = line end end
+                if lines[1] and cut(lines[1], 40) == first then table.remove(lines, 1) end
+                if desk_note_add(first, lines) == false then msg("Notes are full: delete one first") else msg("Kept as a note") end
+                return
+            end
+            local out
+            -- (`upper` and `lower` know the plain letters only: the accented Latin ones, á to þ, are two bytes, C3 and one 0x20 apart, and
+            -- were left as they were. × and ÷ sit among them and have no other case. Other alphabets are still not changed.)
+            if what == 0 then out = (t:upper():gsub("\xC3([\xA0-\xBE])", function(c) return c == "\xB7" and "\xC3\xB7" or "\xC3" .. string.char(c:byte() - 0x20) end))
+            elseif what == 1 then out = (t:lower():gsub("\xC3([\x80-\x9E])", function(c) return c == "\x97" and "\xC3\x97" or "\xC3" .. string.char(c:byte() + 0x20) end))
+            elseif what == 2 then out = (t:gsub("^%s+", ""):gsub("%s+$", ""):gsub("[ \t]+\n", "\n"))
+            elseif what == 3 then
+                local ok, d = pcall(json.decode, mark_empty(t))
+                if not ok then msg("That is not JSON"); return end
+                out = pretty(d)
+            elseif what == 4 then out = (t:gsub("%+", " "):gsub("%%(%x%x)", function(h) return string.char(tonumber(h, 16)) end))
+            elseif what == 5 then
+                out = unb64(t)
+                if not out or out == "" then msg("That is not Base64"); return end
+            end
+            if not out then return end
+            -- (the text on its input, never in its arguments, where anyone on the machine could read it and a long one would not fit; and
+            -- `output = false`: wl-copy stays behind holding the clipboard, and waiting for its output ended only at the next copy)
+            run("wl-copy", {}, function()
+                msg(({ [0] = "UPPER copied", "lower copied", "Trimmed and copied", "Tidied and copied", "Decoded and copied", "Decoded and copied" })[what] or "Copied")
+                after(400, function() if refresh then refresh() end end)
+            end, { input = out, output = false })
+        end)
+    end)
+    on("clip_clear", function()
+        if not fact.clip_confirm then
+            fact.clip_confirm = true
+            confirm = confirm + 1
+            local mine = confirm
+            after(3500, function() if mine == confirm then fact.clip_confirm = false end end)
+            return
+        end
+        confirm = confirm + 1
+        fact.clip_confirm = false
+        queue, thumbs = {}, {}
+        run("cliphist", { "wipe" }, function()
+            if tdir then run("find", { tdir, "-type", "f", "-name", "*.png", "-delete" }, function() end) end
+            recent = {}
+            render()
+            msg("Cleared  ·  pins kept")
+        end)
+    end)
+    on("clip_refresh", refresh)
+    on("fact:desk_tab", function(v) if tonumber(v) == 2 and fact.desk_open then refresh() end end)
+    on("fact:desk_open", function(v) if (v == true or tostring(v) == "true") and tonumber(fact.desk_tab) == 2 then refresh() end end)
+    every(3000, function() if fact.desk_open and tonumber(fact.desk_tab) == 2 then refresh() end end)
+
+    do
+        local ok, saved = pcall(sys.ask, "files.read", "desk-clip-pins.json", "json")
+        if ok and type(saved) == "table" and type(saved.items) == "table" then
+            for _, p in ipairs(saved.items) do
+                if type(p) == "table" and #pins < MAX_PINS then
+                    if p.image == true and type(p.file) == "string" then
+                        pins[#pins + 1] = { image = true, file = p.file, thumb = type(p.thumb) == "string" and p.thumb or nil,
+                                            label = tostring(p.label or "Image"), sub = tostring(p.sub or ""), mime = type(p.mime) == "string" and p.mime or "image/png",
+                                            key = type(p.key) == "string" and p.key or nil }
+                    elseif type(p.text) == "string" and p.text ~= "" then
+                        pins[#pins + 1] = { text = p.text }
+                    end
+                end
+            end
+        end
+    end
+    render()
+    with_dirs(function(d)
+        pdir = d.data .. "/clip-pins"
+        run("mkdir", { "-p", pdir }, function() end)
+        tdir = d.cache .. "/clip"
+        -- pictures that went out of the history a week ago leave the cache
+        run("mkdir", { "-p", tdir }, function()
+            run("find", { tdir, "-type", "f", "-mtime", "+7", "-delete" }, function() end)
+        end)
+    end)
+end

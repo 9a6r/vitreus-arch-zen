@@ -1,0 +1,491 @@
+part BarIcons {
+    //  The bar's icons are drawn here, on top of the bar and outside its wave-shader group, with a soft dark
+    //  halo (a group `glow` in the palette's dark colour) so they hold up on a light wallpaper, as the text
+    //  does. An effect cannot sit inside another effect's group, hence outside. The click areas and rules
+    //  stay in the bar group above.
+    group {
+        glow: 2.4 * bu, 110%, deep
+        row tray_bar_row {
+            at: floor(tr.x - ((if(bs.tray > 0.02, bartrays.count, 0) + if(rec_on, 1, 0) + if(priv_mic, 1, 0) + if(priv_cam, 1, 0) + if(priv_scr and not rec_on, 1, 0) + if(kb_multi, 1, 0)) * 24 - 6) * bu / 2 + 0.5), floor(bar.y - 9 * bu + 0.5)
+            gap: floor(6 * bu + 0.5)
+            show: lm < 0.5
+            BarKbd() { show: kb_multi }
+            BarPriv(0) { show: priv_mic }
+            BarPriv(1) { show: priv_cam }
+            BarPriv(2) { show: priv_scr and not rec_on }
+            BarRec(rec_stop) { show: rec_on }
+            for t in bartrays { BarTray(t, click: bar_tray_click, menu: bar_tray_menu) { show: bs.tray > 0.02 } }
+        }
+        column tray_bar_col {
+            at: floor(lf.x - 9 * bu + 0.5), floor(lv.tray + 0.5)
+            gap: floor(6 * bu + 0.5)
+            show: lm >= 0.5
+            BarKbd() { show: kb_multi }
+            BarPriv(0) { show: priv_mic }
+            BarPriv(1) { show: priv_cam }
+            BarPriv(2) { show: priv_scr and not rec_on }
+            BarRec(rec_stop) { show: rec_on }
+            for t in bartrays { BarTray(t, click: bar_tray_click, menu: bar_tray_menu) { show: bs.tray > 0.02 } }
+        }
+        //  The add-ons piece (only on the Island): the add-on pill's icons.
+        row ax_bar_row {
+            at: floor(ax.x - fw.ax / 2 + 0.5), floor(bar.y - 9 * bu + 0.5)
+            gap: floor(6 * bu + 0.5)
+            show: fm < 0.5 and bs.ax > 0.02
+            for t in adk_pins { BarAddon(t) }
+        }
+        //  The workspace marks (Settings > Bar > Workspaces): five looks, each morphing into the next (`ws.st.k`; their lengths are `ws.s` in vitreus.plm).
+        //  What they share: a busy workspace is more solid than an empty one, one asking for attention is coral (breathing, if chosen), and under the pointer
+        //  a mark swells a little, popping past, and brightens. The one in view takes the accent (`wsacc`): one piece that travels (`pl.*`), or that fades in place.
+        let wk = ws.K
+        let wso = bs.ws * (1 - ws.sp)
+        let ws.pop = 0.8 * ws.st.0 + 0.92 * ws.st.1 + 0.3 * ws.st.2 + ws.st.3 + 0.92 * ws.st.4      // how solid the accent is: a glass tint round the app icons, solid elsewhere
+        //  The capsule's track: one piece of glass under all the segments, from the first to the last.
+        let tk.l = ws.o - 2.5 * wk
+        let tk.r = ws.o + ws.end + 2.5 * wk
+        let tk.m = (tk.l + tk.r) / 2
+        let tk.len = max(0, tk.r - tk.l)
+        let tk.t = 17 * wk
+        body ws.track {
+            color: ink
+            opacity: 7% * ws.st.0 * wso
+            rim: 35%
+            box { at: mix(tk.m, lf.x, lm), mix(bar.y, tk.m, lm); size: mix(tk.len, tk.t, lm), mix(tk.t, tk.len, lm); corner: tk.t / 2 }
+        }
+        //  The mark in view, travelling (Stretch: its head runs ahead and its tail follows; Slide: as one piece), the same shape whatever the look: a capsule's
+        //  filled segment, the pips' pill, the lit tile, the numerals' underline (under the line: `ws.po`), the rings' disc. Under the marks, so what
+        //  the one in view holds (its pips, icons, number, the ring's arc) is drawn on it.
+        let pl.w = mix(pl.len, pl.t, lm)
+        let pl.h = mix(pl.t, pl.len, lm)
+        let plx = mix(pl.m, lf.x + ws.po, lm)
+        let ply = mix(bar.y + ws.po, pl.m, lm)
+        group {
+            body ws.pill {
+                gradient: 0, ply - pl.h / 2 to 0, ply + pl.h / 2, wsacc.hi, wsacc.lo
+                rim: 55%
+                shadow: 0, 0, 7 * bu, 30% * (1 - ws.st.3), wsacc
+                opacity: ws.pop * wso * (1 - ws.mo2)
+                box { at: plx, ply; size: pl.w, pl.h; corner: ws.cr * min(pl.w, pl.h) }
+            }
+            PWsOutline(plx, ply, pl.w, pl.h, wso * (1 - ws.mo2) * (1 - ws.st.3), 0, 1, max(max(max(wsh.1.$screen, wsh.2.$screen), max(wsh.3.$screen, wsh.4.$screen)), max(max(max(wsh.5.$screen, wsh.6.$screen), max(wsh.7.$screen, wsh.8.$screen)), max(wsh.9.$screen, wsh.10.$screen))))
+        }
+        repeat i in 1..11 {
+            let a = ws.a.$i
+            let L = ws.s.$i
+            let act = ws.act.$i
+            let busy = ws.tall.$i
+            let n = ws.cnt.$i
+            let ni = ws.ico.$i
+            let hot = wsh.$i.$screen
+            let wg = ws.urg.$i * (1 - act) * (1 - 0.6 * ws.br)
+            let tone = mix(ink, warm, wg)
+            let cx = mix(a, lf.x, lm)
+            let cy = mix(bar.y, a, lm)
+            let lead = ws.nl * wk / 2                    // the pips and the icons move along by half the room the number before them takes
+            group {
+                opacity: ws.vis.$i * wso
+                pivot: cx, cy
+                scale: 1 + 0.22 * wsp.$i.$screen * (1 - 0.75 * act)        // (the one in view swells less: its pill does not swell with it)
+                //  Fade: the accent is each mark's own, coming and going in place, in the travelling one's shape.
+                body {
+                    color: wsacc
+                    rim: 55%
+                    opacity: act * ws.mo2 * ws.pop
+                    box { at: mix(a, lf.x + ws.po, lm), mix(bar.y + ws.po, a, lm); size: mix(L, ws.pb, lm), mix(ws.pb, L, lm); corner: ws.cr * min(L, ws.pb) }
+                }
+                //  Capsule: a segment of the track.
+                box { at: cx, cy; size: mix(L - 3 * wk, 11 * wk, lm), mix(11 * wk, L - 3 * wk, lm); corner: 3.5 * wk; color: tone; opacity: ws.st.0 * (1 - act) * (9% + 15% * busy + 14% * hot + 45% * wg) }
+                //  Pips: a dot for each window, up to three, or a hollow one for none.
+                repeat k in 0..3 {
+                    let d = (k - (max(1, n) - 1) / 2) * 8 * wk + lead
+                    let on = if(k == 0, clamp(n, 0, 1), clamp(n - k, 0, 1))
+                    ellipse { at: mix(a + d, lf.x, lm), mix(bar.y, a + d, lm); radius: 2.5 * wk * (0.3 + 0.7 * on); color: mix(tone, wsacc.on, act); opacity: ws.st.1 * on * mix(55% + 25% * busy + 20% * hot, 100%, act) }
+                }
+                ellipse { at: mix(a + lead, lf.x, lm), mix(bar.y, a + lead, lm); radius: 2.3 * wk; stroke: 1.2 * wk; color: mix(tone, wsacc.on, act); opacity: ws.st.1 * (1 - clamp(n, 0, 1)) * mix(45% + 30% * hot, 100%, act) }
+                //  Apps: a glass tile round its app icons, or a dot for none.
+                box { at: cx, cy; size: mix(L, 24 * wk, lm), mix(24 * wk, L, lm); corner: 7 * wk; color: tone; opacity: ws.st.2 * (1 - act) * (6% + 7% * hot + 30% * wg) }
+                box { at: cx, cy; size: mix(L, 24 * wk, lm), mix(24 * wk, L, lm); corner: 7 * wk; stroke: 1 * wk; color: tone; opacity: ws.st.2 * (1 - act) * (10% + 8% * busy + 12% * hot + 40% * wg) }
+                repeat k in 0..3 {
+                    let d = (k - (max(1, ni) - 1) / 2) * 16 * wk + lead
+                    let on = clamp(ni - k, 0, 1)
+                    let isz = 13 * wk * (0.5 + 0.5 * on)
+                    image wsim.$i.$k { at: mix(a + d, lf.x, lm) - isz / 2, mix(bar.y, a + d, lm) - isz / 2; size: isz, isz; opacity: ws.st.2 * on * mix(70% + 30% * hot, 100%, act) }
+                }
+                ellipse { at: mix(a + lead, lf.x, lm), mix(bar.y, a + lead, lm); radius: 2.2 * wk; color: tone; opacity: ws.st.2 * (1 - clamp(ni, 0, 1)) * mix(45% + 30% * hot, 90%, act) }
+                //  Rings: a ring with a third of it drawn for each window; the one in view's on the accent's disc.
+                let rr = (5.5 + 2 * ws.nums) * wk
+                ellipse { at: cx, cy; radius: rr; stroke: 1.4 * wk; color: tone; opacity: ws.st.4 * (1 - act) * (26% + 16% * hot + 40% * wg) }
+                arc { at: cx, cy; radius: rr; span: n / 3 * 360deg; rotate: n / 3 * 180deg; width: 1.8 * wk; color: mix(tone, wsacc.on, act); opacity: ws.st.4 * clamp(n, 0, 1) * mix(85% + 15% * hot, 100%, act) }
+            }
+        }
+        //  A special workspace in view: a pencil mark where the marks were, coming up from nothing: the sparkle (magic, and any other), a pair of notes (music) or an eye
+        //  crossed out (private). Their lines are redrawn about five times a second the whole time they are there, the way a workspace mark's are under the pointer.
+        let sk.x = mix(ws.o + 9 * ws.U, lf.x, lm)
+        let sk.y = mix(bar.y, ws.o + 9 * ws.U, lm)
+        PBSpark(sk.x, sk.y, 9 * ws.U * max(ws.spa, 0.01), ws.spa * bs.ws)
+        PBNote(sk.x, sk.y, 9 * ws.U * max(ws.spm, 0.01), ws.spm * bs.ws)
+        PBHide(sk.x, sk.y, 9 * ws.U * max(ws.spp, 0.01), ws.spp * bs.ws)
+        //  The plus: two strokes, there while the workspace in view has a window.
+        let wpl.x = mix(ws.pa, lf.x, lm)
+        let wpl.y = mix(bar.y, ws.pa, lm)
+        let wpl.d = ws.ps * 0.62 * (1 + 0.3 * wspl.$screen)
+        body ws_plus_icon {
+            color: ink
+            opacity: (55% + 40% * wspl.$screen) * ws.pv * bs.ws
+            rim: 30%
+            box { at: wpl.x, wpl.y; size: max(0.3, wpl.d * ws.pv), 1.6 * ws.U; corner: 0.8 * ws.U }
+            box { at: wpl.x, wpl.y; size: 1.6 * ws.U, max(0.3, wpl.d * ws.pv); corner: 0.8 * ws.U }
+        }
+        //  The overview button: two windows drawn as outlines (the marks are all solid), wide with small corners, one behind the other; the front one has
+        //  its title bar. Brightening under the pointer.
+        let ovi.w = 1.3 * ws.U
+        PBOver(ob.x, ob.y, ov_btn.hover, ob.d, ovi.w, (45% + 35% * ov_btn.hover) * bs.ws, (70% + 30% * ov_btn.hover) * bs.ws, (70% + 30% * ov_btn.hover) * bs.ws)
+        //  The player's buttons.
+        group {
+            opacity: mshow * bs.media * bs.title
+            group {
+                pivot: mcx - 18.5 * bu, mcy
+                scale: 1 + 0.14 * bp.prev.hover
+                PBPrev(mcx - 18.5 * bu, mcy, bp.prev.hover, bu, 65% + 35% * bp.prev.hover)
+            }
+            //  Pause while it plays, play while it is paused.
+            group {
+                pivot: mcx, mcy
+                scale: 1 + 0.14 * bp.play.hover
+                PBPlay(mcx, mcy, bp.play.hover, bu, 85% + 15% * bp.play.hover, if(media.playing, 1, 0))
+            }
+            group {
+                pivot: mcx + 18.5 * bu, mcy
+                scale: 1 + 0.14 * bp.next.hover
+                PBNext(mcx + 18.5 * bu, mcy, bp.next.hover, bu, 65% + 35% * bp.next.hover)
+            }
+        }
+        //  Down the left the player's buttons are the top bar's own, turned with the title (a quarter anticlockwise, so they read from the foot up:
+        //  previous nearest the text, next at the far end), at the top end of it.
+        group {
+            opacity: mshow * bs.media0 * lm
+            pivot: lf.x, lv.mid
+            rotate: -90deg
+            group {
+                pivot: lf.x - 18.5 * bcu, lv.mid
+                scale: 1 + 0.14 * vm_prev.hover
+                PBPrev(lf.x - 18.5 * bcu, lv.mid, vm_prev.hover, bcu, 65% + 35% * vm_prev.hover)
+            }
+            group {
+                pivot: lf.x, lv.mid
+                scale: 1 + 0.14 * vm_play.hover
+                PBPlay(lf.x, lv.mid, vm_play.hover, bcu, 85% + 15% * vm_play.hover, if(media.playing, 1, 0))
+            }
+            group {
+                pivot: lf.x + 18.5 * bcu, lv.mid
+                scale: 1 + 0.14 * vm_next.hover
+                PBNext(lf.x + 18.5 * bcu, lv.mid, vm_next.hover, bcu, 65% + 35% * vm_next.hover)
+            }
+        }
+        //  The settings button: a gear, between the player's buttons and the controls button.
+        group {
+            opacity: (65% + 35% * max(set_hit.hover, clamp(ds, 0, 1))) * bs.set
+            move: (lf.x - set.x) * lm, (lv.set - bar.y) * lm
+            group {
+                pivot: set.x, bar.y
+                scale: 1 + 0.14 * set_hit.hover
+                PBGear(set.x, bar.y, set_hit.hover, bu, clamp(ds, 0, 1))
+            }
+        }
+        //  The launcher's button, between the settings button and the controls button: a magnifying glass.
+        group {
+            opacity: (65% + 35% * max(sr_hit.hover, clamp(dl, 0, 1))) * bs.sr
+            move: (lf.x - sr.x) * lm, (lv.sr - bar.y) * lm
+            group {
+                pivot: sr.x + 2 * bu, bar.y + 2 * bu
+                scale: 1 + 0.14 * sr_hit.hover
+                PBSearch(sr.x, bar.y, sr_hit.hover, bu, clamp(dl, 0, 1))
+            }
+        }
+        //  The controls button, between the settings button and the clock: two sliders.
+        group {
+            opacity: (65% + 35% * max(ctl_hit.hover, clamp(dk, 0, 1))) * bs.ctl
+            move: (lf.x - ctl.x) * lm, (lv.ctl - bar.y) * lm
+            group {
+                pivot: ctl.x, bar.y
+                scale: 1 + 0.14 * ctl_hit.hover
+                PBCtl(ctl.x, bar.y, ctl_hit.hover, bu, clamp(dk, 0, 1))
+            }
+        }
+        //  The workspace numbers (Numerals, and the number on every mark), written out one by one: in the bar's icons a text that is not written out in the file
+        //  (a live text, a `pick`) comes out without its colour. Each in the three numerals (1 2 3, I II III, 一 二 三: these in Zen Kurenaido, the one font here that has them, a size up for its thinner stroke), the chosen one shown: they cross-fade.
+        //  The unseen copies measure each one, for the numerals' slots (`wsnw.i.k`).
+        let wk = ws.K
+        let wso = bs.ws * (1 - ws.sp)
+        group {
+            let wn1.a = ws.a.1
+            let wn1.act = ws.act.1
+            let wn1.wg = ws.urg.1 * (1 - wn1.act) * (1 - 0.6 * ws.br)
+            let wn1.cx = mix(wn1.a, lf.x, lm)
+            let wn1.cy = mix(bar.y, wn1.a, lm)
+            let wn1.nd = (-(ws.st.1 * (5 + 8 * (max(1, ws.cnt.1) - 1)) + ws.st.2 * (16 * max(1, ws.ico.1) - 3) + ws.nl) * wk / 2 + 5.5 * wk) * (ws.st.1 + ws.st.2)      // the number and the pips or icons after it, centred as one
+            let wn1.o1 = ws.vis.1 * wso * ws.st.3 * min(100%, mix(45% + 40% * ws.tall.1 + 30% * wsh.1.$screen, 100%, wn1.act))
+            let wn1.o2 = ws.vis.1 * wso * ws.nums * min(100%, mix(55% + 30% * ws.tall.1 + 25% * wsh.1.$screen, 100%, wn1.act))
+            text "1" { at: 0, 0; anchor: left center; size: 11.5; weight: 700; lines: 1; measure: wsnw.1.0; opacity: 0; family: "Space Grotesk" }
+            text "I" { at: 0, 0; anchor: left center; size: 11.5; weight: 700; lines: 1; measure: wsnw.1.1; opacity: 0; family: "Space Grotesk" }
+            text "一" { at: 0, 0; anchor: left center; size: 14; lines: 1; measure: wsnw.1.2; opacity: 0; family: "Zen Kurenaido" }
+            group {
+                scale: wk * (1 + 0.22 * wsp.1.$screen * (1 - 0.75 * wn1.act))
+                pivot: wn1.cx, wn1.cy
+                text "1" { at: wn1.cx, wn1.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 11.5; weight: 700; color: mix(mix(ink, warm, wn1.wg), wsacc, wn1.act); opacity: wn1.o1 * (1 - ws.nr1 - ws.nr2); family: "Space Grotesk" }
+                text "I" { at: wn1.cx, wn1.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 11.5; weight: 700; color: mix(mix(ink, warm, wn1.wg), wsacc, wn1.act); opacity: wn1.o1 * ws.nr1; family: "Space Grotesk" }
+                text "一" { at: wn1.cx, wn1.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 14; color: mix(mix(ink, warm, wn1.wg), wsacc, wn1.act); opacity: wn1.o1 * ws.nr2; family: "Zen Kurenaido" }
+            }
+            group {
+                scale: wk * (1 + 0.22 * wsp.1.$screen * (1 - 0.75 * wn1.act))
+                pivot: mix(wn1.a + wn1.nd, lf.x, lm), mix(bar.y, wn1.a + wn1.nd, lm)
+                text "1" { at: mix(wn1.a + wn1.nd, lf.x, lm), mix(bar.y, wn1.a + wn1.nd, lm); anchor: center; align: center; size: 9; weight: 700; color: mix(mix(ink, warm, wn1.wg), mix(wsacc.on, ink, ws.st.2), wn1.act); opacity: wn1.o2 * (1 - ws.nr1 - ws.nr2); family: "Space Grotesk" }
+                text "I" { at: mix(wn1.a + wn1.nd, lf.x, lm), mix(bar.y, wn1.a + wn1.nd, lm); anchor: center; align: center; size: 9; weight: 700; color: mix(mix(ink, warm, wn1.wg), mix(wsacc.on, ink, ws.st.2), wn1.act); opacity: wn1.o2 * ws.nr1; family: "Space Grotesk" }
+                text "一" { at: mix(wn1.a + wn1.nd, lf.x, lm), mix(bar.y, wn1.a + wn1.nd, lm); anchor: center; align: center; size: 11; color: mix(mix(ink, warm, wn1.wg), mix(wsacc.on, ink, ws.st.2), wn1.act); opacity: wn1.o2 * ws.nr2; family: "Zen Kurenaido" }
+            }
+        }
+        group {
+            let wn2.a = ws.a.2
+            let wn2.act = ws.act.2
+            let wn2.wg = ws.urg.2 * (1 - wn2.act) * (1 - 0.6 * ws.br)
+            let wn2.cx = mix(wn2.a, lf.x, lm)
+            let wn2.cy = mix(bar.y, wn2.a, lm)
+            let wn2.nd = (-(ws.st.1 * (5 + 8 * (max(1, ws.cnt.2) - 1)) + ws.st.2 * (16 * max(1, ws.ico.2) - 3) + ws.nl) * wk / 2 + 5.5 * wk) * (ws.st.1 + ws.st.2)      // the number and the pips or icons after it, centred as one
+            let wn2.o1 = ws.vis.2 * wso * ws.st.3 * min(100%, mix(45% + 40% * ws.tall.2 + 30% * wsh.2.$screen, 100%, wn2.act))
+            let wn2.o2 = ws.vis.2 * wso * ws.nums * min(100%, mix(55% + 30% * ws.tall.2 + 25% * wsh.2.$screen, 100%, wn2.act))
+            text "2" { at: 0, 0; anchor: left center; size: 11.5; weight: 700; lines: 1; measure: wsnw.2.0; opacity: 0; family: "Space Grotesk" }
+            text "II" { at: 0, 0; anchor: left center; size: 11.5; weight: 700; lines: 1; measure: wsnw.2.1; opacity: 0; family: "Space Grotesk" }
+            text "二" { at: 0, 0; anchor: left center; size: 14; lines: 1; measure: wsnw.2.2; opacity: 0; family: "Zen Kurenaido" }
+            group {
+                scale: wk * (1 + 0.22 * wsp.2.$screen * (1 - 0.75 * wn2.act))
+                pivot: wn2.cx, wn2.cy
+                text "2" { at: wn2.cx, wn2.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 11.5; weight: 700; color: mix(mix(ink, warm, wn2.wg), wsacc, wn2.act); opacity: wn2.o1 * (1 - ws.nr1 - ws.nr2); family: "Space Grotesk" }
+                text "II" { at: wn2.cx, wn2.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 11.5; weight: 700; color: mix(mix(ink, warm, wn2.wg), wsacc, wn2.act); opacity: wn2.o1 * ws.nr1; family: "Space Grotesk" }
+                text "二" { at: wn2.cx, wn2.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 14; color: mix(mix(ink, warm, wn2.wg), wsacc, wn2.act); opacity: wn2.o1 * ws.nr2; family: "Zen Kurenaido" }
+            }
+            group {
+                scale: wk * (1 + 0.22 * wsp.2.$screen * (1 - 0.75 * wn2.act))
+                pivot: mix(wn2.a + wn2.nd, lf.x, lm), mix(bar.y, wn2.a + wn2.nd, lm)
+                text "2" { at: mix(wn2.a + wn2.nd, lf.x, lm), mix(bar.y, wn2.a + wn2.nd, lm); anchor: center; align: center; size: 9; weight: 700; color: mix(mix(ink, warm, wn2.wg), mix(wsacc.on, ink, ws.st.2), wn2.act); opacity: wn2.o2 * (1 - ws.nr1 - ws.nr2); family: "Space Grotesk" }
+                text "II" { at: mix(wn2.a + wn2.nd, lf.x, lm), mix(bar.y, wn2.a + wn2.nd, lm); anchor: center; align: center; size: 9; weight: 700; color: mix(mix(ink, warm, wn2.wg), mix(wsacc.on, ink, ws.st.2), wn2.act); opacity: wn2.o2 * ws.nr1; family: "Space Grotesk" }
+                text "二" { at: mix(wn2.a + wn2.nd, lf.x, lm), mix(bar.y, wn2.a + wn2.nd, lm); anchor: center; align: center; size: 11; color: mix(mix(ink, warm, wn2.wg), mix(wsacc.on, ink, ws.st.2), wn2.act); opacity: wn2.o2 * ws.nr2; family: "Zen Kurenaido" }
+            }
+        }
+        group {
+            let wn3.a = ws.a.3
+            let wn3.act = ws.act.3
+            let wn3.wg = ws.urg.3 * (1 - wn3.act) * (1 - 0.6 * ws.br)
+            let wn3.cx = mix(wn3.a, lf.x, lm)
+            let wn3.cy = mix(bar.y, wn3.a, lm)
+            let wn3.nd = (-(ws.st.1 * (5 + 8 * (max(1, ws.cnt.3) - 1)) + ws.st.2 * (16 * max(1, ws.ico.3) - 3) + ws.nl) * wk / 2 + 5.5 * wk) * (ws.st.1 + ws.st.2)      // the number and the pips or icons after it, centred as one
+            let wn3.o1 = ws.vis.3 * wso * ws.st.3 * min(100%, mix(45% + 40% * ws.tall.3 + 30% * wsh.3.$screen, 100%, wn3.act))
+            let wn3.o2 = ws.vis.3 * wso * ws.nums * min(100%, mix(55% + 30% * ws.tall.3 + 25% * wsh.3.$screen, 100%, wn3.act))
+            text "3" { at: 0, 0; anchor: left center; size: 11.5; weight: 700; lines: 1; measure: wsnw.3.0; opacity: 0; family: "Space Grotesk" }
+            text "III" { at: 0, 0; anchor: left center; size: 11.5; weight: 700; lines: 1; measure: wsnw.3.1; opacity: 0; family: "Space Grotesk" }
+            text "三" { at: 0, 0; anchor: left center; size: 14; lines: 1; measure: wsnw.3.2; opacity: 0; family: "Zen Kurenaido" }
+            group {
+                scale: wk * (1 + 0.22 * wsp.3.$screen * (1 - 0.75 * wn3.act))
+                pivot: wn3.cx, wn3.cy
+                text "3" { at: wn3.cx, wn3.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 11.5; weight: 700; color: mix(mix(ink, warm, wn3.wg), wsacc, wn3.act); opacity: wn3.o1 * (1 - ws.nr1 - ws.nr2); family: "Space Grotesk" }
+                text "III" { at: wn3.cx, wn3.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 11.5; weight: 700; color: mix(mix(ink, warm, wn3.wg), wsacc, wn3.act); opacity: wn3.o1 * ws.nr1; family: "Space Grotesk" }
+                text "三" { at: wn3.cx, wn3.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 14; color: mix(mix(ink, warm, wn3.wg), wsacc, wn3.act); opacity: wn3.o1 * ws.nr2; family: "Zen Kurenaido" }
+            }
+            group {
+                scale: wk * (1 + 0.22 * wsp.3.$screen * (1 - 0.75 * wn3.act))
+                pivot: mix(wn3.a + wn3.nd, lf.x, lm), mix(bar.y, wn3.a + wn3.nd, lm)
+                text "3" { at: mix(wn3.a + wn3.nd, lf.x, lm), mix(bar.y, wn3.a + wn3.nd, lm); anchor: center; align: center; size: 9; weight: 700; color: mix(mix(ink, warm, wn3.wg), mix(wsacc.on, ink, ws.st.2), wn3.act); opacity: wn3.o2 * (1 - ws.nr1 - ws.nr2); family: "Space Grotesk" }
+                text "III" { at: mix(wn3.a + wn3.nd, lf.x, lm), mix(bar.y, wn3.a + wn3.nd, lm); anchor: center; align: center; size: 9; weight: 700; color: mix(mix(ink, warm, wn3.wg), mix(wsacc.on, ink, ws.st.2), wn3.act); opacity: wn3.o2 * ws.nr1; family: "Space Grotesk" }
+                text "三" { at: mix(wn3.a + wn3.nd, lf.x, lm), mix(bar.y, wn3.a + wn3.nd, lm); anchor: center; align: center; size: 11; color: mix(mix(ink, warm, wn3.wg), mix(wsacc.on, ink, ws.st.2), wn3.act); opacity: wn3.o2 * ws.nr2; family: "Zen Kurenaido" }
+            }
+        }
+        group {
+            let wn4.a = ws.a.4
+            let wn4.act = ws.act.4
+            let wn4.wg = ws.urg.4 * (1 - wn4.act) * (1 - 0.6 * ws.br)
+            let wn4.cx = mix(wn4.a, lf.x, lm)
+            let wn4.cy = mix(bar.y, wn4.a, lm)
+            let wn4.nd = (-(ws.st.1 * (5 + 8 * (max(1, ws.cnt.4) - 1)) + ws.st.2 * (16 * max(1, ws.ico.4) - 3) + ws.nl) * wk / 2 + 5.5 * wk) * (ws.st.1 + ws.st.2)      // the number and the pips or icons after it, centred as one
+            let wn4.o1 = ws.vis.4 * wso * ws.st.3 * min(100%, mix(45% + 40% * ws.tall.4 + 30% * wsh.4.$screen, 100%, wn4.act))
+            let wn4.o2 = ws.vis.4 * wso * ws.nums * min(100%, mix(55% + 30% * ws.tall.4 + 25% * wsh.4.$screen, 100%, wn4.act))
+            text "4" { at: 0, 0; anchor: left center; size: 11.5; weight: 700; lines: 1; measure: wsnw.4.0; opacity: 0; family: "Space Grotesk" }
+            text "IV" { at: 0, 0; anchor: left center; size: 11.5; weight: 700; lines: 1; measure: wsnw.4.1; opacity: 0; family: "Space Grotesk" }
+            text "四" { at: 0, 0; anchor: left center; size: 14; lines: 1; measure: wsnw.4.2; opacity: 0; family: "Zen Kurenaido" }
+            group {
+                scale: wk * (1 + 0.22 * wsp.4.$screen * (1 - 0.75 * wn4.act))
+                pivot: wn4.cx, wn4.cy
+                text "4" { at: wn4.cx, wn4.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 11.5; weight: 700; color: mix(mix(ink, warm, wn4.wg), wsacc, wn4.act); opacity: wn4.o1 * (1 - ws.nr1 - ws.nr2); family: "Space Grotesk" }
+                text "IV" { at: wn4.cx, wn4.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 11.5; weight: 700; color: mix(mix(ink, warm, wn4.wg), wsacc, wn4.act); opacity: wn4.o1 * ws.nr1; family: "Space Grotesk" }
+                text "四" { at: wn4.cx, wn4.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 14; color: mix(mix(ink, warm, wn4.wg), wsacc, wn4.act); opacity: wn4.o1 * ws.nr2; family: "Zen Kurenaido" }
+            }
+            group {
+                scale: wk * (1 + 0.22 * wsp.4.$screen * (1 - 0.75 * wn4.act))
+                pivot: mix(wn4.a + wn4.nd, lf.x, lm), mix(bar.y, wn4.a + wn4.nd, lm)
+                text "4" { at: mix(wn4.a + wn4.nd, lf.x, lm), mix(bar.y, wn4.a + wn4.nd, lm); anchor: center; align: center; size: 9; weight: 700; color: mix(mix(ink, warm, wn4.wg), mix(wsacc.on, ink, ws.st.2), wn4.act); opacity: wn4.o2 * (1 - ws.nr1 - ws.nr2); family: "Space Grotesk" }
+                text "IV" { at: mix(wn4.a + wn4.nd, lf.x, lm), mix(bar.y, wn4.a + wn4.nd, lm); anchor: center; align: center; size: 9; weight: 700; color: mix(mix(ink, warm, wn4.wg), mix(wsacc.on, ink, ws.st.2), wn4.act); opacity: wn4.o2 * ws.nr1; family: "Space Grotesk" }
+                text "四" { at: mix(wn4.a + wn4.nd, lf.x, lm), mix(bar.y, wn4.a + wn4.nd, lm); anchor: center; align: center; size: 11; color: mix(mix(ink, warm, wn4.wg), mix(wsacc.on, ink, ws.st.2), wn4.act); opacity: wn4.o2 * ws.nr2; family: "Zen Kurenaido" }
+            }
+        }
+        group {
+            let wn5.a = ws.a.5
+            let wn5.act = ws.act.5
+            let wn5.wg = ws.urg.5 * (1 - wn5.act) * (1 - 0.6 * ws.br)
+            let wn5.cx = mix(wn5.a, lf.x, lm)
+            let wn5.cy = mix(bar.y, wn5.a, lm)
+            let wn5.nd = (-(ws.st.1 * (5 + 8 * (max(1, ws.cnt.5) - 1)) + ws.st.2 * (16 * max(1, ws.ico.5) - 3) + ws.nl) * wk / 2 + 5.5 * wk) * (ws.st.1 + ws.st.2)      // the number and the pips or icons after it, centred as one
+            let wn5.o1 = ws.vis.5 * wso * ws.st.3 * min(100%, mix(45% + 40% * ws.tall.5 + 30% * wsh.5.$screen, 100%, wn5.act))
+            let wn5.o2 = ws.vis.5 * wso * ws.nums * min(100%, mix(55% + 30% * ws.tall.5 + 25% * wsh.5.$screen, 100%, wn5.act))
+            text "5" { at: 0, 0; anchor: left center; size: 11.5; weight: 700; lines: 1; measure: wsnw.5.0; opacity: 0; family: "Space Grotesk" }
+            text "V" { at: 0, 0; anchor: left center; size: 11.5; weight: 700; lines: 1; measure: wsnw.5.1; opacity: 0; family: "Space Grotesk" }
+            text "五" { at: 0, 0; anchor: left center; size: 14; lines: 1; measure: wsnw.5.2; opacity: 0; family: "Zen Kurenaido" }
+            group {
+                scale: wk * (1 + 0.22 * wsp.5.$screen * (1 - 0.75 * wn5.act))
+                pivot: wn5.cx, wn5.cy
+                text "5" { at: wn5.cx, wn5.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 11.5; weight: 700; color: mix(mix(ink, warm, wn5.wg), wsacc, wn5.act); opacity: wn5.o1 * (1 - ws.nr1 - ws.nr2); family: "Space Grotesk" }
+                text "V" { at: wn5.cx, wn5.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 11.5; weight: 700; color: mix(mix(ink, warm, wn5.wg), wsacc, wn5.act); opacity: wn5.o1 * ws.nr1; family: "Space Grotesk" }
+                text "五" { at: wn5.cx, wn5.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 14; color: mix(mix(ink, warm, wn5.wg), wsacc, wn5.act); opacity: wn5.o1 * ws.nr2; family: "Zen Kurenaido" }
+            }
+            group {
+                scale: wk * (1 + 0.22 * wsp.5.$screen * (1 - 0.75 * wn5.act))
+                pivot: mix(wn5.a + wn5.nd, lf.x, lm), mix(bar.y, wn5.a + wn5.nd, lm)
+                text "5" { at: mix(wn5.a + wn5.nd, lf.x, lm), mix(bar.y, wn5.a + wn5.nd, lm); anchor: center; align: center; size: 9; weight: 700; color: mix(mix(ink, warm, wn5.wg), mix(wsacc.on, ink, ws.st.2), wn5.act); opacity: wn5.o2 * (1 - ws.nr1 - ws.nr2); family: "Space Grotesk" }
+                text "V" { at: mix(wn5.a + wn5.nd, lf.x, lm), mix(bar.y, wn5.a + wn5.nd, lm); anchor: center; align: center; size: 9; weight: 700; color: mix(mix(ink, warm, wn5.wg), mix(wsacc.on, ink, ws.st.2), wn5.act); opacity: wn5.o2 * ws.nr1; family: "Space Grotesk" }
+                text "五" { at: mix(wn5.a + wn5.nd, lf.x, lm), mix(bar.y, wn5.a + wn5.nd, lm); anchor: center; align: center; size: 11; color: mix(mix(ink, warm, wn5.wg), mix(wsacc.on, ink, ws.st.2), wn5.act); opacity: wn5.o2 * ws.nr2; family: "Zen Kurenaido" }
+            }
+        }
+        group {
+            let wn6.a = ws.a.6
+            let wn6.act = ws.act.6
+            let wn6.wg = ws.urg.6 * (1 - wn6.act) * (1 - 0.6 * ws.br)
+            let wn6.cx = mix(wn6.a, lf.x, lm)
+            let wn6.cy = mix(bar.y, wn6.a, lm)
+            let wn6.nd = (-(ws.st.1 * (5 + 8 * (max(1, ws.cnt.6) - 1)) + ws.st.2 * (16 * max(1, ws.ico.6) - 3) + ws.nl) * wk / 2 + 5.5 * wk) * (ws.st.1 + ws.st.2)      // the number and the pips or icons after it, centred as one
+            let wn6.o1 = ws.vis.6 * wso * ws.st.3 * min(100%, mix(45% + 40% * ws.tall.6 + 30% * wsh.6.$screen, 100%, wn6.act))
+            let wn6.o2 = ws.vis.6 * wso * ws.nums * min(100%, mix(55% + 30% * ws.tall.6 + 25% * wsh.6.$screen, 100%, wn6.act))
+            text "6" { at: 0, 0; anchor: left center; size: 11.5; weight: 700; lines: 1; measure: wsnw.6.0; opacity: 0; family: "Space Grotesk" }
+            text "VI" { at: 0, 0; anchor: left center; size: 11.5; weight: 700; lines: 1; measure: wsnw.6.1; opacity: 0; family: "Space Grotesk" }
+            text "六" { at: 0, 0; anchor: left center; size: 14; lines: 1; measure: wsnw.6.2; opacity: 0; family: "Zen Kurenaido" }
+            group {
+                scale: wk * (1 + 0.22 * wsp.6.$screen * (1 - 0.75 * wn6.act))
+                pivot: wn6.cx, wn6.cy
+                text "6" { at: wn6.cx, wn6.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 11.5; weight: 700; color: mix(mix(ink, warm, wn6.wg), wsacc, wn6.act); opacity: wn6.o1 * (1 - ws.nr1 - ws.nr2); family: "Space Grotesk" }
+                text "VI" { at: wn6.cx, wn6.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 11.5; weight: 700; color: mix(mix(ink, warm, wn6.wg), wsacc, wn6.act); opacity: wn6.o1 * ws.nr1; family: "Space Grotesk" }
+                text "六" { at: wn6.cx, wn6.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 14; color: mix(mix(ink, warm, wn6.wg), wsacc, wn6.act); opacity: wn6.o1 * ws.nr2; family: "Zen Kurenaido" }
+            }
+            group {
+                scale: wk * (1 + 0.22 * wsp.6.$screen * (1 - 0.75 * wn6.act))
+                pivot: mix(wn6.a + wn6.nd, lf.x, lm), mix(bar.y, wn6.a + wn6.nd, lm)
+                text "6" { at: mix(wn6.a + wn6.nd, lf.x, lm), mix(bar.y, wn6.a + wn6.nd, lm); anchor: center; align: center; size: 9; weight: 700; color: mix(mix(ink, warm, wn6.wg), mix(wsacc.on, ink, ws.st.2), wn6.act); opacity: wn6.o2 * (1 - ws.nr1 - ws.nr2); family: "Space Grotesk" }
+                text "VI" { at: mix(wn6.a + wn6.nd, lf.x, lm), mix(bar.y, wn6.a + wn6.nd, lm); anchor: center; align: center; size: 9; weight: 700; color: mix(mix(ink, warm, wn6.wg), mix(wsacc.on, ink, ws.st.2), wn6.act); opacity: wn6.o2 * ws.nr1; family: "Space Grotesk" }
+                text "六" { at: mix(wn6.a + wn6.nd, lf.x, lm), mix(bar.y, wn6.a + wn6.nd, lm); anchor: center; align: center; size: 11; color: mix(mix(ink, warm, wn6.wg), mix(wsacc.on, ink, ws.st.2), wn6.act); opacity: wn6.o2 * ws.nr2; family: "Zen Kurenaido" }
+            }
+        }
+        group {
+            let wn7.a = ws.a.7
+            let wn7.act = ws.act.7
+            let wn7.wg = ws.urg.7 * (1 - wn7.act) * (1 - 0.6 * ws.br)
+            let wn7.cx = mix(wn7.a, lf.x, lm)
+            let wn7.cy = mix(bar.y, wn7.a, lm)
+            let wn7.nd = (-(ws.st.1 * (5 + 8 * (max(1, ws.cnt.7) - 1)) + ws.st.2 * (16 * max(1, ws.ico.7) - 3) + ws.nl) * wk / 2 + 5.5 * wk) * (ws.st.1 + ws.st.2)      // the number and the pips or icons after it, centred as one
+            let wn7.o1 = ws.vis.7 * wso * ws.st.3 * min(100%, mix(45% + 40% * ws.tall.7 + 30% * wsh.7.$screen, 100%, wn7.act))
+            let wn7.o2 = ws.vis.7 * wso * ws.nums * min(100%, mix(55% + 30% * ws.tall.7 + 25% * wsh.7.$screen, 100%, wn7.act))
+            text "7" { at: 0, 0; anchor: left center; size: 11.5; weight: 700; lines: 1; measure: wsnw.7.0; opacity: 0; family: "Space Grotesk" }
+            text "VII" { at: 0, 0; anchor: left center; size: 11.5; weight: 700; lines: 1; measure: wsnw.7.1; opacity: 0; family: "Space Grotesk" }
+            text "七" { at: 0, 0; anchor: left center; size: 14; lines: 1; measure: wsnw.7.2; opacity: 0; family: "Zen Kurenaido" }
+            group {
+                scale: wk * (1 + 0.22 * wsp.7.$screen * (1 - 0.75 * wn7.act))
+                pivot: wn7.cx, wn7.cy
+                text "7" { at: wn7.cx, wn7.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 11.5; weight: 700; color: mix(mix(ink, warm, wn7.wg), wsacc, wn7.act); opacity: wn7.o1 * (1 - ws.nr1 - ws.nr2); family: "Space Grotesk" }
+                text "VII" { at: wn7.cx, wn7.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 11.5; weight: 700; color: mix(mix(ink, warm, wn7.wg), wsacc, wn7.act); opacity: wn7.o1 * ws.nr1; family: "Space Grotesk" }
+                text "七" { at: wn7.cx, wn7.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 14; color: mix(mix(ink, warm, wn7.wg), wsacc, wn7.act); opacity: wn7.o1 * ws.nr2; family: "Zen Kurenaido" }
+            }
+            group {
+                scale: wk * (1 + 0.22 * wsp.7.$screen * (1 - 0.75 * wn7.act))
+                pivot: mix(wn7.a + wn7.nd, lf.x, lm), mix(bar.y, wn7.a + wn7.nd, lm)
+                text "7" { at: mix(wn7.a + wn7.nd, lf.x, lm), mix(bar.y, wn7.a + wn7.nd, lm); anchor: center; align: center; size: 9; weight: 700; color: mix(mix(ink, warm, wn7.wg), mix(wsacc.on, ink, ws.st.2), wn7.act); opacity: wn7.o2 * (1 - ws.nr1 - ws.nr2); family: "Space Grotesk" }
+                text "VII" { at: mix(wn7.a + wn7.nd, lf.x, lm), mix(bar.y, wn7.a + wn7.nd, lm); anchor: center; align: center; size: 9; weight: 700; color: mix(mix(ink, warm, wn7.wg), mix(wsacc.on, ink, ws.st.2), wn7.act); opacity: wn7.o2 * ws.nr1; family: "Space Grotesk" }
+                text "七" { at: mix(wn7.a + wn7.nd, lf.x, lm), mix(bar.y, wn7.a + wn7.nd, lm); anchor: center; align: center; size: 11; color: mix(mix(ink, warm, wn7.wg), mix(wsacc.on, ink, ws.st.2), wn7.act); opacity: wn7.o2 * ws.nr2; family: "Zen Kurenaido" }
+            }
+        }
+        group {
+            let wn8.a = ws.a.8
+            let wn8.act = ws.act.8
+            let wn8.wg = ws.urg.8 * (1 - wn8.act) * (1 - 0.6 * ws.br)
+            let wn8.cx = mix(wn8.a, lf.x, lm)
+            let wn8.cy = mix(bar.y, wn8.a, lm)
+            let wn8.nd = (-(ws.st.1 * (5 + 8 * (max(1, ws.cnt.8) - 1)) + ws.st.2 * (16 * max(1, ws.ico.8) - 3) + ws.nl) * wk / 2 + 5.5 * wk) * (ws.st.1 + ws.st.2)      // the number and the pips or icons after it, centred as one
+            let wn8.o1 = ws.vis.8 * wso * ws.st.3 * min(100%, mix(45% + 40% * ws.tall.8 + 30% * wsh.8.$screen, 100%, wn8.act))
+            let wn8.o2 = ws.vis.8 * wso * ws.nums * min(100%, mix(55% + 30% * ws.tall.8 + 25% * wsh.8.$screen, 100%, wn8.act))
+            text "8" { at: 0, 0; anchor: left center; size: 11.5; weight: 700; lines: 1; measure: wsnw.8.0; opacity: 0; family: "Space Grotesk" }
+            text "VIII" { at: 0, 0; anchor: left center; size: 11.5; weight: 700; lines: 1; measure: wsnw.8.1; opacity: 0; family: "Space Grotesk" }
+            text "八" { at: 0, 0; anchor: left center; size: 14; lines: 1; measure: wsnw.8.2; opacity: 0; family: "Zen Kurenaido" }
+            group {
+                scale: wk * (1 + 0.22 * wsp.8.$screen * (1 - 0.75 * wn8.act))
+                pivot: wn8.cx, wn8.cy
+                text "8" { at: wn8.cx, wn8.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 11.5; weight: 700; color: mix(mix(ink, warm, wn8.wg), wsacc, wn8.act); opacity: wn8.o1 * (1 - ws.nr1 - ws.nr2); family: "Space Grotesk" }
+                text "VIII" { at: wn8.cx, wn8.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 11.5; weight: 700; color: mix(mix(ink, warm, wn8.wg), wsacc, wn8.act); opacity: wn8.o1 * ws.nr1; family: "Space Grotesk" }
+                text "八" { at: wn8.cx, wn8.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 14; color: mix(mix(ink, warm, wn8.wg), wsacc, wn8.act); opacity: wn8.o1 * ws.nr2; family: "Zen Kurenaido" }
+            }
+            group {
+                scale: wk * (1 + 0.22 * wsp.8.$screen * (1 - 0.75 * wn8.act))
+                pivot: mix(wn8.a + wn8.nd, lf.x, lm), mix(bar.y, wn8.a + wn8.nd, lm)
+                text "8" { at: mix(wn8.a + wn8.nd, lf.x, lm), mix(bar.y, wn8.a + wn8.nd, lm); anchor: center; align: center; size: 9; weight: 700; color: mix(mix(ink, warm, wn8.wg), mix(wsacc.on, ink, ws.st.2), wn8.act); opacity: wn8.o2 * (1 - ws.nr1 - ws.nr2); family: "Space Grotesk" }
+                text "VIII" { at: mix(wn8.a + wn8.nd, lf.x, lm), mix(bar.y, wn8.a + wn8.nd, lm); anchor: center; align: center; size: 9; weight: 700; color: mix(mix(ink, warm, wn8.wg), mix(wsacc.on, ink, ws.st.2), wn8.act); opacity: wn8.o2 * ws.nr1; family: "Space Grotesk" }
+                text "八" { at: mix(wn8.a + wn8.nd, lf.x, lm), mix(bar.y, wn8.a + wn8.nd, lm); anchor: center; align: center; size: 11; color: mix(mix(ink, warm, wn8.wg), mix(wsacc.on, ink, ws.st.2), wn8.act); opacity: wn8.o2 * ws.nr2; family: "Zen Kurenaido" }
+            }
+        }
+        group {
+            let wn9.a = ws.a.9
+            let wn9.act = ws.act.9
+            let wn9.wg = ws.urg.9 * (1 - wn9.act) * (1 - 0.6 * ws.br)
+            let wn9.cx = mix(wn9.a, lf.x, lm)
+            let wn9.cy = mix(bar.y, wn9.a, lm)
+            let wn9.nd = (-(ws.st.1 * (5 + 8 * (max(1, ws.cnt.9) - 1)) + ws.st.2 * (16 * max(1, ws.ico.9) - 3) + ws.nl) * wk / 2 + 5.5 * wk) * (ws.st.1 + ws.st.2)      // the number and the pips or icons after it, centred as one
+            let wn9.o1 = ws.vis.9 * wso * ws.st.3 * min(100%, mix(45% + 40% * ws.tall.9 + 30% * wsh.9.$screen, 100%, wn9.act))
+            let wn9.o2 = ws.vis.9 * wso * ws.nums * min(100%, mix(55% + 30% * ws.tall.9 + 25% * wsh.9.$screen, 100%, wn9.act))
+            text "9" { at: 0, 0; anchor: left center; size: 11.5; weight: 700; lines: 1; measure: wsnw.9.0; opacity: 0; family: "Space Grotesk" }
+            text "IX" { at: 0, 0; anchor: left center; size: 11.5; weight: 700; lines: 1; measure: wsnw.9.1; opacity: 0; family: "Space Grotesk" }
+            text "九" { at: 0, 0; anchor: left center; size: 14; lines: 1; measure: wsnw.9.2; opacity: 0; family: "Zen Kurenaido" }
+            group {
+                scale: wk * (1 + 0.22 * wsp.9.$screen * (1 - 0.75 * wn9.act))
+                pivot: wn9.cx, wn9.cy
+                text "9" { at: wn9.cx, wn9.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 11.5; weight: 700; color: mix(mix(ink, warm, wn9.wg), wsacc, wn9.act); opacity: wn9.o1 * (1 - ws.nr1 - ws.nr2); family: "Space Grotesk" }
+                text "IX" { at: wn9.cx, wn9.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 11.5; weight: 700; color: mix(mix(ink, warm, wn9.wg), wsacc, wn9.act); opacity: wn9.o1 * ws.nr1; family: "Space Grotesk" }
+                text "九" { at: wn9.cx, wn9.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 14; color: mix(mix(ink, warm, wn9.wg), wsacc, wn9.act); opacity: wn9.o1 * ws.nr2; family: "Zen Kurenaido" }
+            }
+            group {
+                scale: wk * (1 + 0.22 * wsp.9.$screen * (1 - 0.75 * wn9.act))
+                pivot: mix(wn9.a + wn9.nd, lf.x, lm), mix(bar.y, wn9.a + wn9.nd, lm)
+                text "9" { at: mix(wn9.a + wn9.nd, lf.x, lm), mix(bar.y, wn9.a + wn9.nd, lm); anchor: center; align: center; size: 9; weight: 700; color: mix(mix(ink, warm, wn9.wg), mix(wsacc.on, ink, ws.st.2), wn9.act); opacity: wn9.o2 * (1 - ws.nr1 - ws.nr2); family: "Space Grotesk" }
+                text "IX" { at: mix(wn9.a + wn9.nd, lf.x, lm), mix(bar.y, wn9.a + wn9.nd, lm); anchor: center; align: center; size: 9; weight: 700; color: mix(mix(ink, warm, wn9.wg), mix(wsacc.on, ink, ws.st.2), wn9.act); opacity: wn9.o2 * ws.nr1; family: "Space Grotesk" }
+                text "九" { at: mix(wn9.a + wn9.nd, lf.x, lm), mix(bar.y, wn9.a + wn9.nd, lm); anchor: center; align: center; size: 11; color: mix(mix(ink, warm, wn9.wg), mix(wsacc.on, ink, ws.st.2), wn9.act); opacity: wn9.o2 * ws.nr2; family: "Zen Kurenaido" }
+            }
+        }
+        group {
+            let wn10.a = ws.a.10
+            let wn10.act = ws.act.10
+            let wn10.wg = ws.urg.10 * (1 - wn10.act) * (1 - 0.6 * ws.br)
+            let wn10.cx = mix(wn10.a, lf.x, lm)
+            let wn10.cy = mix(bar.y, wn10.a, lm)
+            let wn10.nd = (-(ws.st.1 * (5 + 8 * (max(1, ws.cnt.10) - 1)) + ws.st.2 * (16 * max(1, ws.ico.10) - 3) + ws.nl) * wk / 2 + 5.5 * wk) * (ws.st.1 + ws.st.2)      // the number and the pips or icons after it, centred as one
+            let wn10.o1 = ws.vis.10 * wso * ws.st.3 * min(100%, mix(45% + 40% * ws.tall.10 + 30% * wsh.10.$screen, 100%, wn10.act))
+            let wn10.o2 = ws.vis.10 * wso * ws.nums * min(100%, mix(55% + 30% * ws.tall.10 + 25% * wsh.10.$screen, 100%, wn10.act))
+            text "十" { at: 0, 0; anchor: left center; size: 14; lines: 1; measure: wsnw.10.0; opacity: 0; family: "Zen Kurenaido" }
+            text "X" { at: 0, 0; anchor: left center; size: 11.5; weight: 700; lines: 1; measure: wsnw.10.1; opacity: 0; family: "Space Grotesk" }
+            text "十" { at: 0, 0; anchor: left center; size: 14; lines: 1; measure: wsnw.10.2; opacity: 0; family: "Zen Kurenaido" }
+            group {
+                scale: wk * (1 + 0.22 * wsp.10.$screen * (1 - 0.75 * wn10.act))
+                pivot: wn10.cx, wn10.cy
+                text "十" { at: wn10.cx, wn10.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 14; color: mix(mix(ink, warm, wn10.wg), wsacc, wn10.act); opacity: wn10.o1 * (1 - ws.nr1 - ws.nr2); family: "Zen Kurenaido" }
+                text "X" { at: wn10.cx, wn10.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 11.5; weight: 700; color: mix(mix(ink, warm, wn10.wg), wsacc, wn10.act); opacity: wn10.o1 * ws.nr1; family: "Space Grotesk" }
+                text "十" { at: wn10.cx, wn10.cy - 0.5 * ws.st.3; anchor: center; align: center; size: 14; color: mix(mix(ink, warm, wn10.wg), wsacc, wn10.act); opacity: wn10.o1 * ws.nr2; family: "Zen Kurenaido" }
+            }
+            group {
+                scale: wk * (1 + 0.22 * wsp.10.$screen * (1 - 0.75 * wn10.act))
+                pivot: mix(wn10.a + wn10.nd, lf.x, lm), mix(bar.y, wn10.a + wn10.nd, lm)
+                text "十" { at: mix(wn10.a + wn10.nd, lf.x, lm), mix(bar.y, wn10.a + wn10.nd, lm); anchor: center; align: center; size: 11; color: mix(mix(ink, warm, wn10.wg), mix(wsacc.on, ink, ws.st.2), wn10.act); opacity: wn10.o2 * (1 - ws.nr1 - ws.nr2); family: "Zen Kurenaido" }
+                text "X" { at: mix(wn10.a + wn10.nd, lf.x, lm), mix(bar.y, wn10.a + wn10.nd, lm); anchor: center; align: center; size: 9; weight: 700; color: mix(mix(ink, warm, wn10.wg), mix(wsacc.on, ink, ws.st.2), wn10.act); opacity: wn10.o2 * ws.nr1; family: "Space Grotesk" }
+                text "十" { at: mix(wn10.a + wn10.nd, lf.x, lm), mix(bar.y, wn10.a + wn10.nd, lm); anchor: center; align: center; size: 11; color: mix(mix(ink, warm, wn10.wg), mix(wsacc.on, ink, ws.st.2), wn10.act); opacity: wn10.o2 * ws.nr2; family: "Zen Kurenaido" }
+            }
+        }
+    }
+}

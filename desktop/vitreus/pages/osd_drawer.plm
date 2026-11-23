@@ -1,0 +1,217 @@
+part OsdDrawer {
+    //  The volume and notification drawer's content, clipped to its shape. Both sit on one plate
+    //  (the same 8% veil as the others), 12 in from the drawer's edge; `osd_kind` picks which is drawn.
+    group {
+        clip inset 2 box { at: mix(mix(do.ix, do.ex, fm), 2 * os.px - mix(do.ix, do.ex, fm), rt), do.ey; size: mix(do.iw, do.ew, fm), do.eh; corner: 26 * u * (1 - 0.73 * sq) }
+        opacity: fo
+        move: rt * (screen.width - 2 * os.px), (1 - fo) * 12 * u + bt * (yo + vb - 2 * os.cy)
+        //  The same as the calendar's: what is inside grows with the drawer, from the edge it comes out of (the strip's, or the right frame's for the volume and the notifications, which grow leftwards).
+        group {
+            pivot: mix(do.edge, 2 * os.px - do.edge, rt), do.ey
+            scale: max(do.lf, 0.05)
+        //  A notification at a smaller size (`nk`, vitreus.plm): its content scaled about the drawer's top right corner, as the glass is made smaller.
+        group {
+            pivot: do.corner, os.cy
+            scale: nk
+        //  Two effects cannot sit one inside the other, so the Retro theme's pixelation of the drawer (`px.do`) is on this group, and the face's own (below) on a
+        //  group beside it.
+        group {
+            shader: pixelate, px.do
+        let oy = os.ck + (8 + osd_h / 2) * u                 // the plate's middle
+        let ot = os.ck + 8 * u                               // and its top
+        //  Obsidian: a solid plate a step lighter than the shell, with a small tight shadow, in place of the veil.
+        body { color: mix(mix(obsidian, ink, (veil) * 1.6), dd_cream, dd_k); opacity: (obs) * (1 - dd_k); border: 2.4 * u * dd_k, ink; shadow: 0, 2 * u, 7 * u, 40% * (1 - dd_k), #000000; show: obs > 0.004; box { at: os.px, oy; size: 316 * u, osd_h * u; corner: 14 * u } }
+        DdCard(os.px, oy, 316 * u, osd_h * u, 300.5, mix(mix(obsidian, ink, (veil) * 1.6), dd_cream, dd_k), (obs) * dd_k, u) { show: dd_k > 0.004 and (obs > 0.004) }      // Doodle: the hand-drawn card
+        box { at: os.px, oy; size: 316 * u, osd_h * u; corner: 14 * u; color: obsidian; opacity: card_fill * (1 - obs) }      // the card's deeper backing (see `card_fill`)
+        box { at: os.px, oy; size: 316 * u, osd_h * u; corner: 14 * u; color: ink; opacity: (veil) * (1 - obs) }
+        box { at: os.px, oy; size: 316 * u, osd_h * u; corner: 14 * u; stroke: 1 * u; color: ink; opacity: hair * (1 - dd_k) }
+        //  A press on the plate takes the drawer down (a notification is dismissed with it). Declared
+        //  first, so the cross and the buttons above it win where they overlap.
+        zone box os_hit { at: os.px, oy; size: 316 * u, osd_h * u; corner: 14 * u; cursor: pointer }
+        on press os_hit while osd_kind == vol { osd_on = false }
+        on press os_hit while osd_kind == note { emit nt_close }
+
+        // ── the volume ──
+        group {
+            opacity: okv * max(osd_vp, 1 - max(osd_bp, osd_mp))
+            show: okv > 0.01 and (osd_v or not (osd_b or osd_m))
+            let vy = ot + 32 * u                             // the top row (the plate's middle when it is the only one)
+            let vtx = os.px - 128 * u                        // the face's tile
+            box { at: vtx, vy; size: 44 * u, 44 * u; corner: 12 * u; color: ink; opacity: 6% }
+            //  The level is a pencil slider (PSlider), the control center's: the pinched pencil track, the squeezed ring for a knob. Given the raw volume so the knob morphs as it changes.
+            PSlider(os.px - 96 * u, vy, 170 * u, if(audio.muted, 0, audio.volume), 1, u, 16 * u, if(audio.muted, 1, 0))
+            text number(audio.volume * 100, 0, "%") { at: floor(os.px + 116 * u + 0.5), floor(vy + 0.5); anchor: center; align: center; size: 21; weight: 700; color: ink; family: "Space Grotesk"; show: not audio.muted }
+            text "Muted" { at: floor(os.px + 116 * u + 0.5), floor(vy + 0.5); anchor: center; align: center; size: 21; weight: 700; color: faint; family: "Space Grotesk"; show: audio.muted }
+        }
+
+        // ── the brightness: under the volume when both are out, alone in its place otherwise ──
+        group {
+            opacity: okv * osd_bp
+            show: okv > 0.01 and osd_b
+            let by = ot + (32 + 72 * osd_vp) * u
+            let btx = os.px - 128 * u                        // the sun's tile
+            box { at: btx, by; size: 44 * u, 44 * u; corner: 12 * u; color: ink; opacity: 6% }
+            //  The brightness icon: the control center's pencil sun (PSun), a touch larger the brighter it is.
+            group {
+                pivot: btx, by
+                scale: (1.3 + 0.2 * bright_osd) * u / cu
+                PSun(btx, by, 1, bright_osd, 0.9)
+            }
+            //  The level is the same pencil slider (PSlider) as the volume's and the control center's.
+            PSlider(os.px - 96 * u, by, 170 * u, clamp(bright_osd, 0, 1), 1, u, 16 * u, 0)
+            text number(bright_now * 100, 0, "%") { at: floor(os.px + 116 * u + 0.5), floor(by + 0.5); anchor: center; align: center; size: 21; weight: 700; color: ink; family: "Space Grotesk" }
+        }
+
+        // ── Caps Lock, Num Lock or the keyboard layout (logic/lockkeys.luau), under whichever of the other two are out (this was the microphone's row) ──
+        group {
+            opacity: okv * osd_mp
+            show: okv > 0.01 and osd_m
+            let omcy = ot + (32 + 72 * osd_vp + 72 * osd_bp) * u
+            let mtx = os.px - 128 * u
+            let lkon = lk_state or lk_kind == 2
+            box { at: mtx, omcy; size: 44 * u, 44 * u; corner: 12 * u; color: if(lkon, mint, ink); opacity: if(lkon, 14%, 6%) }
+            group { show: lk_kind == 0; GCaps(mtx, omcy, 1.3 * u, if(lkon, mint, faint), 1, 0) }
+            group { show: lk_kind == 1; GNum(mtx, omcy, 1.3 * u, if(lkon, mint, faint), 1, 0) }
+            group { show: lk_kind == 2; GKeyboard(mtx, omcy, 1.3 * u, if(lkon, mint, faint), 1, 0) }
+            text pick(lk_kind, "Caps Lock", "Num Lock", "Layout") { at: floor(os.px - 90 * u + 0.5), floor(omcy + 0.5); anchor: left center; size: 19; weight: 700; color: ink; family: "Space Grotesk"; show: lk_kind != 2 }
+            text pick(if(lk_state, 1, 0), "off", "on") { at: floor(os.px + 116 * u + 0.5), floor(omcy + 0.5); anchor: center; align: center; size: 21; weight: 700; color: if(lk_state, mint, faint); family: "Space Grotesk"; show: lk_kind != 2 }
+            text kb_layout { at: floor(os.px - 90 * u + 0.5), floor(omcy + 0.5); anchor: left center; size: 19; weight: 700; width: 230 * u; lines: 1; color: mint; family: "Space Grotesk"; show: lk_kind == 2 }
+        }
+
+        // ── a notification ──
+        group {
+            opacity: okn
+            show: okn > 0.01
+            let nty = oy                                  // the tile's middle: the plate's, so it sits vertically centred
+            let ntx = os.px - 128 * u
+            let ntl = os.px - 96 * u                         // where its words start
+            box { at: ntx, nty; size: 44 * u, 44 * u; corner: 12 * u; color: ink; opacity: 6% }
+            //  No picture from the app: a bell, drawn in pencil like the volume's smiley (the lines are drawn again, a hair off, about eight times a second, and the
+            //  outline twice, a little crooked), with a ring of rays turning slowly round it like the brightness sun's. It is in the accent (or red, for something
+            //  urgent), and when the notification arrives it swings on its top and the clapper knocks, settling over a couple of seconds (`nt_sw`).
+            group {
+                show: not nt_icon_on
+                let bfr = floor(time * 8 * pn_rate)                                  // which redrawing of the lines this is
+                let bdr = clamp(fo * 1.5 - 0.1, 0, 1)                      // drawn in as the banner lands, with the smiley's
+                let bq = clamp(nt_sw, 0, 1)                                // the swing's clock: a spring keeps its speed when a second notification interrupts, and would overshoot
+                let bsw = (1 - bq) * sin(bq * 2000)                        // the swing: about five shrinking turns over two seconds
+                //  The rays: six short strokes round the tile, turning, breathing, and brighter while it rings.
+                repeat r in 0..6 {
+                    let bang = r * 60 + time * 30
+                    let br0 = 17 * u
+                    let br1 = br0 + (2 + 1.5 * (1 - bq) + 1.0 * sin(time * 200 + r * 90)) * u
+                    line { from: ntx + br0 * cos(bang), nty + br0 * sin(bang); to: ntx + br1 * cos(bang), nty + br1 * sin(bang); width: 1.8 * u; color: if(nt_urgent, alert, mint); opacity: (30% + 50% * (1 - bq)) * bdr }
+                }
+                group {
+                    pivot: ntx, nty - 11 * u
+                    rotate: 24deg * bsw
+                    //  The body, a flared dome: two turns of the pencil, the second fainter and a little off.
+                    repeat bp in 0..2 {
+                        let bo = bp * 0.7 * u
+                        let bj = 0.5 * u * sin(bfr * 53 + bp * 137)
+                        let bk = 0.5 * u * sin(bfr * 61 + bp * 71 + 40)
+                        path { at: ntx + bo, nty + bo * 0.5; stroke: if(bp == 0, 1.8, 1.3) * u; color: ink; opacity: if(bp == 0, 90%, 34% * pn_echo) * bdr
+                               move -10 * u + bj, 6 * u + bk
+                               curve -5.5 * u + bk, -6 * u + bj via -6.5 * u, 2 * u
+                               curve 5.5 * u + bj, -6 * u + bk via 0, -15 * u + bj
+                               curve 10 * u + bk, 6 * u + bj via 6.5 * u, 2 * u
+                               line -10 * u + bj, 6 * u + bk }
+                    }
+                    //  A wash in the accent inside it, like the laugh's.
+                    path { at: ntx, nty; color: if(nt_urgent, alert, mint); opacity: 30% * bdr; move -10 * u, 6 * u; curve -5.5 * u, -6 * u via -6.5 * u, 2 * u; curve 5.5 * u, -6 * u via 0, -15 * u; curve 10 * u, 6 * u via 6.5 * u, 2 * u; close }
+                    //  The knob on top, and the shading: two short strokes on the left of the dome.
+                    ellipse { at: ntx + 0.4 * u * sin(bfr * 67), nty - 12.3 * u; radius: 1.5 * u; color: ink; opacity: bdr }
+                    repeat bc in 0..2 {
+                        line { from: ntx - 6 * u + bc * 2 * u, nty - 3 * u + bc * 1.5 * u + 0.4 * u * sin(bfr * 47 + bc * 60); to: ntx - 5 * u + bc * 2 * u, nty + 2 * u + 0.4 * u * sin(bfr * 53 + bc * 70); width: 1.1 * u; color: if(nt_urgent, alert, mint); opacity: 65% * bdr }
+                    }
+                    //  The clapper, knocking the other way.
+                    ellipse { at: ntx - 3.5 * u * bsw + 0.4 * u * sin(bfr * 59), nty + 10 * u; radius: 2.2 * u; color: if(nt_urgent, alert, mint); opacity: bdr }
+                }
+            }
+            //  The app's own icon wobbles when the notification arrives, as the bell swings (the same `nt_sw`, so it waits for the banner to land): a few shrinking turns about its middle and a little squash,
+            //  then still. It is a function of that spring alone, so it cannot go on turning.
+            group {
+                show: nt_icon_on
+                pivot: ntx, nty
+                rotate: 16deg * (1 - clamp(nt_sw, 0, 1)) * sin(clamp(nt_sw, 0, 1) * 2000)
+                scale: 1 + 0.07 * (1 - clamp(nt_sw, 0, 1)) * sin(clamp(nt_sw, 0, 1) * 2600 + 40)
+                image nt_img { at: floor(ntx - 22 * u + 0.5), floor(nty - 22 * u + 0.5); size: floor(44 * u + 0.5), floor(44 * u + 0.5) }
+            }
+            //  A ring off the tile when it arrives.
+            ellipse { at: ntx, nty; radius: (24 + 22 * nt_ring) * u; stroke: 2 * u; color: if(nt_urgent, alert, mint); opacity: 90% * (1 - nt_ring) }
+            ellipse { at: ntx + 20 * u, nty - 20 * u; radius: 5 * u; color: alert; opacity: if(nt_urgent, 60% + 40% * sin(time * 300), 0) }
+
+            text nt_app { at: floor(ntl + 0.5), floor(ot + 12 * u + 9 * u + 0.5); anchor: left center; size: 13; weight: 700; width: 190 * u; lines: 1; color: faint; family: "Space Grotesk" }
+            text nt_title { at: floor(ntl + 0.5), floor(ot + 35 * u + 0.5); anchor: left top; size: 19; weight: 700; width: 236 * u; lines: 3; measure: ntt; color: ink; family: "Space Grotesk" }
+            text nt_body { at: floor(ntl + 0.5), floor(ot + (39 + nt_th) * u + 0.5); anchor: left top; size: 15.5; width: 236 * u; lines: 6; measure: ntb; color: faint; family: "Space Grotesk"; show: nt_body_on }
+            //  Its buttons, under the words.
+            row nt_row {
+                at: floor(ntl + 0.5), floor(ot + (nt_content + 8) * u + 0.5)
+                gap: 8
+                for a in nt_acts { NtAct(a, click: nt_act) }
+            }
+            //  Close.
+            ellipse { at: os.px + 140 * u, ot + 12 * u + 8 * u; radius: 10 * u; color: ink; opacity: 22% * nt_x.hover }
+            line { from: os.px + 136.5 * u, ot + 12 * u + 4.5 * u; to: os.px + 143.5 * u, ot + 12 * u + 11.5 * u; width: 1.4 * u; color: ink; opacity: 55% + 45% * nt_x.hover }
+            line { from: os.px + 143.5 * u, ot + 12 * u + 4.5 * u; to: os.px + 136.5 * u, ot + 12 * u + 11.5 * u; width: 1.4 * u; color: ink; opacity: 55% + 45% * nt_x.hover }
+            zone box nt_x { at: os.px + 140 * u, ot + 12 * u + 8 * u; size: 24 * u, 24 * u; corner: 12 * u; cursor: pointer }
+            on press nt_x { emit nt_close }
+        }
+
+        // ── a screenshot ──
+        group {
+            opacity: oks
+            show: oks > 0.01
+            let sty = ot + 8 * u                              // the picture's top
+            let stw = 292 * u
+            let sth = 164 * u
+            group {
+                clip inset 0 box { at: os.px, sty + sth / 2; size: stw, sth; corner: 10 * u }
+                image shot_img { at: floor(os.px - stw / 2 + 0.5), floor(sty + 0.5); size: floor(stw + 0.5), floor(sth + 0.5) }
+            }
+            zone box shot_open_z { at: os.px, sty + sth / 2; size: stw, sth; corner: 10 * u; cursor: pointer; label: "Open the screenshot" }
+            on press shot_open_z { emit shot_act(0) }
+            //  Close, on the picture's corner (a dark disc, so it shows on a light picture too).
+            ellipse { at: os.px + stw / 2 - 16 * u, sty + 16 * u; radius: 11 * u; color: #000000; opacity: 45% + 20% * shot_x.hover }
+            line { from: os.px + stw / 2 - 19.5 * u, sty + 12.5 * u; to: os.px + stw / 2 - 12.5 * u, sty + 19.5 * u; width: 1.5 * u; color: #ffffff; opacity: 90% }
+            line { from: os.px + stw / 2 - 12.5 * u, sty + 12.5 * u; to: os.px + stw / 2 - 19.5 * u, sty + 19.5 * u; width: 1.5 * u; color: #ffffff; opacity: 90% }
+            zone box shot_x { at: os.px + stw / 2 - 16 * u, sty + 16 * u; size: 26 * u, 26 * u; corner: 13 * u; cursor: pointer }
+            on press shot_x { emit shot_close }
+            text shot_name { at: floor(os.px - stw / 2 + 2 * u + 0.5), floor(sty + sth + 14 * u + 0.5); anchor: left center; size: 12; weight: 600; width: stw - 4 * u; lines: 1; color: faint; family: "Space Grotesk" }
+            //  What can be done with it: Open and Delete always; the text ones when tesseract can read it.
+            repeat k in 0..4 {
+                let sn = if(shot_ocr, 4, 2)
+                let sg = 6 * u
+                let sw = (stw - (sn - 1) * sg) / sn
+                let sl = if(shot_ocr, k, if(k == 0, 0, 3))        // which action this button is
+                let sx = os.px - stw / 2 + sw / 2 + k * (sw + sg)
+                let sy = sty + sth + 38 * u
+                group {
+                    show: k < sn
+                    box { at: sx, sy; size: sw, 26 * u; corner: 13 * u; color: if(sl == 3, alert, mint); opacity: 14% + 12% * shot_b.$k.hover }
+                    text pick(sl, "Open", "Copy text", "Ask", "Delete") { at: floor(sx + 0.5), floor(sy + 0.5); anchor: center; align: center; size: 12; weight: 700; color: if(sl == 3, alert, mint); family: "Space Grotesk" }
+                    zone box shot_b.$k { at: sx, sy; size: sw, 28 * u; corner: 14 * u; cursor: pointer; active: k < sn and oks > 0.5 }
+                    on press shot_b.$k { emit shot_act(sl) }
+                }
+            }
+        }
+        }
+        //  The volume's face (see the pencil smiley): over the volume's row, with that row's own fade and the same place.
+        group {
+            opacity: okv * max(osd_vp, 1 - max(osd_bp, osd_mp))
+            show: okv > 0.01 and (osd_v or not (osd_b or osd_m))
+            let fvy = ot + 32 * u
+            let fvx = os.px - 128 * u
+            //  The volume's icon: the control center's pencil speaker (PSpk), bobbing a little and a touch larger the louder it is. (The pencil smiley that was here is
+            //  `PSmiley` in vitreus.plm, kept to use somewhere else.)
+            group {
+                move: 0, -1.0 * u * (0.5 + 0.5 * sin(time * 200))
+                pivot: fvx, fvy
+                scale: (1.2 + 0.25 * if(audio.muted, 0, volume_level)) * u / cu
+                PSpk(fvx - 10 * cu, fvy, 1, 0.9, if(audio.muted, 0, 25% + 75% * clamp(volume_level * 12, 0, 1)), if(audio.muted, 0, 20% + 80% * clamp((volume_level - 0.35) * 4, 0, 1)), if(audio.muted, 1, 0))
+            }
+        }
+        }
+        }
+    }
+}

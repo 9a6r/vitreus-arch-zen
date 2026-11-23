@@ -1,0 +1,9 @@
+vitreus-keep "$HOME/.config/pleamar/shells/vitreus/vitreus.plm" "$HOME/.local/share/pleamar/vitreus/vitreus.log"
+PLEAMAR_SWAPCHAIN=1 vitreus-keep "$HOME/.config/pleamar/shells/vitreus/lockscreen/lockscreen.plm"
+vitreus-keep "$HOME/.config/pleamar/shells/vitreus/wptrans/wptrans.plm"
+vitreus-keep "$HOME/.config/pleamar/shells/vitreus/desktopclock/desktopclock.plm"
+vitreus-keep "$HOME/.config/pleamar/shells/vitreus/desktopsysmon/desktopsysmon.plm"
+pgrep -x awww-daemon >/dev/null || awww-daemon
+/usr/local/lib/vitreus-iso/wallpaper
+pgrep -x hypridle >/dev/null || hypridle
+pgrep -x wl-paste >/dev/null || wl-paste --watch cliphist store

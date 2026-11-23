@@ -1,0 +1,1909 @@
+part BarGlass {
+    //  The whole bar, glass and all, is one group so the wave can bend it as one thing.
+    group {
+        //  Only while it does something: the Retro's pixelation, or a wave that can bend (not on the left, not with the panel half down, and while a beat or a ring is moving).
+        //  The rest of the time the group goes without its shader and its full-surface pass (pleamar 0.3.12 and later).
+        shader: wave, pv, mix(clamp(ring, 0, 1), 1, lm), mix((mc - (cx - bar.w / 2)) / bar.w, 0.5, clamp(ring_mid, 0, 1)), lf.w, 2.6 * u * (1 - min(1, drop * 2)) * (1 - lm) * (1 - sg), bar.w, pxa, lf.t + 1000 * if(fm < 0.5, 1, 0) while pxa > 1.5 or (fr_wv > 0 and fm > 0.5) or (lm < 0.999 and sg < 0.5 and drop < 0.5 and (pv > 0.001 or ring < 0.999))
+        //  With the Retro on, a barely visible box over the whole surface makes the group's box the surface, so the pixelation (wave.wgsl) knows where the opening is.
+        box { from: 0, 0; size: screen.width, screen.height; color: deep; opacity: 1.2% * max(cas_k, if(fr_wv > 0 and fm > 0.5, 0.25, 0)) }
+        // ── the liquid ───────────────────────────────────────────────
+        body {
+            color: mix(mix(tint, #000000, cy_dark * cy_k), #000000, 0.7 * glass_smoke)
+            glass: 100%
+            opacity: glass_op * (1 - obs)
+            lens: glass_bend
+            frost: glass_clear
+            refraction: glass_refr
+            dispersion: glass_disp
+            dome: glass_dome
+            milk: glass_milk
+            smoke: glass_smoke
+            tint: 22% + 45% * glass_smoke          // smoke: more of its own colour, darkened below, so it reads at the bar too
+            rim: 10% * glass_rim + 14% * pv * glass_rim
+            shine: pointer
+            shadow: 0, 1 + 6 * drop + 3 * pv, 6 + 14 * drop + 8 * pv, 8% + 16% * drop + 8% * pv, deep
+            show: (obs < 0.996 and not glass_auto) and fw_act < 0.5
+            include "bar_shapes.plm"
+        }
+        body {
+            color: mix(mix(tint, #000000, cy_dark * cy_k), #000000, 0.7 * glass_smoke)
+            glass: 100%
+            opacity: glass_op * (1 - obs)
+            lens: glass_bend
+            frost: glass_clear
+            refraction: glass_refr
+            dispersion: glass_disp
+            dome: glass_dome
+            milk: glass_milk
+            smoke: glass_smoke
+            tint: 22% + 45% * glass_smoke          // smoke: more of its own colour, darkened below, so it reads at the bar too
+            rim: 10% * glass_rim + 14% * pv * glass_rim
+            shine: pointer
+            shadow: 0, 1 + 6 * drop + 3 * pv, 6 + 14 * drop + 8 * pv, 8% + 16% * drop + 8% * pv, deep
+            show: (obs < 0.996 and not glass_auto) and fw_act > 0.5 and fw_act < 1.5
+            include "bar_shapes.plm"
+            include "bar_waves_12.plm"
+        }
+        body {
+            color: mix(mix(tint, #000000, cy_dark * cy_k), #000000, 0.7 * glass_smoke)
+            glass: 100%
+            opacity: glass_op * (1 - obs)
+            lens: glass_bend
+            frost: glass_clear
+            refraction: glass_refr
+            dispersion: glass_disp
+            dome: glass_dome
+            milk: glass_milk
+            smoke: glass_smoke
+            tint: 22% + 45% * glass_smoke          // smoke: more of its own colour, darkened below, so it reads at the bar too
+            rim: 10% * glass_rim + 14% * pv * glass_rim
+            shine: pointer
+            shadow: 0, 1 + 6 * drop + 3 * pv, 6 + 14 * drop + 8 * pv, 8% + 16% * drop + 8% * pv, deep
+            show: (obs < 0.996 and not glass_auto) and fw_act > 1.5 and fw_act < 2.5
+            include "bar_shapes.plm"
+            include "bar_waves_24.plm"
+        }
+        body {
+            color: mix(mix(tint, #000000, cy_dark * cy_k), #000000, 0.7 * glass_smoke)
+            glass: 100%
+            opacity: glass_op * (1 - obs)
+            lens: glass_bend
+            frost: glass_clear
+            refraction: glass_refr
+            dispersion: glass_disp
+            dome: glass_dome
+            milk: glass_milk
+            smoke: glass_smoke
+            tint: 22% + 45% * glass_smoke          // smoke: more of its own colour, darkened below, so it reads at the bar too
+            rim: 10% * glass_rim + 14% * pv * glass_rim
+            shine: pointer
+            shadow: 0, 1 + 6 * drop + 3 * pv, 6 + 14 * drop + 8 * pv, 8% + 16% * drop + 8% * pv, deep
+            show: (obs < 0.996 and not glass_auto) and fw_act > 2.5 and fw_act < 3.5
+            include "bar_shapes.plm"
+            include "bar_waves.plm"
+        }
+        //  The same glass with `frost: auto` (frosted only where what is behind is busy): `frost:` cannot take `auto` from an expression, so it is a body of its own.
+        body {
+            color: mix(mix(tint, #000000, cy_dark * cy_k), #000000, 0.7 * glass_smoke)
+            glass: 100%
+            opacity: glass_op * (1 - obs)
+            lens: glass_bend
+            frost: auto
+            refraction: glass_refr
+            dispersion: glass_disp
+            dome: glass_dome
+            milk: glass_milk
+            smoke: glass_smoke
+            tint: 22% + 45% * glass_smoke          // smoke: more of its own colour, darkened below, so it reads at the bar too
+            rim: 10% * glass_rim + 14% * pv * glass_rim
+            shine: pointer
+            shadow: 0, 1 + 6 * drop + 3 * pv, 6 + 14 * drop + 8 * pv, 8% + 16% * drop + 8% * pv, deep
+            show: (obs < 0.996 and glass_auto) and fw_act < 0.5
+            include "bar_shapes.plm"
+        }
+        body {
+            color: mix(mix(tint, #000000, cy_dark * cy_k), #000000, 0.7 * glass_smoke)
+            glass: 100%
+            opacity: glass_op * (1 - obs)
+            lens: glass_bend
+            frost: auto
+            refraction: glass_refr
+            dispersion: glass_disp
+            dome: glass_dome
+            milk: glass_milk
+            smoke: glass_smoke
+            tint: 22% + 45% * glass_smoke          // smoke: more of its own colour, darkened below, so it reads at the bar too
+            rim: 10% * glass_rim + 14% * pv * glass_rim
+            shine: pointer
+            shadow: 0, 1 + 6 * drop + 3 * pv, 6 + 14 * drop + 8 * pv, 8% + 16% * drop + 8% * pv, deep
+            show: (obs < 0.996 and glass_auto) and fw_act > 0.5 and fw_act < 1.5
+            include "bar_shapes.plm"
+            include "bar_waves_12.plm"
+        }
+        body {
+            color: mix(mix(tint, #000000, cy_dark * cy_k), #000000, 0.7 * glass_smoke)
+            glass: 100%
+            opacity: glass_op * (1 - obs)
+            lens: glass_bend
+            frost: auto
+            refraction: glass_refr
+            dispersion: glass_disp
+            dome: glass_dome
+            milk: glass_milk
+            smoke: glass_smoke
+            tint: 22% + 45% * glass_smoke          // smoke: more of its own colour, darkened below, so it reads at the bar too
+            rim: 10% * glass_rim + 14% * pv * glass_rim
+            shine: pointer
+            shadow: 0, 1 + 6 * drop + 3 * pv, 6 + 14 * drop + 8 * pv, 8% + 16% * drop + 8% * pv, deep
+            show: (obs < 0.996 and glass_auto) and fw_act > 1.5 and fw_act < 2.5
+            include "bar_shapes.plm"
+            include "bar_waves_24.plm"
+        }
+        body {
+            color: mix(mix(tint, #000000, cy_dark * cy_k), #000000, 0.7 * glass_smoke)
+            glass: 100%
+            opacity: glass_op * (1 - obs)
+            lens: glass_bend
+            frost: auto
+            refraction: glass_refr
+            dispersion: glass_disp
+            dome: glass_dome
+            milk: glass_milk
+            smoke: glass_smoke
+            tint: 22% + 45% * glass_smoke          // smoke: more of its own colour, darkened below, so it reads at the bar too
+            rim: 10% * glass_rim + 14% * pv * glass_rim
+            shine: pointer
+            shadow: 0, 1 + 6 * drop + 3 * pv, 6 + 14 * drop + 8 * pv, 8% + 16% * drop + 8% * pv, deep
+            show: (obs < 0.996 and glass_auto) and fw_act > 2.5 and fw_act < 3.5
+            include "bar_shapes.plm"
+            include "bar_waves.plm"
+        }
+        //  The same shapes again, as flat obsidian: a body with no rim (`rim: 0%`). (Before pleamar 0.4.14 a `rim` that was an expression
+        //  was read as its first number, so `rim: 40% * cas_k` kept 40% of light on the edge with the Cassette off; now it is worked out.)
+        //  Blur behind the obsidian: a glass body asks the compositor for it (100 % glass at 34 %: the request needs glass x opacity of 30 % or more, and a more opaque layer would hide the blur), and the obsidian over it (60 % opaque while blur is on, solid when it is off) hides the glass's look.
+        body {
+            color: obsidian
+            glass: 100%
+            lens: false
+            rim: 0%
+            refraction: 0%
+            dispersion: 0%
+            shine: 9000, 9000
+            opacity: obs * 0.34 * (1 - pk)
+            show: (obs > 0.97) and fw_act < 0.5
+            include "bar_shapes.plm"
+        }
+        body {
+            color: obsidian
+            glass: 100%
+            lens: false
+            rim: 0%
+            refraction: 0%
+            dispersion: 0%
+            shine: 9000, 9000
+            opacity: obs * 0.34 * (1 - pk)
+            show: (obs > 0.97) and fw_act > 0.5 and fw_act < 1.5
+            include "bar_shapes.plm"
+            include "bar_waves_12.plm"
+        }
+        body {
+            color: obsidian
+            glass: 100%
+            lens: false
+            rim: 0%
+            refraction: 0%
+            dispersion: 0%
+            shine: 9000, 9000
+            opacity: obs * 0.34 * (1 - pk)
+            show: (obs > 0.97) and fw_act > 1.5 and fw_act < 2.5
+            include "bar_shapes.plm"
+            include "bar_waves_24.plm"
+        }
+        body {
+            color: obsidian
+            glass: 100%
+            lens: false
+            rim: 0%
+            refraction: 0%
+            dispersion: 0%
+            shine: 9000, 9000
+            opacity: obs * 0.34 * (1 - pk)
+            show: (obs > 0.97) and fw_act > 2.5 and fw_act < 3.5
+            include "bar_shapes.plm"
+            include "bar_waves.plm"
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            opacity: obs * (1 - 0.4 * clamp(hy_blur, 0, 1))
+            shadow: 0, 3 + 6 * drop + 3 * pv, 14 + 14 * drop + 8 * pv, (30% + 16% * drop + 8% * pv) * (1 - pk), #000000
+            show: (obs > 0.004) and fw_act < 0.5
+            include "bar_shapes.plm"
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            opacity: obs * (1 - 0.4 * clamp(hy_blur, 0, 1))
+            shadow: 0, 3 + 6 * drop + 3 * pv, 14 + 14 * drop + 8 * pv, (30% + 16% * drop + 8% * pv) * (1 - pk), #000000
+            show: (obs > 0.004) and fw_act > 0.5 and fw_act < 1.5
+            include "bar_shapes.plm"
+            include "bar_waves_12.plm"
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            opacity: obs * (1 - 0.4 * clamp(hy_blur, 0, 1))
+            shadow: 0, 3 + 6 * drop + 3 * pv, 14 + 14 * drop + 8 * pv, (30% + 16% * drop + 8% * pv) * (1 - pk), #000000
+            show: (obs > 0.004) and fw_act > 1.5 and fw_act < 2.5
+            include "bar_shapes.plm"
+            include "bar_waves_24.plm"
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            opacity: obs * (1 - 0.4 * clamp(hy_blur, 0, 1))
+            shadow: 0, 3 + 6 * drop + 3 * pv, 14 + 14 * drop + 8 * pv, (30% + 16% * drop + 8% * pv) * (1 - pk), #000000
+            show: (obs > 0.004) and fw_act > 2.5 and fw_act < 3.5
+            include "bar_shapes.plm"
+            include "bar_waves.plm"
+        }
+        //  The Cassette's plastic over it (see `cas_k`): a lit lip, a dark outline, a hard shadow.
+        body {
+            color: obsidian
+            rim: 40% * cas_k
+            border: 1.7 * u * cas_k, deep
+            shadow: 4.5 * u * cas_k, 5.5 * u * cas_k, 0, 55% * cas_k, deep
+            opacity: cas_k
+            show: (cas_k > 0.004) and fw_act < 0.5
+            include "bar_shapes.plm"
+        }
+        body {
+            color: obsidian
+            rim: 40% * cas_k
+            border: 1.7 * u * cas_k, deep
+            shadow: 4.5 * u * cas_k, 5.5 * u * cas_k, 0, 55% * cas_k, deep
+            opacity: cas_k
+            show: (cas_k > 0.004) and fw_act > 0.5 and fw_act < 1.5
+            include "bar_shapes.plm"
+            include "bar_waves_12.plm"
+        }
+        body {
+            color: obsidian
+            rim: 40% * cas_k
+            border: 1.7 * u * cas_k, deep
+            shadow: 4.5 * u * cas_k, 5.5 * u * cas_k, 0, 55% * cas_k, deep
+            opacity: cas_k
+            show: (cas_k > 0.004) and fw_act > 1.5 and fw_act < 2.5
+            include "bar_shapes.plm"
+            include "bar_waves_24.plm"
+        }
+        body {
+            color: obsidian
+            rim: 40% * cas_k
+            border: 1.7 * u * cas_k, deep
+            shadow: 4.5 * u * cas_k, 5.5 * u * cas_k, 0, 55% * cas_k, deep
+            opacity: cas_k
+            show: (cas_k > 0.004) and fw_act > 2.5 and fw_act < 3.5
+            include "bar_shapes.plm"
+            include "bar_waves.plm"
+        }
+        //  The UwU's candy plastic over it: a pastel gradient across the whole screen (pink, lilac, sky, mint), a thick grape outline, a lit lip and a hard pink shadow.
+        body {
+            gradient: 0, 0 to screen.width, screen.height, #ffb3dc, #cfc4ff 38%, #aab4ff 68%, #ffd0ea
+            rim: 55% * uwu_k
+            border: 3 * u * uwu_k, deep
+            shadow: 4 * u * uwu_k, 5 * u * uwu_k, 0, 90% * uwu_k, mix(deep, #ff6ec7, 0.75)
+            opacity: uwu_k
+            show: (uwu_k > 0.004) and fw_act < 0.5
+            include "bar_shapes.plm"
+        }
+        body {
+            gradient: 0, 0 to screen.width, screen.height, #ffb3dc, #cfc4ff 38%, #aab4ff 68%, #ffd0ea
+            rim: 55% * uwu_k
+            border: 3 * u * uwu_k, deep
+            shadow: 4 * u * uwu_k, 5 * u * uwu_k, 0, 90% * uwu_k, mix(deep, #ff6ec7, 0.75)
+            opacity: uwu_k
+            show: (uwu_k > 0.004) and fw_act > 0.5 and fw_act < 1.5
+            include "bar_shapes.plm"
+            include "bar_waves_12.plm"
+        }
+        body {
+            gradient: 0, 0 to screen.width, screen.height, #ffb3dc, #cfc4ff 38%, #aab4ff 68%, #ffd0ea
+            rim: 55% * uwu_k
+            border: 3 * u * uwu_k, deep
+            shadow: 4 * u * uwu_k, 5 * u * uwu_k, 0, 90% * uwu_k, mix(deep, #ff6ec7, 0.75)
+            opacity: uwu_k
+            show: (uwu_k > 0.004) and fw_act > 1.5 and fw_act < 2.5
+            include "bar_shapes.plm"
+            include "bar_waves_24.plm"
+        }
+        body {
+            gradient: 0, 0 to screen.width, screen.height, #ffb3dc, #cfc4ff 38%, #aab4ff 68%, #ffd0ea
+            rim: 55% * uwu_k
+            border: 3 * u * uwu_k, deep
+            shadow: 4 * u * uwu_k, 5 * u * uwu_k, 0, 90% * uwu_k, mix(deep, #ff6ec7, 0.75)
+            opacity: uwu_k
+            show: (uwu_k > 0.004) and fw_act > 2.5 and fw_act < 3.5
+            include "bar_shapes.plm"
+            include "bar_waves.plm"
+        }
+        //  The Milk's body: two layers of the same pale material, one casting a white light up and to the left, the other a soft dark shade down and to the right.
+        body {
+            color: obsidian
+            rim: 0%
+            shadow: -3 * u * milk_k, -3 * u * milk_k, 8 * u * milk_k, 38% * milk_k, #ffffff
+            opacity: milk_k
+            show: (milk_k > 0.004) and fw_act < 0.5
+            include "bar_shapes.plm"
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            shadow: 3 * u * milk_k, 4 * u * milk_k, 10 * u * milk_k, 28% * milk_k, deep
+            opacity: milk_k
+            show: (milk_k > 0.004) and fw_act < 0.5
+            include "bar_shapes.plm"
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            shadow: -3 * u * milk_k, -3 * u * milk_k, 8 * u * milk_k, 38% * milk_k, #ffffff
+            opacity: milk_k
+            show: (milk_k > 0.004) and fw_act > 0.5 and fw_act < 1.5
+            include "bar_shapes.plm"
+            include "bar_waves_12.plm"
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            shadow: 3 * u * milk_k, 4 * u * milk_k, 10 * u * milk_k, 28% * milk_k, deep
+            opacity: milk_k
+            show: (milk_k > 0.004) and fw_act > 0.5 and fw_act < 1.5
+            include "bar_shapes.plm"
+            include "bar_waves_12.plm"
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            shadow: -3 * u * milk_k, -3 * u * milk_k, 8 * u * milk_k, 38% * milk_k, #ffffff
+            opacity: milk_k
+            show: (milk_k > 0.004) and fw_act > 1.5 and fw_act < 2.5
+            include "bar_shapes.plm"
+            include "bar_waves_24.plm"
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            shadow: 3 * u * milk_k, 4 * u * milk_k, 10 * u * milk_k, 28% * milk_k, deep
+            opacity: milk_k
+            show: (milk_k > 0.004) and fw_act > 1.5 and fw_act < 2.5
+            include "bar_shapes.plm"
+            include "bar_waves_24.plm"
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            shadow: -3 * u * milk_k, -3 * u * milk_k, 8 * u * milk_k, 38% * milk_k, #ffffff
+            opacity: milk_k
+            show: (milk_k > 0.004) and fw_act > 2.5 and fw_act < 3.5
+            include "bar_shapes.plm"
+            include "bar_waves.plm"
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            shadow: 3 * u * milk_k, 4 * u * milk_k, 10 * u * milk_k, 28% * milk_k, deep
+            opacity: milk_k
+            show: (milk_k > 0.004) and fw_act > 2.5 and fw_act < 3.5
+            include "bar_shapes.plm"
+            include "bar_waves.plm"
+        }
+        //  The Proxy's body: flat near-black plates with a thin pale outline and a hard offset edge in the second accent, like the HUD's own panels. Solid, so the glass is off (`obs`), as with the plastics.
+        body {
+            color: obsidian
+            rim: 0%
+            border: 1.4 * u * px_k, mix(#e8f1f5, obsidian, 0.4)
+            shadow: 2.5 * u * px_k, 3 * u * px_k, 0, 85% * px_k, deep
+            opacity: px_k
+            show: (px_k > 0.004) and fw_act < 0.5
+            include "bar_shapes.plm"
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            border: 1.4 * u * px_k, mix(#e8f1f5, obsidian, 0.4)
+            shadow: 2.5 * u * px_k, 3 * u * px_k, 0, 85% * px_k, deep
+            opacity: px_k
+            show: (px_k > 0.004) and fw_act > 0.5 and fw_act < 1.5
+            include "bar_shapes.plm"
+            include "bar_waves_12.plm"
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            border: 1.4 * u * px_k, mix(#e8f1f5, obsidian, 0.4)
+            shadow: 2.5 * u * px_k, 3 * u * px_k, 0, 85% * px_k, deep
+            opacity: px_k
+            show: (px_k > 0.004) and fw_act > 1.5 and fw_act < 2.5
+            include "bar_shapes.plm"
+            include "bar_waves_24.plm"
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            border: 1.4 * u * px_k, mix(#e8f1f5, obsidian, 0.4)
+            shadow: 2.5 * u * px_k, 3 * u * px_k, 0, 85% * px_k, deep
+            opacity: px_k
+            show: (px_k > 0.004) and fw_act > 2.5 and fw_act < 3.5
+            include "bar_shapes.plm"
+            include "bar_waves.plm"
+        }
+        //  The Paper's body: a sheet of cream paper with a worn, brownish edge and a soft shadow underneath, as if laid on the desk. Solid, so the glass is off (`obs`), as with the plastics.
+        body {
+            color: obsidian
+            rim: 0%
+            border: 1.2 * u * pp_k, mix(deep, obsidian, 0.55)
+            shadow: 1.5 * u * pp_k, 3.5 * u * pp_k, 9 * u * pp_k, 42% * pp_k, deep
+            opacity: pp_k
+            show: (pp_k > 0.004) and fw_act < 0.5
+            include "bar_shapes.plm"
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            border: 1.2 * u * pp_k, mix(deep, obsidian, 0.55)
+            shadow: 1.5 * u * pp_k, 3.5 * u * pp_k, 9 * u * pp_k, 42% * pp_k, deep
+            opacity: pp_k
+            show: (pp_k > 0.004) and fw_act > 0.5 and fw_act < 1.5
+            include "bar_shapes.plm"
+            include "bar_waves_12.plm"
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            border: 1.2 * u * pp_k, mix(deep, obsidian, 0.55)
+            shadow: 1.5 * u * pp_k, 3.5 * u * pp_k, 9 * u * pp_k, 42% * pp_k, deep
+            opacity: pp_k
+            show: (pp_k > 0.004) and fw_act > 1.5 and fw_act < 2.5
+            include "bar_shapes.plm"
+            include "bar_waves_24.plm"
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            border: 1.2 * u * pp_k, mix(deep, obsidian, 0.55)
+            shadow: 1.5 * u * pp_k, 3.5 * u * pp_k, 9 * u * pp_k, 42% * pp_k, deep
+            opacity: pp_k
+            show: (pp_k > 0.004) and fw_act > 2.5 and fw_act < 3.5
+            include "bar_shapes.plm"
+            include "bar_waves.plm"
+        }
+        //  The Doodle's body: a sheet of paper with a thin ink outline (`ink`) and a solid ink shadow off to the bottom right (the same shape again, in ink, moved), no rim. Solid, so the glass is off (`obs`).
+        group {
+            move: 3.5 * u, 3.5 * u
+            body {
+                color: ink
+                rim: 0%
+                opacity: dd_k
+                show: (dd_k > 0.004) and fw_act < 0.5
+                include "bar_shapes.plm"
+            }
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            border: 2.8 * u * dd_k, ink
+            opacity: dd_k
+            show: (dd_k > 0.004) and fw_act < 0.5
+            include "bar_shapes.plm"
+        }
+        group {
+            move: 3.5 * u, 3.5 * u
+            body {
+                color: ink
+                rim: 0%
+                opacity: dd_k
+                show: (dd_k > 0.004) and fw_act > 0.5 and fw_act < 1.5
+                include "bar_shapes.plm"
+                include "bar_waves_12.plm"
+            }
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            border: 2.8 * u * dd_k, ink
+            opacity: dd_k
+            show: (dd_k > 0.004) and fw_act > 0.5 and fw_act < 1.5
+            include "bar_shapes.plm"
+            include "bar_waves_12.plm"
+        }
+        group {
+            move: 3.5 * u, 3.5 * u
+            body {
+                color: ink
+                rim: 0%
+                opacity: dd_k
+                show: (dd_k > 0.004) and fw_act > 1.5 and fw_act < 2.5
+                include "bar_shapes.plm"
+                include "bar_waves_24.plm"
+            }
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            border: 2.8 * u * dd_k, ink
+            opacity: dd_k
+            show: (dd_k > 0.004) and fw_act > 1.5 and fw_act < 2.5
+            include "bar_shapes.plm"
+            include "bar_waves_24.plm"
+        }
+        group {
+            move: 3.5 * u, 3.5 * u
+            body {
+                color: ink
+                rim: 0%
+                opacity: dd_k
+                show: (dd_k > 0.004) and fw_act > 2.5 and fw_act < 3.5
+                include "bar_shapes.plm"
+                include "bar_waves.plm"
+            }
+        }
+        body {
+            color: obsidian
+            rim: 0%
+            border: 2.8 * u * dd_k, ink
+            opacity: dd_k
+            show: (dd_k > 0.004) and fw_act > 2.5 and fw_act < 3.5
+            include "bar_shapes.plm"
+            include "bar_waves.plm"
+        }
+        //  The Paper's torn edge, worn rim and grain on every drawer, from the first moment it opens: its box follows the drawer's own size and wobble (the same sums as its body in bar_shapes.plm), and its noise is tied to the panel's sides, so the edge opens, closes and jiggles with the panel.
+        group {
+            show: pp_k > 0.01 and dk0 > 0.004
+            opacity: pp_k
+            let pedkw = dk.ew * (1 + dj.stretch - 0.07 * dk.bell + 0.003 * wobble * (1 - sg)) * dk.tail
+            let pedkh = (dk.eh * (1 - dj.stretch * 0.5 - 0.002 * wobble * (1 - sg)) + sg.up) * dk.tail
+            let pedkl = dk.ex - pedkw / 2
+            let pedkt = dk.ey - sg.up / 2 - pedkh / 2
+            shader paper { at: pedkl - 8, pedkt - 8; size: pedkw + 16, pedkh + 16; values: 1, 1, 8, mix(min(dk.ew, dk.eh) / 2, rc, clamp(dk0 * 1.6 - 0.1, 0, 1)); colors: obsidian, deep }
+        }
+        group {
+            show: uwu_k > 0.01 and dk0 > 0.004
+            opacity: uwu_k
+            let uwhkw = dk.ew * (1 + dj.stretch - 0.07 * dk.bell + 0.003 * wobble * (1 - sg)) * dk.tail
+            let uwhkh = (dk.eh * (1 - dj.stretch * 0.5 - 0.002 * wobble * (1 - sg)) + sg.up) * dk.tail
+            let uwhkl = dk.ex - uwhkw / 2
+            let uwhkt = dk.ey - sg.up / 2 - uwhkh / 2
+            shader halftone { at: uwhkl - 8, uwhkt - 8; size: uwhkw + 16, uwhkh + 16; values: 1, 1, 8, mix(min(dk.ew, dk.eh) / 2, rc, clamp(dk0 * 1.6 - 0.1, 0, 1)); colors: mint, deep }
+        }
+        group {
+            show: pp_k > 0.01 and dc0 > 0.004
+            opacity: pp_k
+            let pedcw = dc.ew * (1 + dj.stretch - 0.07 * dc.bell + 0.003 * wobble)
+            let pedch = dc.eh * (1 - dj.stretch * 0.5 - 0.002 * wobble) + sg.up
+            let pedcl = dc.ex - pedcw / 2
+            let pedct = dc.ey - sg.up / 2 - pedch / 2
+            shader paper { at: pedcl - 8, pedct - 8; size: pedcw + 16, pedch + 16; values: 1, 4.7, 8, mix(min(dc.ew, dc.eh) / 2, rc, clamp(dc0 * 1.6 - 0.1, 0, 1)); colors: obsidian, deep }
+        }
+        group {
+            show: uwu_k > 0.01 and dc0 > 0.004
+            opacity: uwu_k
+            let uwhcw = dc.ew * (1 + dj.stretch - 0.07 * dc.bell + 0.003 * wobble)
+            let uwhch = dc.eh * (1 - dj.stretch * 0.5 - 0.002 * wobble) + sg.up
+            let uwhcl = dc.ex - uwhcw / 2
+            let uwhct = dc.ey - sg.up / 2 - uwhch / 2
+            shader halftone { at: uwhcl - 8, uwhct - 8; size: uwhcw + 16, uwhch + 16; values: 1, 4.7, 8, mix(min(dc.ew, dc.eh) / 2, rc, clamp(dc0 * 1.6 - 0.1, 0, 1)); colors: mint, deep }
+        }
+        group {
+            show: pp_k > 0.01 and ds0 > 0.004
+            opacity: pp_k
+            let pedsw = ds.ew * (1 + dj.stretch - 0.07 * ds.bell + 0.003 * wobble)
+            let pedsh = ds.eh * (1 - dj.stretch * 0.5 - 0.002 * wobble)
+            let pedsl = ds.ex - pedsw / 2
+            let pedst = ds.ey - pedsh / 2
+            shader paper { at: pedsl - 8, pedst - 8; size: pedsw + 16, pedsh + 16; values: 1, 8.4, 8, mix(min(ds.ew, ds.eh) / 2, rc, clamp(ds0 * 1.6 - 0.1, 0, 1)); colors: obsidian, deep }
+        }
+        group {
+            show: uwu_k > 0.01 and ds0 > 0.004
+            opacity: uwu_k
+            let uwhsw = ds.ew * (1 + dj.stretch - 0.07 * ds.bell + 0.003 * wobble)
+            let uwhsh = ds.eh * (1 - dj.stretch * 0.5 - 0.002 * wobble)
+            let uwhsl = ds.ex - uwhsw / 2
+            let uwhst = ds.ey - uwhsh / 2
+            shader halftone { at: uwhsl - 8, uwhst - 8; size: uwhsw + 16, uwhsh + 16; values: 1, 8.4, 8, mix(min(ds.ew, ds.eh) / 2, rc, clamp(ds0 * 1.6 - 0.1, 0, 1)); colors: mint, deep }
+        }
+        group {
+            show: pp_k > 0.01 and dl0 > 0.004
+            opacity: pp_k
+            let pedlw = dl.ew * (1 + dj.stretch - 0.07 * dl.bell + 0.003 * wobble)
+            let pedlh = dl.eh * (1 - dj.stretch * 0.5 - 0.002 * wobble)
+            let pedll = dl.ex - pedlw / 2
+            let pedlt = dl.ey - pedlh / 2
+            shader paper { at: pedll - 8, pedlt - 8; size: pedlw + 16, pedlh + 16; values: 1, 12.1, 8, mix(min(dl.ew, dl.eh) / 2, rc, clamp(dl0 * 1.6 - 0.1, 0, 1)); colors: obsidian, deep }
+        }
+        group {
+            show: uwu_k > 0.01 and dl0 > 0.004
+            opacity: uwu_k
+            let uwhlw = dl.ew * (1 + dj.stretch - 0.07 * dl.bell + 0.003 * wobble)
+            let uwhlh = dl.eh * (1 - dj.stretch * 0.5 - 0.002 * wobble)
+            let uwhll = dl.ex - uwhlw / 2
+            let uwhlt = dl.ey - uwhlh / 2
+            shader halftone { at: uwhll - 8, uwhlt - 8; size: uwhlw + 16, uwhlh + 16; values: 1, 12.1, 8, mix(min(dl.ew, dl.eh) / 2, rc, clamp(dl0 * 1.6 - 0.1, 0, 1)); colors: mint, deep }
+        }
+        group {
+            show: pp_k > 0.01 and dm0 > 0.004
+            opacity: pp_k
+            let pedmw = dm.ew * (1 + dj.stretch - 0.07 * dm.bell + 0.003 * wobble)
+            let pedmh = dm.eh * (1 - dj.stretch * 0.5 - 0.002 * wobble) + sg.up
+            let pedml = dm.ex - pedmw / 2
+            let pedmt = dm.ey - sg.up / 2 - pedmh / 2
+            shader paper { at: pedml - 8, pedmt - 8; size: pedmw + 16, pedmh + 16; values: 1, 15.8, 8, mix(min(dm.ew, dm.eh) / 2, rc, clamp(dm0 * 1.6 - 0.1, 0, 1)); colors: obsidian, deep }
+        }
+        group {
+            show: uwu_k > 0.01 and dm0 > 0.004
+            opacity: uwu_k
+            let uwhmw = dm.ew * (1 + dj.stretch - 0.07 * dm.bell + 0.003 * wobble)
+            let uwhmh = dm.eh * (1 - dj.stretch * 0.5 - 0.002 * wobble) + sg.up
+            let uwhml = dm.ex - uwhmw / 2
+            let uwhmt = dm.ey - sg.up / 2 - uwhmh / 2
+            shader halftone { at: uwhml - 8, uwhmt - 8; size: uwhmw + 16, uwhmh + 16; values: 1, 15.8, 8, mix(min(dm.ew, dm.eh) / 2, rc, clamp(dm0 * 1.6 - 0.1, 0, 1)); colors: mint, deep }
+        }
+        group {
+            show: pp_k > 0.01 and dz0 > 0.004
+            opacity: pp_k
+            let pedzw = dz.fw * (1 + dz.stretch - 0.07 * dz.bell)
+            let pedzh = dz.fh * (1 - dz.stretch * 0.5)
+            let pedzl = dz.fx - pedzw / 2
+            let pedzt = dz.fcy - pedzh / 2
+            shader paper { at: pedzl - 8, pedzt - 8; size: pedzw + 16, pedzh + 16; values: 1, 19.5, 8, mix(min(dz.fw, dz.fh) / 2, 26 * u * desk_s * (1 - 0.73 * sq), clamp(dz0 * 1.6 - 0.1, 0, 1)); colors: obsidian, deep }
+        }
+        group {
+            show: uwu_k > 0.01 and dz0 > 0.004
+            opacity: uwu_k
+            let uwhzw = dz.fw * (1 + dz.stretch - 0.07 * dz.bell)
+            let uwhzh = dz.fh * (1 - dz.stretch * 0.5)
+            let uwhzl = dz.fx - uwhzw / 2
+            let uwhzt = dz.fcy - uwhzh / 2
+            shader halftone { at: uwhzl - 8, uwhzt - 8; size: uwhzw + 16, uwhzh + 16; values: 1, 19.5, 8, mix(min(dz.fw, dz.fh) / 2, 26 * u * desk_s * (1 - 0.73 * sq), clamp(dz0 * 1.6 - 0.1, 0, 1)); colors: mint, deep }
+        }
+        //  The Paper's torn edge on the shell's notches and on the two docks (the app dock and the add-on dock), so they are worn like the drawers. The side that is buried in the frame
+        //  is kept clean (the 100s in the seed are a mask of the sides, see paper.wgsl), so the tear only runs on the part that shows.
+        //  The top frame in three pieces (see `sg.*`): the same torn edge on each piece. Its top (and the end that runs off the screen) is buried in the thin frame, so those sides are kept clean.
+        group {
+            show: pp_k > 0.01 and sg > 0.35
+            opacity: pp_k * clamp(sg * 3 - 1, 0, 1)
+            shader paper { at: -14 - 8, yo - 14 - 8; size: sg.lr + 14 + 16, sg.hc + 14 + 16; values: 1, 503.1, 8, (sg.hc + sg.r) * 0.34 * (1 - 0.73 * sq); colors: obsidian, deep }
+            shader paper { at: sg.q0 - 8, yo - 14 - 8; size: sg.q1 - sg.q0 + 16, sg.hc + 14 + 16; values: 1, 410.6, 8, (sg.hc + sg.r) * 0.34 * (1 - 0.73 * sq); colors: obsidian, deep }
+            shader paper { at: sg.rq - 8, yo - 14 - 8; size: screen.width + 14 - sg.rq + 16, sg.hc + 14 + 16; values: 1, 607.9, 8, (sg.hc + sg.r) * 0.34 * (1 - 0.73 * sq); colors: obsidian, deep }
+        }
+        group {
+            show: pp_k > 0.01 and tm > 0.35 and nt_vis_l.$screen > 0.02
+            opacity: pp_k * clamp(nt_vis_l.$screen * 3, 0, 1)
+            shader paper { at: th.l - 22 - 8, vcc - nt_w / 2 - 8; size: 22 + nt_d * nt_vis_l.$screen + 16, nt_w + 16; values: 1, 101.5, 8, 9 * cu * (1 - 0.73 * sq); colors: obsidian, deep }
+        }
+        group {
+            show: pp_k > 0.01 and lm > 0.35 and sb > 0.5 and nt_vis_t.$screen > 0.02
+            opacity: pp_k * clamp(nt_vis_t.$screen * 3, 0, 1)
+            shader paper { at: ccx - nt_w / 2 - 8, yo + lf.t - 22 - 8; size: nt_w + 16, 22 + nt_d * nt_vis_t.$screen + 16; values: 1, 405.9, 8, 9 * cu * (1 - 0.73 * sq); colors: obsidian, deep }
+        }
+        group {
+            show: pp_k > 0.01 and fm > 0.35 and sb > 0.5 and nt_vis_b.$screen > 0.02
+            opacity: pp_k * clamp(nt_vis_b.$screen * 3, 0, 1)
+            shader paper { at: ccx - nt_w / 2 - 8, vb - th.b - nt_d * nt_vis_b.$screen - 8; size: nt_w + 16, 22 + nt_d * nt_vis_b.$screen + 16; values: 1, 810.3, 8, 9 * cu * (1 - 0.73 * sq); colors: obsidian, deep }
+        }
+        group {
+            show: pp_k > 0.01 and fm > 0.35 and sb > 0.5 and nt_vis_r.$screen > 0.02
+            opacity: pp_k * clamp(nt_vis_r.$screen * 3, 0, 1)
+            shader paper { at: screen.width - th.r - nt_d * nt_vis_r.$screen - 8, vcc - nt_w / 2 - 8; size: 22 + nt_d * nt_vis_r.$screen + 16, nt_w + 16; values: 1, 214.7, 8, 9 * cu * (1 - 0.73 * sq); colors: obsidian, deep }
+        }
+        group {
+            show: pp_k > 0.01 and cdk.g > 0.02
+            opacity: pp_k * clamp(cdk.g * 3, 0, 1)
+            let ppcdm = if(pick(screen.index, cdk_ax.0, cdk_ax.1) < -0.5, 1, 0) + 2 * if(pick(screen.index, cdk_ax.0, cdk_ax.1) > 0.5, 1, 0) + 4 * if(pick(screen.index, cdk_ay.0, cdk_ay.1) < -0.5, 1, 0) + 8 * if(pick(screen.index, cdk_ay.0, cdk_ay.1) > 0.5, 1, 0)
+            shader paper { at: cdk.bx - max(0.3, cdk.bw) / 2 - 8, cdk.by - max(0.3, cdk.bh) / 2 - 8; size: max(0.3, cdk.bw) + 16, max(0.3, cdk.bh) + 16; values: 1, 6.2 + 100 * ppcdm, 8, cdk.cr; colors: obsidian, deep }
+        }
+        group {
+            show: pp_k > 0.01 and adk.g > 0.02
+            opacity: pp_k * clamp(adk.g * 3, 0, 1)
+            let ppadm = if(pick(screen.index, adk_ax.0, adk_ax.1) < -0.5, 1, 0) + 2 * if(pick(screen.index, adk_ax.0, adk_ax.1) > 0.5, 1, 0) + 4 * if(pick(screen.index, adk_ay.0, adk_ay.1) < -0.5, 1, 0) + 8 * if(pick(screen.index, adk_ay.0, adk_ay.1) > 0.5, 1, 0)
+            shader paper { at: adk.bx - max(0.3, adk.bw) / 2 - 8, adk.by - max(0.3, adk.bh) / 2 - 8; size: max(0.3, adk.bw) + 16, max(0.3, adk.bh) + 16; values: 1, 17.4 + 100 * ppadm, 8, cdk.cr; colors: obsidian, deep }
+        }
+        //  The Paper's worn sheet and tape on every drawer that is out: the shader rubs the edges and speckles the cream, and two strips of washi tape hold it down by its top corners.
+        group {
+            show: pp_k > 0.01 and dk0 > 0.9
+            opacity: pp_k * clamp(dk0 * 3 - 2, 0, 1)
+            let ppdkl = dk.ex - dk.ew / 2
+            let ppdkr = dk.ex + dk.ew / 2
+            let ppdkt = dk.ey - dk.eh / 2
+            let ppdkb = min(dk.ey + dk.eh / 2, vb - lf.t - 1)
+            box { at: ppdkl + 30 * u, ppdkt - 2; size: 60 * u, 19; rotate: -11deg; color: #e9dba8; opacity: 86% }
+            box { at: ppdkl + 30 * u, ppdkt - 2; size: 60 * u, 19; rotate: -11deg; stroke: 1; color: deep; opacity: 22% }
+            line { from: ppdkl + 30 * u - 30 * u, ppdkt - 2 - 4; to: ppdkl + 30 * u + 30 * u, ppdkt - 2 - 4; width: 1.2; color: #ffffff; opacity: 30%; rotate: -11deg }
+            box { at: ppdkr - 58 * u, ppdkt + 4; size: 70 * u, 19; rotate: 3deg; color: #c9d8ec; opacity: 86% }
+            box { at: ppdkr - 58 * u, ppdkt + 4; size: 70 * u, 19; rotate: 3deg; stroke: 1; color: deep; opacity: 22% }
+            line { from: ppdkr - 58 * u - 35 * u, ppdkt + 4 - 4; to: ppdkr - 58 * u + 35 * u, ppdkt + 4 - 4; width: 1.2; color: #ffffff; opacity: 30%; rotate: 3deg }
+        }
+        group {
+            show: pp_k > 0.01 and dc0 > 0.9
+            opacity: pp_k * clamp(dc0 * 3 - 2, 0, 1)
+            let ppdcl = dc.ex - dc.ew / 2
+            let ppdcr = dc.ex + dc.ew / 2
+            let ppdct = dc.ey - dc.eh / 2
+            let ppdcb = min(dc.ey + dc.eh / 2, vb - lf.t - 1)
+            box { at: ppdcl + 64 * u, ppdct + 5; size: 58 * u, 19; rotate: -3deg; color: #e8b9b4; opacity: 86% }
+            box { at: ppdcl + 64 * u, ppdct + 5; size: 58 * u, 19; rotate: -3deg; stroke: 1; color: deep; opacity: 22% }
+            line { from: ppdcl + 64 * u - 29 * u, ppdct + 5 - 4; to: ppdcl + 64 * u + 29 * u, ppdct + 5 - 4; width: 1.2; color: #ffffff; opacity: 30%; rotate: -3deg }
+            box { at: ppdcr - 24 * u, ppdct - 3; size: 64 * u, 19; rotate: 8deg; color: #cfe0bf; opacity: 86% }
+            box { at: ppdcr - 24 * u, ppdct - 3; size: 64 * u, 19; rotate: 8deg; stroke: 1; color: deep; opacity: 22% }
+            line { from: ppdcr - 24 * u - 32 * u, ppdct - 3 - 4; to: ppdcr - 24 * u + 32 * u, ppdct - 3 - 4; width: 1.2; color: #ffffff; opacity: 30%; rotate: 8deg }
+        }
+        group {
+            show: pp_k > 0.01 and ds0 > 0.9
+            opacity: pp_k * clamp(ds0 * 3 - 2, 0, 1)
+            let ppdsl = ds.ex - ds.ew / 2
+            let ppdsr = ds.ex + ds.ew / 2
+            let ppdst = ds.ey - ds.eh / 2
+            let ppdsb = min(ds.ey + ds.eh / 2, vb - lf.t - 1)
+            box { at: ppdsl + 18 * u, ppdst + 2; size: 72 * u, 19; rotate: -8deg; color: #e9dba8; opacity: 86% }
+            box { at: ppdsl + 18 * u, ppdst + 2; size: 72 * u, 19; rotate: -8deg; stroke: 1; color: deep; opacity: 22% }
+            line { from: ppdsl + 18 * u - 36 * u, ppdst + 2 - 4; to: ppdsl + 18 * u + 36 * u, ppdst + 2 - 4; width: 1.2; color: #ffffff; opacity: 30%; rotate: -8deg }
+            box { at: ppdsr - 70 * u, ppdst + 6; size: 56 * u, 19; rotate: -2deg; color: #d9c6e6; opacity: 86% }
+            box { at: ppdsr - 70 * u, ppdst + 6; size: 56 * u, 19; rotate: -2deg; stroke: 1; color: deep; opacity: 22% }
+            line { from: ppdsr - 70 * u - 28 * u, ppdst + 6 - 4; to: ppdsr - 70 * u + 28 * u, ppdst + 6 - 4; width: 1.2; color: #ffffff; opacity: 30%; rotate: -2deg }
+        }
+        group {
+            show: pp_k > 0.01 and dl0 > 0.9
+            opacity: pp_k * clamp(dl0 * 3 - 2, 0, 1)
+            let ppdll = dl.ex - dl.ew / 2
+            let ppdlr = dl.ex + dl.ew / 2
+            let ppdlt = dl.ey - dl.eh / 2
+            let ppdlb = min(dl.ey + dl.eh / 2, vb - lf.t - 1)
+            box { at: ppdll + 52 * u, ppdlt - 1; size: 64 * u, 19; rotate: 6deg; color: #c9d8ec; opacity: 86% }
+            box { at: ppdll + 52 * u, ppdlt - 1; size: 64 * u, 19; rotate: 6deg; stroke: 1; color: deep; opacity: 22% }
+            line { from: ppdll + 52 * u - 32 * u, ppdlt - 1 - 4; to: ppdll + 52 * u + 32 * u, ppdlt - 1 - 4; width: 1.2; color: #ffffff; opacity: 30%; rotate: 6deg }
+            box { at: ppdlr - 34 * u, ppdlb - 14 - 6; size: 62 * u, 19; rotate: -6deg; color: #e9dba8; opacity: 86% }
+            box { at: ppdlr - 34 * u, ppdlb - 14 - 6; size: 62 * u, 19; rotate: -6deg; stroke: 1; color: deep; opacity: 22% }
+            line { from: ppdlr - 34 * u - 31 * u, ppdlb - 14 - 6 - 4; to: ppdlr - 34 * u + 31 * u, ppdlb - 14 - 6 - 4; width: 1.2; color: #ffffff; opacity: 30%; rotate: -6deg }
+        }
+        group {
+            show: pp_k > 0.01 and dm0 > 0.9
+            opacity: pp_k * clamp(dm0 * 3 - 2, 0, 1)
+            let ppdml = dm.ex - dm.ew / 2
+            let ppdmr = dm.ex + dm.ew / 2
+            let ppdmt = dm.ey - dm.eh / 2
+            let ppdmb = min(dm.ey + dm.eh / 2, vb - lf.t - 1)
+            box { at: ppdml + 40 * u, ppdmt + 6; size: 56 * u, 19; rotate: -14deg; color: #cfe0bf; opacity: 86% }
+            box { at: ppdml + 40 * u, ppdmt + 6; size: 56 * u, 19; rotate: -14deg; stroke: 1; color: deep; opacity: 22% }
+            line { from: ppdml + 40 * u - 28 * u, ppdmt + 6 - 4; to: ppdml + 40 * u + 28 * u, ppdmt + 6 - 4; width: 1.2; color: #ffffff; opacity: 30%; rotate: -14deg }
+            box { at: ppdmr - 46 * u, ppdmt - 2; size: 70 * u, 19; rotate: 5deg; color: #e8b9b4; opacity: 86% }
+            box { at: ppdmr - 46 * u, ppdmt - 2; size: 70 * u, 19; rotate: 5deg; stroke: 1; color: deep; opacity: 22% }
+            line { from: ppdmr - 46 * u - 35 * u, ppdmt - 2 - 4; to: ppdmr - 46 * u + 35 * u, ppdmt - 2 - 4; width: 1.2; color: #ffffff; opacity: 30%; rotate: 5deg }
+        }
+        group {
+            show: pp_k > 0.01 and dz0 > 0.9
+            opacity: pp_k * clamp(dz0 * 3 - 2, 0, 1)
+            let ppdzl = dz.fx - dz.fw / 2
+            let ppdzr = dz.fx + dz.fw / 2
+            let ppdzt = dz.fcy - dz.fh / 2
+            let ppdzb = min(dz.fcy + dz.fh / 2, vb - lf.t - 1)
+            box { at: ppdzl + 28 * u, ppdzb - 14 - 4; size: 66 * u, 19; rotate: 7deg; color: #d9c6e6; opacity: 86% }
+            box { at: ppdzl + 28 * u, ppdzb - 14 - 4; size: 66 * u, 19; rotate: 7deg; stroke: 1; color: deep; opacity: 22% }
+            line { from: ppdzl + 28 * u - 33 * u, ppdzb - 14 - 4 - 4; to: ppdzl + 28 * u + 33 * u, ppdzb - 14 - 4 - 4; width: 1.2; color: #ffffff; opacity: 30%; rotate: 7deg }
+            box { at: ppdzr - 62 * u, ppdzt + 3; size: 60 * u, 19; rotate: -4deg; color: #c9d8ec; opacity: 86% }
+            box { at: ppdzr - 62 * u, ppdzt + 3; size: 60 * u, 19; rotate: -4deg; stroke: 1; color: deep; opacity: 22% }
+            line { from: ppdzr - 62 * u - 30 * u, ppdzt + 3 - 4; to: ppdzr - 62 * u + 30 * u, ppdzt + 3 - 4; width: 1.2; color: #ffffff; opacity: 30%; rotate: -4deg }
+        }
+        //  The Cassette's detail on each drawer, only while it is plastic and the drawer is out: an accent-coloured tab at the top left (opposite the grips) (a console's button), a row of straight vertical grip slots in the bottom right
+        //  corner (like the vents of a handheld: dark, with a lit edge) that run a few pixels past the drawer's bottom edge as if they wrapped round the base, and a screw in the bottom left.
+        //  Inside the drawer they stay in its margin, so they never touch what it holds.
+        group {
+            show: cas_k > 0.01 and dk0 > 0.9
+            opacity: cas_k * clamp(dk0 * 3 - 2, 0, 1)
+            let gdk.l = dk.ex - dk.ew / 2
+            let gdk.r = dk.ex + dk.ew / 2
+            let gdk.t = dk.ey - dk.eh / 2
+            let gdk.b = min(dk.ey + dk.eh / 2, vb - lf.t - 1)
+            box { at: gdk.l + 58.5 * u + 2, gdk.t + 9 + 3; size: 58 * u, 24; corner: 5; color: deep; opacity: 38% }
+            box { at: gdk.l + 58.5 * u, gdk.t + 9; size: 58 * u, 24; corner: 5; color: mintlo }
+            box { at: gdk.l + 58.5 * u, gdk.t + 9 - 2.5; size: 58 * u, 24 - 5; corner: 5; color: mint }
+            line { from: gdk.l + 58.5 * u - 24 * u, gdk.t + 9 - 2.5 - (24 - 5) / 2 + 4; to: gdk.l + 58.5 * u + 24 * u, gdk.t + 9 - 2.5 - (24 - 5) / 2 + 4; width: 2.2; color: minthi; opacity: 70% }
+            box { at: gdk.l + 58.5 * u, gdk.t + 9; size: 58 * u, 24; corner: 5; stroke: 1.4; color: deep }
+            repeat k in 0..8 {
+                line { from: gdk.r - 20 * u - k * 11 * u, gdk.b + 4; to: gdk.r - 20 * u - k * 11 * u, gdk.b - 18; width: 6; color: mix(deep, #ffffff, 6%) }
+                line { from: gdk.r - 20 * u - k * 11 * u + 3.6, gdk.b + 4; to: gdk.r - 20 * u - k * 11 * u + 3.6, gdk.b - 18; width: 1.2; color: #ffffff; opacity: 45% }
+            }
+            ellipse { at: gdk.l + 12, gdk.b - 12; radius: 3.6; color: mix(deep, #ffffff, 38%) }
+            ellipse { at: gdk.l + 12, gdk.b - 12; radius: 3.6; stroke: 1.1; color: deep }
+            line { from: gdk.l + 10, gdk.b - 10; to: gdk.l + 14, gdk.b - 14; width: 1.3; color: deep }
+        }
+        group {
+            show: cas_k > 0.01 and dc0 > 0.9
+            opacity: cas_k * clamp(dc0 * 3 - 2, 0, 1)
+            let gdc.l = dc.ex - dc.ew / 2
+            let gdc.r = dc.ex + dc.ew / 2
+            let gdc.t = dc.ey - dc.eh / 2
+            let gdc.b = min(dc.ey + dc.eh / 2, vb - lf.t - 1)
+            box { at: gdc.l + 58.5 * u + 2, gdc.t + 9 + 3; size: 58 * u, 24; corner: 5; color: deep; opacity: 38% }
+            box { at: gdc.l + 58.5 * u, gdc.t + 9; size: 58 * u, 24; corner: 5; color: mintlo }
+            box { at: gdc.l + 58.5 * u, gdc.t + 9 - 2.5; size: 58 * u, 24 - 5; corner: 5; color: mint }
+            line { from: gdc.l + 58.5 * u - 24 * u, gdc.t + 9 - 2.5 - (24 - 5) / 2 + 4; to: gdc.l + 58.5 * u + 24 * u, gdc.t + 9 - 2.5 - (24 - 5) / 2 + 4; width: 2.2; color: minthi; opacity: 70% }
+            box { at: gdc.l + 58.5 * u, gdc.t + 9; size: 58 * u, 24; corner: 5; stroke: 1.4; color: deep }
+            repeat k in 0..8 {
+                line { from: gdc.r - 20 * u - k * 11 * u, gdc.b + 4; to: gdc.r - 20 * u - k * 11 * u, gdc.b - 18; width: 6; color: mix(deep, #ffffff, 6%) }
+                line { from: gdc.r - 20 * u - k * 11 * u + 3.6, gdc.b + 4; to: gdc.r - 20 * u - k * 11 * u + 3.6, gdc.b - 18; width: 1.2; color: #ffffff; opacity: 45% }
+            }
+            ellipse { at: gdc.l + 12, gdc.b - 12; radius: 3.6; color: mix(deep, #ffffff, 38%) }
+            ellipse { at: gdc.l + 12, gdc.b - 12; radius: 3.6; stroke: 1.1; color: deep }
+            line { from: gdc.l + 10, gdc.b - 10; to: gdc.l + 14, gdc.b - 14; width: 1.3; color: deep }
+        }
+        group {
+            show: cas_k > 0.01 and ds0 > 0.9
+            opacity: cas_k * clamp(ds0 * 3 - 2, 0, 1)
+            let gds.l = ds.ex - ds.ew / 2
+            let gds.r = ds.ex + ds.ew / 2
+            let gds.t = ds.ey - ds.eh / 2
+            let gds.b = min(ds.ey + ds.eh / 2, vb - lf.t - 1)
+            box { at: gds.l + 58.5 * u + 2, gds.t + 9 + 3; size: 58 * u, 24; corner: 5; color: deep; opacity: 38% }
+            box { at: gds.l + 58.5 * u, gds.t + 9; size: 58 * u, 24; corner: 5; color: mintlo }
+            box { at: gds.l + 58.5 * u, gds.t + 9 - 2.5; size: 58 * u, 24 - 5; corner: 5; color: mint }
+            line { from: gds.l + 58.5 * u - 24 * u, gds.t + 9 - 2.5 - (24 - 5) / 2 + 4; to: gds.l + 58.5 * u + 24 * u, gds.t + 9 - 2.5 - (24 - 5) / 2 + 4; width: 2.2; color: minthi; opacity: 70% }
+            box { at: gds.l + 58.5 * u, gds.t + 9; size: 58 * u, 24; corner: 5; stroke: 1.4; color: deep }
+            repeat k in 0..8 {
+                line { from: gds.r - 20 * u - k * 11 * u, gds.b + 4; to: gds.r - 20 * u - k * 11 * u, gds.b - 18; width: 6; color: mix(deep, #ffffff, 6%) }
+                line { from: gds.r - 20 * u - k * 11 * u + 3.6, gds.b + 4; to: gds.r - 20 * u - k * 11 * u + 3.6, gds.b - 18; width: 1.2; color: #ffffff; opacity: 45% }
+            }
+            ellipse { at: gds.l + 12, gds.b - 12; radius: 3.6; color: mix(deep, #ffffff, 38%) }
+            ellipse { at: gds.l + 12, gds.b - 12; radius: 3.6; stroke: 1.1; color: deep }
+            line { from: gds.l + 10, gds.b - 10; to: gds.l + 14, gds.b - 14; width: 1.3; color: deep }
+        }
+        group {
+            show: cas_k > 0.01 and dl0 > 0.9
+            opacity: cas_k * clamp(dl0 * 3 - 2, 0, 1)
+            let gdl.l = dl.ex - dl.ew / 2
+            let gdl.r = dl.ex + dl.ew / 2
+            let gdl.t = dl.ey - dl.eh / 2
+            let gdl.b = min(dl.ey + dl.eh / 2, vb - lf.t - 1)
+            box { at: gdl.l + 58.5 * u + 2, gdl.t + 9 + 3; size: 58 * u, 24; corner: 5; color: deep; opacity: 38% }
+            box { at: gdl.l + 58.5 * u, gdl.t + 9; size: 58 * u, 24; corner: 5; color: mintlo }
+            box { at: gdl.l + 58.5 * u, gdl.t + 9 - 2.5; size: 58 * u, 24 - 5; corner: 5; color: mint }
+            line { from: gdl.l + 58.5 * u - 24 * u, gdl.t + 9 - 2.5 - (24 - 5) / 2 + 4; to: gdl.l + 58.5 * u + 24 * u, gdl.t + 9 - 2.5 - (24 - 5) / 2 + 4; width: 2.2; color: minthi; opacity: 70% }
+            box { at: gdl.l + 58.5 * u, gdl.t + 9; size: 58 * u, 24; corner: 5; stroke: 1.4; color: deep }
+            repeat k in 0..8 {
+                line { from: gdl.r - 20 * u - k * 11 * u, gdl.b + 4; to: gdl.r - 20 * u - k * 11 * u, gdl.b - 18; width: 6; color: mix(deep, #ffffff, 6%) }
+                line { from: gdl.r - 20 * u - k * 11 * u + 3.6, gdl.b + 4; to: gdl.r - 20 * u - k * 11 * u + 3.6, gdl.b - 18; width: 1.2; color: #ffffff; opacity: 45% }
+            }
+            ellipse { at: gdl.l + 12, gdl.b - 12; radius: 3.6; color: mix(deep, #ffffff, 38%) }
+            ellipse { at: gdl.l + 12, gdl.b - 12; radius: 3.6; stroke: 1.1; color: deep }
+            line { from: gdl.l + 10, gdl.b - 10; to: gdl.l + 14, gdl.b - 14; width: 1.3; color: deep }
+        }
+        group {
+            show: cas_k > 0.01 and dm0 > 0.9
+            opacity: cas_k * clamp(dm0 * 3 - 2, 0, 1)
+            let gdm.l = dm.ex - dm.ew / 2
+            let gdm.r = dm.ex + dm.ew / 2
+            let gdm.t = dm.ey - dm.eh / 2
+            let gdm.b = min(dm.ey + dm.eh / 2, vb - lf.t - 1)
+            box { at: gdm.l + 58.5 * u + 2, gdm.t + 9 + 3; size: 58 * u, 24; corner: 5; color: deep; opacity: 38% }
+            box { at: gdm.l + 58.5 * u, gdm.t + 9; size: 58 * u, 24; corner: 5; color: mintlo }
+            box { at: gdm.l + 58.5 * u, gdm.t + 9 - 2.5; size: 58 * u, 24 - 5; corner: 5; color: mint }
+            line { from: gdm.l + 58.5 * u - 24 * u, gdm.t + 9 - 2.5 - (24 - 5) / 2 + 4; to: gdm.l + 58.5 * u + 24 * u, gdm.t + 9 - 2.5 - (24 - 5) / 2 + 4; width: 2.2; color: minthi; opacity: 70% }
+            box { at: gdm.l + 58.5 * u, gdm.t + 9; size: 58 * u, 24; corner: 5; stroke: 1.4; color: deep }
+            repeat k in 0..8 {
+                line { from: gdm.r - 20 * u - k * 11 * u, gdm.b + 4; to: gdm.r - 20 * u - k * 11 * u, gdm.b - 18; width: 6; color: mix(deep, #ffffff, 6%) }
+                line { from: gdm.r - 20 * u - k * 11 * u + 3.6, gdm.b + 4; to: gdm.r - 20 * u - k * 11 * u + 3.6, gdm.b - 18; width: 1.2; color: #ffffff; opacity: 45% }
+            }
+            ellipse { at: gdm.l + 12, gdm.b - 12; radius: 3.6; color: mix(deep, #ffffff, 38%) }
+            ellipse { at: gdm.l + 12, gdm.b - 12; radius: 3.6; stroke: 1.1; color: deep }
+            line { from: gdm.l + 10, gdm.b - 10; to: gdm.l + 14, gdm.b - 14; width: 1.3; color: deep }
+        }
+        group {
+            show: cas_k > 0.01 and dz0 > 0.9
+            opacity: cas_k * clamp(dz0 * 3 - 2, 0, 1)
+            let gdz.l = dz.fx - dz.fw / 2
+            let gdz.r = dz.fx + dz.fw / 2
+            let gdz.t = dz.fcy - dz.fh / 2
+            let gdz.b = min(dz.fcy + dz.fh / 2, vb - lf.t - 1)
+            box { at: gdz.l + 58.5 * u + 2, gdz.t + 9 + 3; size: 58 * u, 24; corner: 5; color: deep; opacity: 38% }
+            box { at: gdz.l + 58.5 * u, gdz.t + 9; size: 58 * u, 24; corner: 5; color: mintlo }
+            box { at: gdz.l + 58.5 * u, gdz.t + 9 - 2.5; size: 58 * u, 24 - 5; corner: 5; color: mint }
+            line { from: gdz.l + 58.5 * u - 24 * u, gdz.t + 9 - 2.5 - (24 - 5) / 2 + 4; to: gdz.l + 58.5 * u + 24 * u, gdz.t + 9 - 2.5 - (24 - 5) / 2 + 4; width: 2.2; color: minthi; opacity: 70% }
+            box { at: gdz.l + 58.5 * u, gdz.t + 9; size: 58 * u, 24; corner: 5; stroke: 1.4; color: deep }
+            repeat k in 0..8 {
+                line { from: gdz.r - 20 * u - k * 11 * u, gdz.b + 4; to: gdz.r - 20 * u - k * 11 * u, gdz.b - 18; width: 6; color: mix(deep, #ffffff, 6%) }
+                line { from: gdz.r - 20 * u - k * 11 * u + 3.6, gdz.b + 4; to: gdz.r - 20 * u - k * 11 * u + 3.6, gdz.b - 18; width: 1.2; color: #ffffff; opacity: 45% }
+            }
+            ellipse { at: gdz.l + 12, gdz.b - 12; radius: 3.6; color: mix(deep, #ffffff, 38%) }
+            ellipse { at: gdz.l + 12, gdz.b - 12; radius: 3.6; stroke: 1.1; color: deep }
+            line { from: gdz.l + 10, gdz.b - 10; to: gdz.l + 14, gdz.b - 14; width: 1.3; color: deep }
+        }
+        //  The Proxy's slanted plates, as ordinary paths and not shapes on the glass (the Proxy is solid, so nothing needs the glass blend; as glass shapes they sat in every copy of
+        //  bar_shapes.plm and cost frame time with the theme off). Painted in three passes so that overlapping plates melt as the glass did: every hard offset shadow, then every outline
+        //  (twice the width), then every fill over them, which hides the outlines inside another plate and the inner half of the rest.
+        group { show: px_k > 0.01 and dk0 > 0.004; opacity: 85% * px_k * clamp((dk0 - 0.004) * 4, 0, 1); move: 2.5 * u, 3 * u
+            path { at: dk.ex + if(px_k > 0.5 and (dk0 > 0.004), 0, 30000), dk.ey - sg.up / 2; color: deep; move pxk_drawer_r - pxk_drawer_w / 2 + pxk_drawer_sk / 2, 0 - pxk_drawer_h / 2; line pxk_drawer_w / 2 - pxk_drawer_r + pxk_drawer_sk / 2, 0 - pxk_drawer_h / 2; curve pxk_drawer_w / 2 + pxk_drawer_sk / 2 - pxk_drawer_r * pxk_drawer_sk / pxk_drawer_l, pxk_drawer_r * pxk_drawer_h / pxk_drawer_l - pxk_drawer_h / 2 via pxk_drawer_w / 2 + pxk_drawer_sk / 2, 0 - pxk_drawer_h / 2; line pxk_drawer_w / 2 - pxk_drawer_sk / 2 + pxk_drawer_r * pxk_drawer_sk / pxk_drawer_l, pxk_drawer_h / 2 - pxk_drawer_r * pxk_drawer_h / pxk_drawer_l; curve pxk_drawer_w / 2 - pxk_drawer_sk / 2 - pxk_drawer_r, pxk_drawer_h / 2 via pxk_drawer_w / 2 - pxk_drawer_sk / 2, pxk_drawer_h / 2; line pxk_drawer_r - pxk_drawer_w / 2 - pxk_drawer_sk / 2, pxk_drawer_h / 2; curve pxk_drawer_r * pxk_drawer_sk / pxk_drawer_l - pxk_drawer_w / 2 - pxk_drawer_sk / 2, pxk_drawer_h / 2 - pxk_drawer_r * pxk_drawer_h / pxk_drawer_l via 0 - pxk_drawer_w / 2 - pxk_drawer_sk / 2, pxk_drawer_h / 2; line pxk_drawer_sk / 2 - pxk_drawer_w / 2 - pxk_drawer_r * pxk_drawer_sk / pxk_drawer_l, pxk_drawer_r * pxk_drawer_h / pxk_drawer_l - pxk_drawer_h / 2; curve pxk_drawer_r - pxk_drawer_w / 2 + pxk_drawer_sk / 2, 0 - pxk_drawer_h / 2 via pxk_drawer_sk / 2 - pxk_drawer_w / 2, 0 - pxk_drawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and dc0 > 0.004; opacity: 85% * px_k * clamp((dc0 - 0.004) * 4, 0, 1); move: 2.5 * u, 3 * u
+            path { at: dc.ex + if(px_k > 0.5 and (dc0 > 0.004), 0, 30000), dc.ey - sg.up / 2; color: deep; move pxk_cdrawer_r - pxk_cdrawer_w / 2 + pxk_cdrawer_sk / 2, 0 - pxk_cdrawer_h / 2; line pxk_cdrawer_w / 2 - pxk_cdrawer_r + pxk_cdrawer_sk / 2, 0 - pxk_cdrawer_h / 2; curve pxk_cdrawer_w / 2 + pxk_cdrawer_sk / 2 - pxk_cdrawer_r * pxk_cdrawer_sk / pxk_cdrawer_l, pxk_cdrawer_r * pxk_cdrawer_h / pxk_cdrawer_l - pxk_cdrawer_h / 2 via pxk_cdrawer_w / 2 + pxk_cdrawer_sk / 2, 0 - pxk_cdrawer_h / 2; line pxk_cdrawer_w / 2 - pxk_cdrawer_sk / 2 + pxk_cdrawer_r * pxk_cdrawer_sk / pxk_cdrawer_l, pxk_cdrawer_h / 2 - pxk_cdrawer_r * pxk_cdrawer_h / pxk_cdrawer_l; curve pxk_cdrawer_w / 2 - pxk_cdrawer_sk / 2 - pxk_cdrawer_r, pxk_cdrawer_h / 2 via pxk_cdrawer_w / 2 - pxk_cdrawer_sk / 2, pxk_cdrawer_h / 2; line pxk_cdrawer_r - pxk_cdrawer_w / 2 - pxk_cdrawer_sk / 2, pxk_cdrawer_h / 2; curve pxk_cdrawer_r * pxk_cdrawer_sk / pxk_cdrawer_l - pxk_cdrawer_w / 2 - pxk_cdrawer_sk / 2, pxk_cdrawer_h / 2 - pxk_cdrawer_r * pxk_cdrawer_h / pxk_cdrawer_l via 0 - pxk_cdrawer_w / 2 - pxk_cdrawer_sk / 2, pxk_cdrawer_h / 2; line pxk_cdrawer_sk / 2 - pxk_cdrawer_w / 2 - pxk_cdrawer_r * pxk_cdrawer_sk / pxk_cdrawer_l, pxk_cdrawer_r * pxk_cdrawer_h / pxk_cdrawer_l - pxk_cdrawer_h / 2; curve pxk_cdrawer_r - pxk_cdrawer_w / 2 + pxk_cdrawer_sk / 2, 0 - pxk_cdrawer_h / 2 via pxk_cdrawer_sk / 2 - pxk_cdrawer_w / 2, 0 - pxk_cdrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and ds0 > 0.004; opacity: 85% * px_k * clamp((ds0 - 0.004) * 4, 0, 1); move: 2.5 * u, 3 * u
+            path { at: ds.ex + if(px_k > 0.5 and (ds0 > 0.004), 0, 30000), ds.ey; color: deep; move pxk_sdrawer_r - pxk_sdrawer_w / 2 + pxk_sdrawer_sk / 2, 0 - pxk_sdrawer_h / 2; line pxk_sdrawer_w / 2 - pxk_sdrawer_r + pxk_sdrawer_sk / 2, 0 - pxk_sdrawer_h / 2; curve pxk_sdrawer_w / 2 + pxk_sdrawer_sk / 2 - pxk_sdrawer_r * pxk_sdrawer_sk / pxk_sdrawer_l, pxk_sdrawer_r * pxk_sdrawer_h / pxk_sdrawer_l - pxk_sdrawer_h / 2 via pxk_sdrawer_w / 2 + pxk_sdrawer_sk / 2, 0 - pxk_sdrawer_h / 2; line pxk_sdrawer_w / 2 - pxk_sdrawer_sk / 2 + pxk_sdrawer_r * pxk_sdrawer_sk / pxk_sdrawer_l, pxk_sdrawer_h / 2 - pxk_sdrawer_r * pxk_sdrawer_h / pxk_sdrawer_l; curve pxk_sdrawer_w / 2 - pxk_sdrawer_sk / 2 - pxk_sdrawer_r, pxk_sdrawer_h / 2 via pxk_sdrawer_w / 2 - pxk_sdrawer_sk / 2, pxk_sdrawer_h / 2; line pxk_sdrawer_r - pxk_sdrawer_w / 2 - pxk_sdrawer_sk / 2, pxk_sdrawer_h / 2; curve pxk_sdrawer_r * pxk_sdrawer_sk / pxk_sdrawer_l - pxk_sdrawer_w / 2 - pxk_sdrawer_sk / 2, pxk_sdrawer_h / 2 - pxk_sdrawer_r * pxk_sdrawer_h / pxk_sdrawer_l via 0 - pxk_sdrawer_w / 2 - pxk_sdrawer_sk / 2, pxk_sdrawer_h / 2; line pxk_sdrawer_sk / 2 - pxk_sdrawer_w / 2 - pxk_sdrawer_r * pxk_sdrawer_sk / pxk_sdrawer_l, pxk_sdrawer_r * pxk_sdrawer_h / pxk_sdrawer_l - pxk_sdrawer_h / 2; curve pxk_sdrawer_r - pxk_sdrawer_w / 2 + pxk_sdrawer_sk / 2, 0 - pxk_sdrawer_h / 2 via pxk_sdrawer_sk / 2 - pxk_sdrawer_w / 2, 0 - pxk_sdrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and dl0 > 0.004; opacity: 85% * px_k * clamp((dl0 - 0.004) * 4, 0, 1); move: 2.5 * u, 3 * u
+            path { at: dl.ex + if(px_k > 0.5 and (dl0 > 0.004), 0, 30000), dl.ey; color: deep; move pxk_ldrawer_r - pxk_ldrawer_w / 2 + pxk_ldrawer_sk / 2, 0 - pxk_ldrawer_h / 2; line pxk_ldrawer_w / 2 - pxk_ldrawer_r + pxk_ldrawer_sk / 2, 0 - pxk_ldrawer_h / 2; curve pxk_ldrawer_w / 2 + pxk_ldrawer_sk / 2 - pxk_ldrawer_r * pxk_ldrawer_sk / pxk_ldrawer_l, pxk_ldrawer_r * pxk_ldrawer_h / pxk_ldrawer_l - pxk_ldrawer_h / 2 via pxk_ldrawer_w / 2 + pxk_ldrawer_sk / 2, 0 - pxk_ldrawer_h / 2; line pxk_ldrawer_w / 2 - pxk_ldrawer_sk / 2 + pxk_ldrawer_r * pxk_ldrawer_sk / pxk_ldrawer_l, pxk_ldrawer_h / 2 - pxk_ldrawer_r * pxk_ldrawer_h / pxk_ldrawer_l; curve pxk_ldrawer_w / 2 - pxk_ldrawer_sk / 2 - pxk_ldrawer_r, pxk_ldrawer_h / 2 via pxk_ldrawer_w / 2 - pxk_ldrawer_sk / 2, pxk_ldrawer_h / 2; line pxk_ldrawer_r - pxk_ldrawer_w / 2 - pxk_ldrawer_sk / 2, pxk_ldrawer_h / 2; curve pxk_ldrawer_r * pxk_ldrawer_sk / pxk_ldrawer_l - pxk_ldrawer_w / 2 - pxk_ldrawer_sk / 2, pxk_ldrawer_h / 2 - pxk_ldrawer_r * pxk_ldrawer_h / pxk_ldrawer_l via 0 - pxk_ldrawer_w / 2 - pxk_ldrawer_sk / 2, pxk_ldrawer_h / 2; line pxk_ldrawer_sk / 2 - pxk_ldrawer_w / 2 - pxk_ldrawer_r * pxk_ldrawer_sk / pxk_ldrawer_l, pxk_ldrawer_r * pxk_ldrawer_h / pxk_ldrawer_l - pxk_ldrawer_h / 2; curve pxk_ldrawer_r - pxk_ldrawer_w / 2 + pxk_ldrawer_sk / 2, 0 - pxk_ldrawer_h / 2 via pxk_ldrawer_sk / 2 - pxk_ldrawer_w / 2, 0 - pxk_ldrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and dax0 > 0.002; opacity: 85% * px_k * clamp((dax0 - 0.002) * 4, 0, 1); move: 2.5 * u, 3 * u
+            path { at: dax.ex + (dax.br - dax.bl) / 2 + if(dax0 > 0.002, 0, 30000) + if(px_k > 0.5, 0, 30000), dax.ey + (dax.bb - dax.bt) / 2; color: deep; move pxk_xdrawer_r - pxk_xdrawer_w / 2 + pxk_xdrawer_sk / 2, 0 - pxk_xdrawer_h / 2; line pxk_xdrawer_w / 2 - pxk_xdrawer_r + pxk_xdrawer_sk / 2, 0 - pxk_xdrawer_h / 2; curve pxk_xdrawer_w / 2 + pxk_xdrawer_sk / 2 - pxk_xdrawer_r * pxk_xdrawer_sk / pxk_xdrawer_l, pxk_xdrawer_r * pxk_xdrawer_h / pxk_xdrawer_l - pxk_xdrawer_h / 2 via pxk_xdrawer_w / 2 + pxk_xdrawer_sk / 2, 0 - pxk_xdrawer_h / 2; line pxk_xdrawer_w / 2 - pxk_xdrawer_sk / 2 + pxk_xdrawer_r * pxk_xdrawer_sk / pxk_xdrawer_l, pxk_xdrawer_h / 2 - pxk_xdrawer_r * pxk_xdrawer_h / pxk_xdrawer_l; curve pxk_xdrawer_w / 2 - pxk_xdrawer_sk / 2 - pxk_xdrawer_r, pxk_xdrawer_h / 2 via pxk_xdrawer_w / 2 - pxk_xdrawer_sk / 2, pxk_xdrawer_h / 2; line pxk_xdrawer_r - pxk_xdrawer_w / 2 - pxk_xdrawer_sk / 2, pxk_xdrawer_h / 2; curve pxk_xdrawer_r * pxk_xdrawer_sk / pxk_xdrawer_l - pxk_xdrawer_w / 2 - pxk_xdrawer_sk / 2, pxk_xdrawer_h / 2 - pxk_xdrawer_r * pxk_xdrawer_h / pxk_xdrawer_l via 0 - pxk_xdrawer_w / 2 - pxk_xdrawer_sk / 2, pxk_xdrawer_h / 2; line pxk_xdrawer_sk / 2 - pxk_xdrawer_w / 2 - pxk_xdrawer_r * pxk_xdrawer_sk / pxk_xdrawer_l, pxk_xdrawer_r * pxk_xdrawer_h / pxk_xdrawer_l - pxk_xdrawer_h / 2; curve pxk_xdrawer_r - pxk_xdrawer_w / 2 + pxk_xdrawer_sk / 2, 0 - pxk_xdrawer_h / 2 via pxk_xdrawer_sk / 2 - pxk_xdrawer_w / 2, 0 - pxk_xdrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and fm > 0.5 and do0 > 0.004; opacity: 85% * px_k * clamp((do0 - 0.004) * 4, 0, 1); move: 2.5 * u, 3 * u
+            path { at: do.ex + if(fm > 0.5, 0, 30000) + if(px_k > 0.5 and (do0 > 0.004), 0, 30000), do.ey; color: deep; move pxk_odrawer_r - pxk_odrawer_w / 2 + pxk_odrawer_sk / 2, 0 - pxk_odrawer_h / 2; line pxk_odrawer_w / 2 - pxk_odrawer_r + pxk_odrawer_sk / 2, 0 - pxk_odrawer_h / 2; curve pxk_odrawer_w / 2 + pxk_odrawer_sk / 2 - pxk_odrawer_r * pxk_odrawer_sk / pxk_odrawer_l, pxk_odrawer_r * pxk_odrawer_h / pxk_odrawer_l - pxk_odrawer_h / 2 via pxk_odrawer_w / 2 + pxk_odrawer_sk / 2, 0 - pxk_odrawer_h / 2; line pxk_odrawer_w / 2 - pxk_odrawer_sk / 2 + pxk_odrawer_r * pxk_odrawer_sk / pxk_odrawer_l, pxk_odrawer_h / 2 - pxk_odrawer_r * pxk_odrawer_h / pxk_odrawer_l; curve pxk_odrawer_w / 2 - pxk_odrawer_sk / 2 - pxk_odrawer_r, pxk_odrawer_h / 2 via pxk_odrawer_w / 2 - pxk_odrawer_sk / 2, pxk_odrawer_h / 2; line pxk_odrawer_r - pxk_odrawer_w / 2 - pxk_odrawer_sk / 2, pxk_odrawer_h / 2; curve pxk_odrawer_r * pxk_odrawer_sk / pxk_odrawer_l - pxk_odrawer_w / 2 - pxk_odrawer_sk / 2, pxk_odrawer_h / 2 - pxk_odrawer_r * pxk_odrawer_h / pxk_odrawer_l via 0 - pxk_odrawer_w / 2 - pxk_odrawer_sk / 2, pxk_odrawer_h / 2; line pxk_odrawer_sk / 2 - pxk_odrawer_w / 2 - pxk_odrawer_r * pxk_odrawer_sk / pxk_odrawer_l, pxk_odrawer_r * pxk_odrawer_h / pxk_odrawer_l - pxk_odrawer_h / 2; curve pxk_odrawer_r - pxk_odrawer_w / 2 + pxk_odrawer_sk / 2, 0 - pxk_odrawer_h / 2 via pxk_odrawer_sk / 2 - pxk_odrawer_w / 2, 0 - pxk_odrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and dm0 > 0.004; opacity: 85% * px_k * clamp((dm0 - 0.004) * 4, 0, 1); move: 2.5 * u, 3 * u
+            path { at: dm.ex + if(px_k > 0.5 and (dm0 > 0.004), 0, 30000), dm.ey - sg.up / 2; color: deep; move pxk_mdrawer_r - pxk_mdrawer_w / 2 + pxk_mdrawer_sk / 2, 0 - pxk_mdrawer_h / 2; line pxk_mdrawer_w / 2 - pxk_mdrawer_r + pxk_mdrawer_sk / 2, 0 - pxk_mdrawer_h / 2; curve pxk_mdrawer_w / 2 + pxk_mdrawer_sk / 2 - pxk_mdrawer_r * pxk_mdrawer_sk / pxk_mdrawer_l, pxk_mdrawer_r * pxk_mdrawer_h / pxk_mdrawer_l - pxk_mdrawer_h / 2 via pxk_mdrawer_w / 2 + pxk_mdrawer_sk / 2, 0 - pxk_mdrawer_h / 2; line pxk_mdrawer_w / 2 - pxk_mdrawer_sk / 2 + pxk_mdrawer_r * pxk_mdrawer_sk / pxk_mdrawer_l, pxk_mdrawer_h / 2 - pxk_mdrawer_r * pxk_mdrawer_h / pxk_mdrawer_l; curve pxk_mdrawer_w / 2 - pxk_mdrawer_sk / 2 - pxk_mdrawer_r, pxk_mdrawer_h / 2 via pxk_mdrawer_w / 2 - pxk_mdrawer_sk / 2, pxk_mdrawer_h / 2; line pxk_mdrawer_r - pxk_mdrawer_w / 2 - pxk_mdrawer_sk / 2, pxk_mdrawer_h / 2; curve pxk_mdrawer_r * pxk_mdrawer_sk / pxk_mdrawer_l - pxk_mdrawer_w / 2 - pxk_mdrawer_sk / 2, pxk_mdrawer_h / 2 - pxk_mdrawer_r * pxk_mdrawer_h / pxk_mdrawer_l via 0 - pxk_mdrawer_w / 2 - pxk_mdrawer_sk / 2, pxk_mdrawer_h / 2; line pxk_mdrawer_sk / 2 - pxk_mdrawer_w / 2 - pxk_mdrawer_r * pxk_mdrawer_sk / pxk_mdrawer_l, pxk_mdrawer_r * pxk_mdrawer_h / pxk_mdrawer_l - pxk_mdrawer_h / 2; curve pxk_mdrawer_r - pxk_mdrawer_w / 2 + pxk_mdrawer_sk / 2, 0 - pxk_mdrawer_h / 2 via pxk_mdrawer_sk / 2 - pxk_mdrawer_w / 2, 0 - pxk_mdrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and fm > 0.5 and dz0 > 0.004; opacity: 85% * px_k * clamp((dz0 - 0.004) * 4, 0, 1); move: 2.5 * u, 3 * u
+            path { at: dz.fx + if(fm > 0.5, 0, 30000) + if(px_k > 0.5 and (dz0 > 0.004), 0, 30000), dz.fcy; color: deep; move pxk_zdrawer_r - pxk_zdrawer_w / 2 + pxk_zdrawer_sk / 2, 0 - pxk_zdrawer_h / 2; line pxk_zdrawer_w / 2 - pxk_zdrawer_r + pxk_zdrawer_sk / 2, 0 - pxk_zdrawer_h / 2; curve pxk_zdrawer_w / 2 + pxk_zdrawer_sk / 2 - pxk_zdrawer_r * pxk_zdrawer_sk / pxk_zdrawer_l, pxk_zdrawer_r * pxk_zdrawer_h / pxk_zdrawer_l - pxk_zdrawer_h / 2 via pxk_zdrawer_w / 2 + pxk_zdrawer_sk / 2, 0 - pxk_zdrawer_h / 2; line pxk_zdrawer_w / 2 - pxk_zdrawer_sk / 2 + pxk_zdrawer_r * pxk_zdrawer_sk / pxk_zdrawer_l, pxk_zdrawer_h / 2 - pxk_zdrawer_r * pxk_zdrawer_h / pxk_zdrawer_l; curve pxk_zdrawer_w / 2 - pxk_zdrawer_sk / 2 - pxk_zdrawer_r, pxk_zdrawer_h / 2 via pxk_zdrawer_w / 2 - pxk_zdrawer_sk / 2, pxk_zdrawer_h / 2; line pxk_zdrawer_r - pxk_zdrawer_w / 2 - pxk_zdrawer_sk / 2, pxk_zdrawer_h / 2; curve pxk_zdrawer_r * pxk_zdrawer_sk / pxk_zdrawer_l - pxk_zdrawer_w / 2 - pxk_zdrawer_sk / 2, pxk_zdrawer_h / 2 - pxk_zdrawer_r * pxk_zdrawer_h / pxk_zdrawer_l via 0 - pxk_zdrawer_w / 2 - pxk_zdrawer_sk / 2, pxk_zdrawer_h / 2; line pxk_zdrawer_sk / 2 - pxk_zdrawer_w / 2 - pxk_zdrawer_r * pxk_zdrawer_sk / pxk_zdrawer_l, pxk_zdrawer_r * pxk_zdrawer_h / pxk_zdrawer_l - pxk_zdrawer_h / 2; curve pxk_zdrawer_r - pxk_zdrawer_w / 2 + pxk_zdrawer_sk / 2, 0 - pxk_zdrawer_h / 2 via pxk_zdrawer_sk / 2 - pxk_zdrawer_w / 2, 0 - pxk_zdrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and sg > 0.35; opacity: 85% * px_k * clamp((sg - 0.35) * 4, 0, 1); move: 2.5 * u, 3 * u
+            path { at: (sg.lr - sg.r) / 2 + if(sg > 0.35, 0, 30000) + if(px_k > 0.5, 0, 30000), yo + (sg.hc - sg.r) / 2; color: deep; move pxk_sgl_r - pxk_sgl_w / 2 + pxk_sgl_sk / 2, 0 - pxk_sgl_h / 2; line pxk_sgl_w / 2 - pxk_sgl_r + pxk_sgl_sk / 2, 0 - pxk_sgl_h / 2; curve pxk_sgl_w / 2 + pxk_sgl_sk / 2 - pxk_sgl_r * pxk_sgl_sk / pxk_sgl_l, pxk_sgl_r * pxk_sgl_h / pxk_sgl_l - pxk_sgl_h / 2 via pxk_sgl_w / 2 + pxk_sgl_sk / 2, 0 - pxk_sgl_h / 2; line pxk_sgl_w / 2 - pxk_sgl_sk / 2 + pxk_sgl_r * pxk_sgl_sk / pxk_sgl_l, pxk_sgl_h / 2 - pxk_sgl_r * pxk_sgl_h / pxk_sgl_l; curve pxk_sgl_w / 2 - pxk_sgl_sk / 2 - pxk_sgl_r, pxk_sgl_h / 2 via pxk_sgl_w / 2 - pxk_sgl_sk / 2, pxk_sgl_h / 2; line pxk_sgl_r - pxk_sgl_w / 2 - pxk_sgl_sk / 2, pxk_sgl_h / 2; curve pxk_sgl_r * pxk_sgl_sk / pxk_sgl_l - pxk_sgl_w / 2 - pxk_sgl_sk / 2, pxk_sgl_h / 2 - pxk_sgl_r * pxk_sgl_h / pxk_sgl_l via 0 - pxk_sgl_w / 2 - pxk_sgl_sk / 2, pxk_sgl_h / 2; line pxk_sgl_sk / 2 - pxk_sgl_w / 2 - pxk_sgl_r * pxk_sgl_sk / pxk_sgl_l, pxk_sgl_r * pxk_sgl_h / pxk_sgl_l - pxk_sgl_h / 2; curve pxk_sgl_r - pxk_sgl_w / 2 + pxk_sgl_sk / 2, 0 - pxk_sgl_h / 2 via pxk_sgl_sk / 2 - pxk_sgl_w / 2, 0 - pxk_sgl_h / 2; close }
+        }
+        group { show: px_k > 0.01 and sg > 0.35; opacity: 85% * px_k * clamp((sg - 0.35) * 4, 0, 1); move: 2.5 * u, 3 * u
+            path { at: (sg.q0 + sg.q1) / 2 + if(sg > 0.35, 0, 30000) + if(px_k > 0.5, 0, 30000), yo + (sg.hc - sg.r) / 2; color: deep; move pxk_sgc_r - pxk_sgc_w / 2 + pxk_sgc_sk / 2, 0 - pxk_sgc_h / 2; line pxk_sgc_w / 2 - pxk_sgc_r + pxk_sgc_sk / 2, 0 - pxk_sgc_h / 2; curve pxk_sgc_w / 2 + pxk_sgc_sk / 2 - pxk_sgc_r * pxk_sgc_sk / pxk_sgc_l, pxk_sgc_r * pxk_sgc_h / pxk_sgc_l - pxk_sgc_h / 2 via pxk_sgc_w / 2 + pxk_sgc_sk / 2, 0 - pxk_sgc_h / 2; line pxk_sgc_w / 2 - pxk_sgc_sk / 2 + pxk_sgc_r * pxk_sgc_sk / pxk_sgc_l, pxk_sgc_h / 2 - pxk_sgc_r * pxk_sgc_h / pxk_sgc_l; curve pxk_sgc_w / 2 - pxk_sgc_sk / 2 - pxk_sgc_r, pxk_sgc_h / 2 via pxk_sgc_w / 2 - pxk_sgc_sk / 2, pxk_sgc_h / 2; line pxk_sgc_r - pxk_sgc_w / 2 - pxk_sgc_sk / 2, pxk_sgc_h / 2; curve pxk_sgc_r * pxk_sgc_sk / pxk_sgc_l - pxk_sgc_w / 2 - pxk_sgc_sk / 2, pxk_sgc_h / 2 - pxk_sgc_r * pxk_sgc_h / pxk_sgc_l via 0 - pxk_sgc_w / 2 - pxk_sgc_sk / 2, pxk_sgc_h / 2; line pxk_sgc_sk / 2 - pxk_sgc_w / 2 - pxk_sgc_r * pxk_sgc_sk / pxk_sgc_l, pxk_sgc_r * pxk_sgc_h / pxk_sgc_l - pxk_sgc_h / 2; curve pxk_sgc_r - pxk_sgc_w / 2 + pxk_sgc_sk / 2, 0 - pxk_sgc_h / 2 via pxk_sgc_sk / 2 - pxk_sgc_w / 2, 0 - pxk_sgc_h / 2; close }
+        }
+        group { show: px_k > 0.01 and sg > 0.35; opacity: 85% * px_k * clamp((sg - 0.35) * 4, 0, 1); move: 2.5 * u, 3 * u
+            path { at: (sg.rq + screen.width + sg.r) / 2 + if(sg > 0.35, 0, 30000) + if(px_k > 0.5, 0, 30000), yo + (sg.hc - sg.r) / 2; color: deep; move pxk_sgr_r - pxk_sgr_w / 2 + pxk_sgr_sk / 2, 0 - pxk_sgr_h / 2; line pxk_sgr_w / 2 - pxk_sgr_r + pxk_sgr_sk / 2, 0 - pxk_sgr_h / 2; curve pxk_sgr_w / 2 + pxk_sgr_sk / 2 - pxk_sgr_r * pxk_sgr_sk / pxk_sgr_l, pxk_sgr_r * pxk_sgr_h / pxk_sgr_l - pxk_sgr_h / 2 via pxk_sgr_w / 2 + pxk_sgr_sk / 2, 0 - pxk_sgr_h / 2; line pxk_sgr_w / 2 - pxk_sgr_sk / 2 + pxk_sgr_r * pxk_sgr_sk / pxk_sgr_l, pxk_sgr_h / 2 - pxk_sgr_r * pxk_sgr_h / pxk_sgr_l; curve pxk_sgr_w / 2 - pxk_sgr_sk / 2 - pxk_sgr_r, pxk_sgr_h / 2 via pxk_sgr_w / 2 - pxk_sgr_sk / 2, pxk_sgr_h / 2; line pxk_sgr_r - pxk_sgr_w / 2 - pxk_sgr_sk / 2, pxk_sgr_h / 2; curve pxk_sgr_r * pxk_sgr_sk / pxk_sgr_l - pxk_sgr_w / 2 - pxk_sgr_sk / 2, pxk_sgr_h / 2 - pxk_sgr_r * pxk_sgr_h / pxk_sgr_l via 0 - pxk_sgr_w / 2 - pxk_sgr_sk / 2, pxk_sgr_h / 2; line pxk_sgr_sk / 2 - pxk_sgr_w / 2 - pxk_sgr_r * pxk_sgr_sk / pxk_sgr_l, pxk_sgr_r * pxk_sgr_h / pxk_sgr_l - pxk_sgr_h / 2; curve pxk_sgr_r - pxk_sgr_w / 2 + pxk_sgr_sk / 2, 0 - pxk_sgr_h / 2 via pxk_sgr_sk / 2 - pxk_sgr_w / 2, 0 - pxk_sgr_h / 2; close }
+        }
+        group { show: px_k > 0.01 and cdk.g > 0.02; opacity: 85% * px_k * clamp((cdk.g - 0.02) * 4, 0, 1); move: 2.5 * u, 3 * u
+            path { at: cdk.bx + if(cdk.g > 0.02, 0, 30000) + if(px_k > 0.5, 0, 30000), cdk.by; color: deep; move pxk_cdk_r - pxk_cdk_w / 2 + pxk_cdk_sk / 2, 0 - pxk_cdk_h / 2; line pxk_cdk_w / 2 - pxk_cdk_r + pxk_cdk_sk / 2, 0 - pxk_cdk_h / 2; curve pxk_cdk_w / 2 + pxk_cdk_sk / 2 - pxk_cdk_r * pxk_cdk_sk / pxk_cdk_l, pxk_cdk_r * pxk_cdk_h / pxk_cdk_l - pxk_cdk_h / 2 via pxk_cdk_w / 2 + pxk_cdk_sk / 2, 0 - pxk_cdk_h / 2; line pxk_cdk_w / 2 - pxk_cdk_sk / 2 + pxk_cdk_r * pxk_cdk_sk / pxk_cdk_l, pxk_cdk_h / 2 - pxk_cdk_r * pxk_cdk_h / pxk_cdk_l; curve pxk_cdk_w / 2 - pxk_cdk_sk / 2 - pxk_cdk_r, pxk_cdk_h / 2 via pxk_cdk_w / 2 - pxk_cdk_sk / 2, pxk_cdk_h / 2; line pxk_cdk_r - pxk_cdk_w / 2 - pxk_cdk_sk / 2, pxk_cdk_h / 2; curve pxk_cdk_r * pxk_cdk_sk / pxk_cdk_l - pxk_cdk_w / 2 - pxk_cdk_sk / 2, pxk_cdk_h / 2 - pxk_cdk_r * pxk_cdk_h / pxk_cdk_l via 0 - pxk_cdk_w / 2 - pxk_cdk_sk / 2, pxk_cdk_h / 2; line pxk_cdk_sk / 2 - pxk_cdk_w / 2 - pxk_cdk_r * pxk_cdk_sk / pxk_cdk_l, pxk_cdk_r * pxk_cdk_h / pxk_cdk_l - pxk_cdk_h / 2; curve pxk_cdk_r - pxk_cdk_w / 2 + pxk_cdk_sk / 2, 0 - pxk_cdk_h / 2 via pxk_cdk_sk / 2 - pxk_cdk_w / 2, 0 - pxk_cdk_h / 2; close }
+        }
+        group { show: px_k > 0.01 and adk.g > 0.02; opacity: 85% * px_k * clamp((adk.g - 0.02) * 4, 0, 1); move: 2.5 * u, 3 * u
+            path { at: adk.bx + if(adk.g > 0.02, 0, 30000) + if(px_k > 0.5, 0, 30000), adk.by; color: deep; move pxk_adk_r - pxk_adk_w / 2 + pxk_adk_sk / 2, 0 - pxk_adk_h / 2; line pxk_adk_w / 2 - pxk_adk_r + pxk_adk_sk / 2, 0 - pxk_adk_h / 2; curve pxk_adk_w / 2 + pxk_adk_sk / 2 - pxk_adk_r * pxk_adk_sk / pxk_adk_l, pxk_adk_r * pxk_adk_h / pxk_adk_l - pxk_adk_h / 2 via pxk_adk_w / 2 + pxk_adk_sk / 2, 0 - pxk_adk_h / 2; line pxk_adk_w / 2 - pxk_adk_sk / 2 + pxk_adk_r * pxk_adk_sk / pxk_adk_l, pxk_adk_h / 2 - pxk_adk_r * pxk_adk_h / pxk_adk_l; curve pxk_adk_w / 2 - pxk_adk_sk / 2 - pxk_adk_r, pxk_adk_h / 2 via pxk_adk_w / 2 - pxk_adk_sk / 2, pxk_adk_h / 2; line pxk_adk_r - pxk_adk_w / 2 - pxk_adk_sk / 2, pxk_adk_h / 2; curve pxk_adk_r * pxk_adk_sk / pxk_adk_l - pxk_adk_w / 2 - pxk_adk_sk / 2, pxk_adk_h / 2 - pxk_adk_r * pxk_adk_h / pxk_adk_l via 0 - pxk_adk_w / 2 - pxk_adk_sk / 2, pxk_adk_h / 2; line pxk_adk_sk / 2 - pxk_adk_w / 2 - pxk_adk_r * pxk_adk_sk / pxk_adk_l, pxk_adk_r * pxk_adk_h / pxk_adk_l - pxk_adk_h / 2; curve pxk_adk_r - pxk_adk_w / 2 + pxk_adk_sk / 2, 0 - pxk_adk_h / 2 via pxk_adk_sk / 2 - pxk_adk_w / 2, 0 - pxk_adk_h / 2; close }
+        }
+        group { show: px_k > 0.01 and dk0 > 0.004; opacity: px_k * clamp((dk0 - 0.004) * 4, 0, 1)
+            path { at: dk.ex + if(px_k > 0.5 and (dk0 > 0.004), 0, 30000), dk.ey - sg.up / 2; stroke: 2.8 * u; color: mix(#e8f1f5, obsidian, 0.4); move pxk_drawer_r - pxk_drawer_w / 2 + pxk_drawer_sk / 2, 0 - pxk_drawer_h / 2; line pxk_drawer_w / 2 - pxk_drawer_r + pxk_drawer_sk / 2, 0 - pxk_drawer_h / 2; curve pxk_drawer_w / 2 + pxk_drawer_sk / 2 - pxk_drawer_r * pxk_drawer_sk / pxk_drawer_l, pxk_drawer_r * pxk_drawer_h / pxk_drawer_l - pxk_drawer_h / 2 via pxk_drawer_w / 2 + pxk_drawer_sk / 2, 0 - pxk_drawer_h / 2; line pxk_drawer_w / 2 - pxk_drawer_sk / 2 + pxk_drawer_r * pxk_drawer_sk / pxk_drawer_l, pxk_drawer_h / 2 - pxk_drawer_r * pxk_drawer_h / pxk_drawer_l; curve pxk_drawer_w / 2 - pxk_drawer_sk / 2 - pxk_drawer_r, pxk_drawer_h / 2 via pxk_drawer_w / 2 - pxk_drawer_sk / 2, pxk_drawer_h / 2; line pxk_drawer_r - pxk_drawer_w / 2 - pxk_drawer_sk / 2, pxk_drawer_h / 2; curve pxk_drawer_r * pxk_drawer_sk / pxk_drawer_l - pxk_drawer_w / 2 - pxk_drawer_sk / 2, pxk_drawer_h / 2 - pxk_drawer_r * pxk_drawer_h / pxk_drawer_l via 0 - pxk_drawer_w / 2 - pxk_drawer_sk / 2, pxk_drawer_h / 2; line pxk_drawer_sk / 2 - pxk_drawer_w / 2 - pxk_drawer_r * pxk_drawer_sk / pxk_drawer_l, pxk_drawer_r * pxk_drawer_h / pxk_drawer_l - pxk_drawer_h / 2; curve pxk_drawer_r - pxk_drawer_w / 2 + pxk_drawer_sk / 2, 0 - pxk_drawer_h / 2 via pxk_drawer_sk / 2 - pxk_drawer_w / 2, 0 - pxk_drawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and dc0 > 0.004; opacity: px_k * clamp((dc0 - 0.004) * 4, 0, 1)
+            path { at: dc.ex + if(px_k > 0.5 and (dc0 > 0.004), 0, 30000), dc.ey - sg.up / 2; stroke: 2.8 * u; color: mix(#e8f1f5, obsidian, 0.4); move pxk_cdrawer_r - pxk_cdrawer_w / 2 + pxk_cdrawer_sk / 2, 0 - pxk_cdrawer_h / 2; line pxk_cdrawer_w / 2 - pxk_cdrawer_r + pxk_cdrawer_sk / 2, 0 - pxk_cdrawer_h / 2; curve pxk_cdrawer_w / 2 + pxk_cdrawer_sk / 2 - pxk_cdrawer_r * pxk_cdrawer_sk / pxk_cdrawer_l, pxk_cdrawer_r * pxk_cdrawer_h / pxk_cdrawer_l - pxk_cdrawer_h / 2 via pxk_cdrawer_w / 2 + pxk_cdrawer_sk / 2, 0 - pxk_cdrawer_h / 2; line pxk_cdrawer_w / 2 - pxk_cdrawer_sk / 2 + pxk_cdrawer_r * pxk_cdrawer_sk / pxk_cdrawer_l, pxk_cdrawer_h / 2 - pxk_cdrawer_r * pxk_cdrawer_h / pxk_cdrawer_l; curve pxk_cdrawer_w / 2 - pxk_cdrawer_sk / 2 - pxk_cdrawer_r, pxk_cdrawer_h / 2 via pxk_cdrawer_w / 2 - pxk_cdrawer_sk / 2, pxk_cdrawer_h / 2; line pxk_cdrawer_r - pxk_cdrawer_w / 2 - pxk_cdrawer_sk / 2, pxk_cdrawer_h / 2; curve pxk_cdrawer_r * pxk_cdrawer_sk / pxk_cdrawer_l - pxk_cdrawer_w / 2 - pxk_cdrawer_sk / 2, pxk_cdrawer_h / 2 - pxk_cdrawer_r * pxk_cdrawer_h / pxk_cdrawer_l via 0 - pxk_cdrawer_w / 2 - pxk_cdrawer_sk / 2, pxk_cdrawer_h / 2; line pxk_cdrawer_sk / 2 - pxk_cdrawer_w / 2 - pxk_cdrawer_r * pxk_cdrawer_sk / pxk_cdrawer_l, pxk_cdrawer_r * pxk_cdrawer_h / pxk_cdrawer_l - pxk_cdrawer_h / 2; curve pxk_cdrawer_r - pxk_cdrawer_w / 2 + pxk_cdrawer_sk / 2, 0 - pxk_cdrawer_h / 2 via pxk_cdrawer_sk / 2 - pxk_cdrawer_w / 2, 0 - pxk_cdrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and ds0 > 0.004; opacity: px_k * clamp((ds0 - 0.004) * 4, 0, 1)
+            path { at: ds.ex + if(px_k > 0.5 and (ds0 > 0.004), 0, 30000), ds.ey; stroke: 2.8 * u; color: mix(#e8f1f5, obsidian, 0.4); move pxk_sdrawer_r - pxk_sdrawer_w / 2 + pxk_sdrawer_sk / 2, 0 - pxk_sdrawer_h / 2; line pxk_sdrawer_w / 2 - pxk_sdrawer_r + pxk_sdrawer_sk / 2, 0 - pxk_sdrawer_h / 2; curve pxk_sdrawer_w / 2 + pxk_sdrawer_sk / 2 - pxk_sdrawer_r * pxk_sdrawer_sk / pxk_sdrawer_l, pxk_sdrawer_r * pxk_sdrawer_h / pxk_sdrawer_l - pxk_sdrawer_h / 2 via pxk_sdrawer_w / 2 + pxk_sdrawer_sk / 2, 0 - pxk_sdrawer_h / 2; line pxk_sdrawer_w / 2 - pxk_sdrawer_sk / 2 + pxk_sdrawer_r * pxk_sdrawer_sk / pxk_sdrawer_l, pxk_sdrawer_h / 2 - pxk_sdrawer_r * pxk_sdrawer_h / pxk_sdrawer_l; curve pxk_sdrawer_w / 2 - pxk_sdrawer_sk / 2 - pxk_sdrawer_r, pxk_sdrawer_h / 2 via pxk_sdrawer_w / 2 - pxk_sdrawer_sk / 2, pxk_sdrawer_h / 2; line pxk_sdrawer_r - pxk_sdrawer_w / 2 - pxk_sdrawer_sk / 2, pxk_sdrawer_h / 2; curve pxk_sdrawer_r * pxk_sdrawer_sk / pxk_sdrawer_l - pxk_sdrawer_w / 2 - pxk_sdrawer_sk / 2, pxk_sdrawer_h / 2 - pxk_sdrawer_r * pxk_sdrawer_h / pxk_sdrawer_l via 0 - pxk_sdrawer_w / 2 - pxk_sdrawer_sk / 2, pxk_sdrawer_h / 2; line pxk_sdrawer_sk / 2 - pxk_sdrawer_w / 2 - pxk_sdrawer_r * pxk_sdrawer_sk / pxk_sdrawer_l, pxk_sdrawer_r * pxk_sdrawer_h / pxk_sdrawer_l - pxk_sdrawer_h / 2; curve pxk_sdrawer_r - pxk_sdrawer_w / 2 + pxk_sdrawer_sk / 2, 0 - pxk_sdrawer_h / 2 via pxk_sdrawer_sk / 2 - pxk_sdrawer_w / 2, 0 - pxk_sdrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and dl0 > 0.004; opacity: px_k * clamp((dl0 - 0.004) * 4, 0, 1)
+            path { at: dl.ex + if(px_k > 0.5 and (dl0 > 0.004), 0, 30000), dl.ey; stroke: 2.8 * u; color: mix(#e8f1f5, obsidian, 0.4); move pxk_ldrawer_r - pxk_ldrawer_w / 2 + pxk_ldrawer_sk / 2, 0 - pxk_ldrawer_h / 2; line pxk_ldrawer_w / 2 - pxk_ldrawer_r + pxk_ldrawer_sk / 2, 0 - pxk_ldrawer_h / 2; curve pxk_ldrawer_w / 2 + pxk_ldrawer_sk / 2 - pxk_ldrawer_r * pxk_ldrawer_sk / pxk_ldrawer_l, pxk_ldrawer_r * pxk_ldrawer_h / pxk_ldrawer_l - pxk_ldrawer_h / 2 via pxk_ldrawer_w / 2 + pxk_ldrawer_sk / 2, 0 - pxk_ldrawer_h / 2; line pxk_ldrawer_w / 2 - pxk_ldrawer_sk / 2 + pxk_ldrawer_r * pxk_ldrawer_sk / pxk_ldrawer_l, pxk_ldrawer_h / 2 - pxk_ldrawer_r * pxk_ldrawer_h / pxk_ldrawer_l; curve pxk_ldrawer_w / 2 - pxk_ldrawer_sk / 2 - pxk_ldrawer_r, pxk_ldrawer_h / 2 via pxk_ldrawer_w / 2 - pxk_ldrawer_sk / 2, pxk_ldrawer_h / 2; line pxk_ldrawer_r - pxk_ldrawer_w / 2 - pxk_ldrawer_sk / 2, pxk_ldrawer_h / 2; curve pxk_ldrawer_r * pxk_ldrawer_sk / pxk_ldrawer_l - pxk_ldrawer_w / 2 - pxk_ldrawer_sk / 2, pxk_ldrawer_h / 2 - pxk_ldrawer_r * pxk_ldrawer_h / pxk_ldrawer_l via 0 - pxk_ldrawer_w / 2 - pxk_ldrawer_sk / 2, pxk_ldrawer_h / 2; line pxk_ldrawer_sk / 2 - pxk_ldrawer_w / 2 - pxk_ldrawer_r * pxk_ldrawer_sk / pxk_ldrawer_l, pxk_ldrawer_r * pxk_ldrawer_h / pxk_ldrawer_l - pxk_ldrawer_h / 2; curve pxk_ldrawer_r - pxk_ldrawer_w / 2 + pxk_ldrawer_sk / 2, 0 - pxk_ldrawer_h / 2 via pxk_ldrawer_sk / 2 - pxk_ldrawer_w / 2, 0 - pxk_ldrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and dax0 > 0.002; opacity: px_k * clamp((dax0 - 0.002) * 4, 0, 1)
+            path { at: dax.ex + (dax.br - dax.bl) / 2 + if(dax0 > 0.002, 0, 30000) + if(px_k > 0.5, 0, 30000), dax.ey + (dax.bb - dax.bt) / 2; stroke: 2.8 * u; color: mix(#e8f1f5, obsidian, 0.4); move pxk_xdrawer_r - pxk_xdrawer_w / 2 + pxk_xdrawer_sk / 2, 0 - pxk_xdrawer_h / 2; line pxk_xdrawer_w / 2 - pxk_xdrawer_r + pxk_xdrawer_sk / 2, 0 - pxk_xdrawer_h / 2; curve pxk_xdrawer_w / 2 + pxk_xdrawer_sk / 2 - pxk_xdrawer_r * pxk_xdrawer_sk / pxk_xdrawer_l, pxk_xdrawer_r * pxk_xdrawer_h / pxk_xdrawer_l - pxk_xdrawer_h / 2 via pxk_xdrawer_w / 2 + pxk_xdrawer_sk / 2, 0 - pxk_xdrawer_h / 2; line pxk_xdrawer_w / 2 - pxk_xdrawer_sk / 2 + pxk_xdrawer_r * pxk_xdrawer_sk / pxk_xdrawer_l, pxk_xdrawer_h / 2 - pxk_xdrawer_r * pxk_xdrawer_h / pxk_xdrawer_l; curve pxk_xdrawer_w / 2 - pxk_xdrawer_sk / 2 - pxk_xdrawer_r, pxk_xdrawer_h / 2 via pxk_xdrawer_w / 2 - pxk_xdrawer_sk / 2, pxk_xdrawer_h / 2; line pxk_xdrawer_r - pxk_xdrawer_w / 2 - pxk_xdrawer_sk / 2, pxk_xdrawer_h / 2; curve pxk_xdrawer_r * pxk_xdrawer_sk / pxk_xdrawer_l - pxk_xdrawer_w / 2 - pxk_xdrawer_sk / 2, pxk_xdrawer_h / 2 - pxk_xdrawer_r * pxk_xdrawer_h / pxk_xdrawer_l via 0 - pxk_xdrawer_w / 2 - pxk_xdrawer_sk / 2, pxk_xdrawer_h / 2; line pxk_xdrawer_sk / 2 - pxk_xdrawer_w / 2 - pxk_xdrawer_r * pxk_xdrawer_sk / pxk_xdrawer_l, pxk_xdrawer_r * pxk_xdrawer_h / pxk_xdrawer_l - pxk_xdrawer_h / 2; curve pxk_xdrawer_r - pxk_xdrawer_w / 2 + pxk_xdrawer_sk / 2, 0 - pxk_xdrawer_h / 2 via pxk_xdrawer_sk / 2 - pxk_xdrawer_w / 2, 0 - pxk_xdrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and fm > 0.5 and do0 > 0.004; opacity: px_k * clamp((do0 - 0.004) * 4, 0, 1)
+            path { at: do.ex + if(fm > 0.5, 0, 30000) + if(px_k > 0.5 and (do0 > 0.004), 0, 30000), do.ey; stroke: 2.8 * u; color: mix(#e8f1f5, obsidian, 0.4); move pxk_odrawer_r - pxk_odrawer_w / 2 + pxk_odrawer_sk / 2, 0 - pxk_odrawer_h / 2; line pxk_odrawer_w / 2 - pxk_odrawer_r + pxk_odrawer_sk / 2, 0 - pxk_odrawer_h / 2; curve pxk_odrawer_w / 2 + pxk_odrawer_sk / 2 - pxk_odrawer_r * pxk_odrawer_sk / pxk_odrawer_l, pxk_odrawer_r * pxk_odrawer_h / pxk_odrawer_l - pxk_odrawer_h / 2 via pxk_odrawer_w / 2 + pxk_odrawer_sk / 2, 0 - pxk_odrawer_h / 2; line pxk_odrawer_w / 2 - pxk_odrawer_sk / 2 + pxk_odrawer_r * pxk_odrawer_sk / pxk_odrawer_l, pxk_odrawer_h / 2 - pxk_odrawer_r * pxk_odrawer_h / pxk_odrawer_l; curve pxk_odrawer_w / 2 - pxk_odrawer_sk / 2 - pxk_odrawer_r, pxk_odrawer_h / 2 via pxk_odrawer_w / 2 - pxk_odrawer_sk / 2, pxk_odrawer_h / 2; line pxk_odrawer_r - pxk_odrawer_w / 2 - pxk_odrawer_sk / 2, pxk_odrawer_h / 2; curve pxk_odrawer_r * pxk_odrawer_sk / pxk_odrawer_l - pxk_odrawer_w / 2 - pxk_odrawer_sk / 2, pxk_odrawer_h / 2 - pxk_odrawer_r * pxk_odrawer_h / pxk_odrawer_l via 0 - pxk_odrawer_w / 2 - pxk_odrawer_sk / 2, pxk_odrawer_h / 2; line pxk_odrawer_sk / 2 - pxk_odrawer_w / 2 - pxk_odrawer_r * pxk_odrawer_sk / pxk_odrawer_l, pxk_odrawer_r * pxk_odrawer_h / pxk_odrawer_l - pxk_odrawer_h / 2; curve pxk_odrawer_r - pxk_odrawer_w / 2 + pxk_odrawer_sk / 2, 0 - pxk_odrawer_h / 2 via pxk_odrawer_sk / 2 - pxk_odrawer_w / 2, 0 - pxk_odrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and dm0 > 0.004; opacity: px_k * clamp((dm0 - 0.004) * 4, 0, 1)
+            path { at: dm.ex + if(px_k > 0.5 and (dm0 > 0.004), 0, 30000), dm.ey - sg.up / 2; stroke: 2.8 * u; color: mix(#e8f1f5, obsidian, 0.4); move pxk_mdrawer_r - pxk_mdrawer_w / 2 + pxk_mdrawer_sk / 2, 0 - pxk_mdrawer_h / 2; line pxk_mdrawer_w / 2 - pxk_mdrawer_r + pxk_mdrawer_sk / 2, 0 - pxk_mdrawer_h / 2; curve pxk_mdrawer_w / 2 + pxk_mdrawer_sk / 2 - pxk_mdrawer_r * pxk_mdrawer_sk / pxk_mdrawer_l, pxk_mdrawer_r * pxk_mdrawer_h / pxk_mdrawer_l - pxk_mdrawer_h / 2 via pxk_mdrawer_w / 2 + pxk_mdrawer_sk / 2, 0 - pxk_mdrawer_h / 2; line pxk_mdrawer_w / 2 - pxk_mdrawer_sk / 2 + pxk_mdrawer_r * pxk_mdrawer_sk / pxk_mdrawer_l, pxk_mdrawer_h / 2 - pxk_mdrawer_r * pxk_mdrawer_h / pxk_mdrawer_l; curve pxk_mdrawer_w / 2 - pxk_mdrawer_sk / 2 - pxk_mdrawer_r, pxk_mdrawer_h / 2 via pxk_mdrawer_w / 2 - pxk_mdrawer_sk / 2, pxk_mdrawer_h / 2; line pxk_mdrawer_r - pxk_mdrawer_w / 2 - pxk_mdrawer_sk / 2, pxk_mdrawer_h / 2; curve pxk_mdrawer_r * pxk_mdrawer_sk / pxk_mdrawer_l - pxk_mdrawer_w / 2 - pxk_mdrawer_sk / 2, pxk_mdrawer_h / 2 - pxk_mdrawer_r * pxk_mdrawer_h / pxk_mdrawer_l via 0 - pxk_mdrawer_w / 2 - pxk_mdrawer_sk / 2, pxk_mdrawer_h / 2; line pxk_mdrawer_sk / 2 - pxk_mdrawer_w / 2 - pxk_mdrawer_r * pxk_mdrawer_sk / pxk_mdrawer_l, pxk_mdrawer_r * pxk_mdrawer_h / pxk_mdrawer_l - pxk_mdrawer_h / 2; curve pxk_mdrawer_r - pxk_mdrawer_w / 2 + pxk_mdrawer_sk / 2, 0 - pxk_mdrawer_h / 2 via pxk_mdrawer_sk / 2 - pxk_mdrawer_w / 2, 0 - pxk_mdrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and fm > 0.5 and dz0 > 0.004; opacity: px_k * clamp((dz0 - 0.004) * 4, 0, 1)
+            path { at: dz.fx + if(fm > 0.5, 0, 30000) + if(px_k > 0.5 and (dz0 > 0.004), 0, 30000), dz.fcy; stroke: 2.8 * u; color: mix(#e8f1f5, obsidian, 0.4); move pxk_zdrawer_r - pxk_zdrawer_w / 2 + pxk_zdrawer_sk / 2, 0 - pxk_zdrawer_h / 2; line pxk_zdrawer_w / 2 - pxk_zdrawer_r + pxk_zdrawer_sk / 2, 0 - pxk_zdrawer_h / 2; curve pxk_zdrawer_w / 2 + pxk_zdrawer_sk / 2 - pxk_zdrawer_r * pxk_zdrawer_sk / pxk_zdrawer_l, pxk_zdrawer_r * pxk_zdrawer_h / pxk_zdrawer_l - pxk_zdrawer_h / 2 via pxk_zdrawer_w / 2 + pxk_zdrawer_sk / 2, 0 - pxk_zdrawer_h / 2; line pxk_zdrawer_w / 2 - pxk_zdrawer_sk / 2 + pxk_zdrawer_r * pxk_zdrawer_sk / pxk_zdrawer_l, pxk_zdrawer_h / 2 - pxk_zdrawer_r * pxk_zdrawer_h / pxk_zdrawer_l; curve pxk_zdrawer_w / 2 - pxk_zdrawer_sk / 2 - pxk_zdrawer_r, pxk_zdrawer_h / 2 via pxk_zdrawer_w / 2 - pxk_zdrawer_sk / 2, pxk_zdrawer_h / 2; line pxk_zdrawer_r - pxk_zdrawer_w / 2 - pxk_zdrawer_sk / 2, pxk_zdrawer_h / 2; curve pxk_zdrawer_r * pxk_zdrawer_sk / pxk_zdrawer_l - pxk_zdrawer_w / 2 - pxk_zdrawer_sk / 2, pxk_zdrawer_h / 2 - pxk_zdrawer_r * pxk_zdrawer_h / pxk_zdrawer_l via 0 - pxk_zdrawer_w / 2 - pxk_zdrawer_sk / 2, pxk_zdrawer_h / 2; line pxk_zdrawer_sk / 2 - pxk_zdrawer_w / 2 - pxk_zdrawer_r * pxk_zdrawer_sk / pxk_zdrawer_l, pxk_zdrawer_r * pxk_zdrawer_h / pxk_zdrawer_l - pxk_zdrawer_h / 2; curve pxk_zdrawer_r - pxk_zdrawer_w / 2 + pxk_zdrawer_sk / 2, 0 - pxk_zdrawer_h / 2 via pxk_zdrawer_sk / 2 - pxk_zdrawer_w / 2, 0 - pxk_zdrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and sg > 0.35; opacity: px_k * clamp((sg - 0.35) * 4, 0, 1)
+            path { at: (sg.lr - sg.r) / 2 + if(sg > 0.35, 0, 30000) + if(px_k > 0.5, 0, 30000), yo + (sg.hc - sg.r) / 2; stroke: 2.8 * u; color: mix(#e8f1f5, obsidian, 0.4); move pxk_sgl_r - pxk_sgl_w / 2 + pxk_sgl_sk / 2, 0 - pxk_sgl_h / 2; line pxk_sgl_w / 2 - pxk_sgl_r + pxk_sgl_sk / 2, 0 - pxk_sgl_h / 2; curve pxk_sgl_w / 2 + pxk_sgl_sk / 2 - pxk_sgl_r * pxk_sgl_sk / pxk_sgl_l, pxk_sgl_r * pxk_sgl_h / pxk_sgl_l - pxk_sgl_h / 2 via pxk_sgl_w / 2 + pxk_sgl_sk / 2, 0 - pxk_sgl_h / 2; line pxk_sgl_w / 2 - pxk_sgl_sk / 2 + pxk_sgl_r * pxk_sgl_sk / pxk_sgl_l, pxk_sgl_h / 2 - pxk_sgl_r * pxk_sgl_h / pxk_sgl_l; curve pxk_sgl_w / 2 - pxk_sgl_sk / 2 - pxk_sgl_r, pxk_sgl_h / 2 via pxk_sgl_w / 2 - pxk_sgl_sk / 2, pxk_sgl_h / 2; line pxk_sgl_r - pxk_sgl_w / 2 - pxk_sgl_sk / 2, pxk_sgl_h / 2; curve pxk_sgl_r * pxk_sgl_sk / pxk_sgl_l - pxk_sgl_w / 2 - pxk_sgl_sk / 2, pxk_sgl_h / 2 - pxk_sgl_r * pxk_sgl_h / pxk_sgl_l via 0 - pxk_sgl_w / 2 - pxk_sgl_sk / 2, pxk_sgl_h / 2; line pxk_sgl_sk / 2 - pxk_sgl_w / 2 - pxk_sgl_r * pxk_sgl_sk / pxk_sgl_l, pxk_sgl_r * pxk_sgl_h / pxk_sgl_l - pxk_sgl_h / 2; curve pxk_sgl_r - pxk_sgl_w / 2 + pxk_sgl_sk / 2, 0 - pxk_sgl_h / 2 via pxk_sgl_sk / 2 - pxk_sgl_w / 2, 0 - pxk_sgl_h / 2; close }
+        }
+        group { show: px_k > 0.01 and sg > 0.35; opacity: px_k * clamp((sg - 0.35) * 4, 0, 1)
+            path { at: (sg.q0 + sg.q1) / 2 + if(sg > 0.35, 0, 30000) + if(px_k > 0.5, 0, 30000), yo + (sg.hc - sg.r) / 2; stroke: 2.8 * u; color: mix(#e8f1f5, obsidian, 0.4); move pxk_sgc_r - pxk_sgc_w / 2 + pxk_sgc_sk / 2, 0 - pxk_sgc_h / 2; line pxk_sgc_w / 2 - pxk_sgc_r + pxk_sgc_sk / 2, 0 - pxk_sgc_h / 2; curve pxk_sgc_w / 2 + pxk_sgc_sk / 2 - pxk_sgc_r * pxk_sgc_sk / pxk_sgc_l, pxk_sgc_r * pxk_sgc_h / pxk_sgc_l - pxk_sgc_h / 2 via pxk_sgc_w / 2 + pxk_sgc_sk / 2, 0 - pxk_sgc_h / 2; line pxk_sgc_w / 2 - pxk_sgc_sk / 2 + pxk_sgc_r * pxk_sgc_sk / pxk_sgc_l, pxk_sgc_h / 2 - pxk_sgc_r * pxk_sgc_h / pxk_sgc_l; curve pxk_sgc_w / 2 - pxk_sgc_sk / 2 - pxk_sgc_r, pxk_sgc_h / 2 via pxk_sgc_w / 2 - pxk_sgc_sk / 2, pxk_sgc_h / 2; line pxk_sgc_r - pxk_sgc_w / 2 - pxk_sgc_sk / 2, pxk_sgc_h / 2; curve pxk_sgc_r * pxk_sgc_sk / pxk_sgc_l - pxk_sgc_w / 2 - pxk_sgc_sk / 2, pxk_sgc_h / 2 - pxk_sgc_r * pxk_sgc_h / pxk_sgc_l via 0 - pxk_sgc_w / 2 - pxk_sgc_sk / 2, pxk_sgc_h / 2; line pxk_sgc_sk / 2 - pxk_sgc_w / 2 - pxk_sgc_r * pxk_sgc_sk / pxk_sgc_l, pxk_sgc_r * pxk_sgc_h / pxk_sgc_l - pxk_sgc_h / 2; curve pxk_sgc_r - pxk_sgc_w / 2 + pxk_sgc_sk / 2, 0 - pxk_sgc_h / 2 via pxk_sgc_sk / 2 - pxk_sgc_w / 2, 0 - pxk_sgc_h / 2; close }
+        }
+        group { show: px_k > 0.01 and sg > 0.35; opacity: px_k * clamp((sg - 0.35) * 4, 0, 1)
+            path { at: (sg.rq + screen.width + sg.r) / 2 + if(sg > 0.35, 0, 30000) + if(px_k > 0.5, 0, 30000), yo + (sg.hc - sg.r) / 2; stroke: 2.8 * u; color: mix(#e8f1f5, obsidian, 0.4); move pxk_sgr_r - pxk_sgr_w / 2 + pxk_sgr_sk / 2, 0 - pxk_sgr_h / 2; line pxk_sgr_w / 2 - pxk_sgr_r + pxk_sgr_sk / 2, 0 - pxk_sgr_h / 2; curve pxk_sgr_w / 2 + pxk_sgr_sk / 2 - pxk_sgr_r * pxk_sgr_sk / pxk_sgr_l, pxk_sgr_r * pxk_sgr_h / pxk_sgr_l - pxk_sgr_h / 2 via pxk_sgr_w / 2 + pxk_sgr_sk / 2, 0 - pxk_sgr_h / 2; line pxk_sgr_w / 2 - pxk_sgr_sk / 2 + pxk_sgr_r * pxk_sgr_sk / pxk_sgr_l, pxk_sgr_h / 2 - pxk_sgr_r * pxk_sgr_h / pxk_sgr_l; curve pxk_sgr_w / 2 - pxk_sgr_sk / 2 - pxk_sgr_r, pxk_sgr_h / 2 via pxk_sgr_w / 2 - pxk_sgr_sk / 2, pxk_sgr_h / 2; line pxk_sgr_r - pxk_sgr_w / 2 - pxk_sgr_sk / 2, pxk_sgr_h / 2; curve pxk_sgr_r * pxk_sgr_sk / pxk_sgr_l - pxk_sgr_w / 2 - pxk_sgr_sk / 2, pxk_sgr_h / 2 - pxk_sgr_r * pxk_sgr_h / pxk_sgr_l via 0 - pxk_sgr_w / 2 - pxk_sgr_sk / 2, pxk_sgr_h / 2; line pxk_sgr_sk / 2 - pxk_sgr_w / 2 - pxk_sgr_r * pxk_sgr_sk / pxk_sgr_l, pxk_sgr_r * pxk_sgr_h / pxk_sgr_l - pxk_sgr_h / 2; curve pxk_sgr_r - pxk_sgr_w / 2 + pxk_sgr_sk / 2, 0 - pxk_sgr_h / 2 via pxk_sgr_sk / 2 - pxk_sgr_w / 2, 0 - pxk_sgr_h / 2; close }
+        }
+        group { show: px_k > 0.01 and cdk.g > 0.02; opacity: px_k * clamp((cdk.g - 0.02) * 4, 0, 1)
+            path { at: cdk.bx + if(cdk.g > 0.02, 0, 30000) + if(px_k > 0.5, 0, 30000), cdk.by; stroke: 2.8 * u; color: mix(#e8f1f5, obsidian, 0.4); move pxk_cdk_r - pxk_cdk_w / 2 + pxk_cdk_sk / 2, 0 - pxk_cdk_h / 2; line pxk_cdk_w / 2 - pxk_cdk_r + pxk_cdk_sk / 2, 0 - pxk_cdk_h / 2; curve pxk_cdk_w / 2 + pxk_cdk_sk / 2 - pxk_cdk_r * pxk_cdk_sk / pxk_cdk_l, pxk_cdk_r * pxk_cdk_h / pxk_cdk_l - pxk_cdk_h / 2 via pxk_cdk_w / 2 + pxk_cdk_sk / 2, 0 - pxk_cdk_h / 2; line pxk_cdk_w / 2 - pxk_cdk_sk / 2 + pxk_cdk_r * pxk_cdk_sk / pxk_cdk_l, pxk_cdk_h / 2 - pxk_cdk_r * pxk_cdk_h / pxk_cdk_l; curve pxk_cdk_w / 2 - pxk_cdk_sk / 2 - pxk_cdk_r, pxk_cdk_h / 2 via pxk_cdk_w / 2 - pxk_cdk_sk / 2, pxk_cdk_h / 2; line pxk_cdk_r - pxk_cdk_w / 2 - pxk_cdk_sk / 2, pxk_cdk_h / 2; curve pxk_cdk_r * pxk_cdk_sk / pxk_cdk_l - pxk_cdk_w / 2 - pxk_cdk_sk / 2, pxk_cdk_h / 2 - pxk_cdk_r * pxk_cdk_h / pxk_cdk_l via 0 - pxk_cdk_w / 2 - pxk_cdk_sk / 2, pxk_cdk_h / 2; line pxk_cdk_sk / 2 - pxk_cdk_w / 2 - pxk_cdk_r * pxk_cdk_sk / pxk_cdk_l, pxk_cdk_r * pxk_cdk_h / pxk_cdk_l - pxk_cdk_h / 2; curve pxk_cdk_r - pxk_cdk_w / 2 + pxk_cdk_sk / 2, 0 - pxk_cdk_h / 2 via pxk_cdk_sk / 2 - pxk_cdk_w / 2, 0 - pxk_cdk_h / 2; close }
+        }
+        group { show: px_k > 0.01 and adk.g > 0.02; opacity: px_k * clamp((adk.g - 0.02) * 4, 0, 1)
+            path { at: adk.bx + if(adk.g > 0.02, 0, 30000) + if(px_k > 0.5, 0, 30000), adk.by; stroke: 2.8 * u; color: mix(#e8f1f5, obsidian, 0.4); move pxk_adk_r - pxk_adk_w / 2 + pxk_adk_sk / 2, 0 - pxk_adk_h / 2; line pxk_adk_w / 2 - pxk_adk_r + pxk_adk_sk / 2, 0 - pxk_adk_h / 2; curve pxk_adk_w / 2 + pxk_adk_sk / 2 - pxk_adk_r * pxk_adk_sk / pxk_adk_l, pxk_adk_r * pxk_adk_h / pxk_adk_l - pxk_adk_h / 2 via pxk_adk_w / 2 + pxk_adk_sk / 2, 0 - pxk_adk_h / 2; line pxk_adk_w / 2 - pxk_adk_sk / 2 + pxk_adk_r * pxk_adk_sk / pxk_adk_l, pxk_adk_h / 2 - pxk_adk_r * pxk_adk_h / pxk_adk_l; curve pxk_adk_w / 2 - pxk_adk_sk / 2 - pxk_adk_r, pxk_adk_h / 2 via pxk_adk_w / 2 - pxk_adk_sk / 2, pxk_adk_h / 2; line pxk_adk_r - pxk_adk_w / 2 - pxk_adk_sk / 2, pxk_adk_h / 2; curve pxk_adk_r * pxk_adk_sk / pxk_adk_l - pxk_adk_w / 2 - pxk_adk_sk / 2, pxk_adk_h / 2 - pxk_adk_r * pxk_adk_h / pxk_adk_l via 0 - pxk_adk_w / 2 - pxk_adk_sk / 2, pxk_adk_h / 2; line pxk_adk_sk / 2 - pxk_adk_w / 2 - pxk_adk_r * pxk_adk_sk / pxk_adk_l, pxk_adk_r * pxk_adk_h / pxk_adk_l - pxk_adk_h / 2; curve pxk_adk_r - pxk_adk_w / 2 + pxk_adk_sk / 2, 0 - pxk_adk_h / 2 via pxk_adk_sk / 2 - pxk_adk_w / 2, 0 - pxk_adk_h / 2; close }
+        }
+        group { show: px_k > 0.01 and dk0 > 0.004; opacity: px_k * clamp((dk0 - 0.004) * 4, 0, 1)
+            path { at: dk.ex + if(px_k > 0.5 and (dk0 > 0.004), 0, 30000), dk.ey - sg.up / 2; color: obsidian; move pxk_drawer_r - pxk_drawer_w / 2 + pxk_drawer_sk / 2, 0 - pxk_drawer_h / 2; line pxk_drawer_w / 2 - pxk_drawer_r + pxk_drawer_sk / 2, 0 - pxk_drawer_h / 2; curve pxk_drawer_w / 2 + pxk_drawer_sk / 2 - pxk_drawer_r * pxk_drawer_sk / pxk_drawer_l, pxk_drawer_r * pxk_drawer_h / pxk_drawer_l - pxk_drawer_h / 2 via pxk_drawer_w / 2 + pxk_drawer_sk / 2, 0 - pxk_drawer_h / 2; line pxk_drawer_w / 2 - pxk_drawer_sk / 2 + pxk_drawer_r * pxk_drawer_sk / pxk_drawer_l, pxk_drawer_h / 2 - pxk_drawer_r * pxk_drawer_h / pxk_drawer_l; curve pxk_drawer_w / 2 - pxk_drawer_sk / 2 - pxk_drawer_r, pxk_drawer_h / 2 via pxk_drawer_w / 2 - pxk_drawer_sk / 2, pxk_drawer_h / 2; line pxk_drawer_r - pxk_drawer_w / 2 - pxk_drawer_sk / 2, pxk_drawer_h / 2; curve pxk_drawer_r * pxk_drawer_sk / pxk_drawer_l - pxk_drawer_w / 2 - pxk_drawer_sk / 2, pxk_drawer_h / 2 - pxk_drawer_r * pxk_drawer_h / pxk_drawer_l via 0 - pxk_drawer_w / 2 - pxk_drawer_sk / 2, pxk_drawer_h / 2; line pxk_drawer_sk / 2 - pxk_drawer_w / 2 - pxk_drawer_r * pxk_drawer_sk / pxk_drawer_l, pxk_drawer_r * pxk_drawer_h / pxk_drawer_l - pxk_drawer_h / 2; curve pxk_drawer_r - pxk_drawer_w / 2 + pxk_drawer_sk / 2, 0 - pxk_drawer_h / 2 via pxk_drawer_sk / 2 - pxk_drawer_w / 2, 0 - pxk_drawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and dc0 > 0.004; opacity: px_k * clamp((dc0 - 0.004) * 4, 0, 1)
+            path { at: dc.ex + if(px_k > 0.5 and (dc0 > 0.004), 0, 30000), dc.ey - sg.up / 2; color: obsidian; move pxk_cdrawer_r - pxk_cdrawer_w / 2 + pxk_cdrawer_sk / 2, 0 - pxk_cdrawer_h / 2; line pxk_cdrawer_w / 2 - pxk_cdrawer_r + pxk_cdrawer_sk / 2, 0 - pxk_cdrawer_h / 2; curve pxk_cdrawer_w / 2 + pxk_cdrawer_sk / 2 - pxk_cdrawer_r * pxk_cdrawer_sk / pxk_cdrawer_l, pxk_cdrawer_r * pxk_cdrawer_h / pxk_cdrawer_l - pxk_cdrawer_h / 2 via pxk_cdrawer_w / 2 + pxk_cdrawer_sk / 2, 0 - pxk_cdrawer_h / 2; line pxk_cdrawer_w / 2 - pxk_cdrawer_sk / 2 + pxk_cdrawer_r * pxk_cdrawer_sk / pxk_cdrawer_l, pxk_cdrawer_h / 2 - pxk_cdrawer_r * pxk_cdrawer_h / pxk_cdrawer_l; curve pxk_cdrawer_w / 2 - pxk_cdrawer_sk / 2 - pxk_cdrawer_r, pxk_cdrawer_h / 2 via pxk_cdrawer_w / 2 - pxk_cdrawer_sk / 2, pxk_cdrawer_h / 2; line pxk_cdrawer_r - pxk_cdrawer_w / 2 - pxk_cdrawer_sk / 2, pxk_cdrawer_h / 2; curve pxk_cdrawer_r * pxk_cdrawer_sk / pxk_cdrawer_l - pxk_cdrawer_w / 2 - pxk_cdrawer_sk / 2, pxk_cdrawer_h / 2 - pxk_cdrawer_r * pxk_cdrawer_h / pxk_cdrawer_l via 0 - pxk_cdrawer_w / 2 - pxk_cdrawer_sk / 2, pxk_cdrawer_h / 2; line pxk_cdrawer_sk / 2 - pxk_cdrawer_w / 2 - pxk_cdrawer_r * pxk_cdrawer_sk / pxk_cdrawer_l, pxk_cdrawer_r * pxk_cdrawer_h / pxk_cdrawer_l - pxk_cdrawer_h / 2; curve pxk_cdrawer_r - pxk_cdrawer_w / 2 + pxk_cdrawer_sk / 2, 0 - pxk_cdrawer_h / 2 via pxk_cdrawer_sk / 2 - pxk_cdrawer_w / 2, 0 - pxk_cdrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and ds0 > 0.004; opacity: px_k * clamp((ds0 - 0.004) * 4, 0, 1)
+            path { at: ds.ex + if(px_k > 0.5 and (ds0 > 0.004), 0, 30000), ds.ey; color: obsidian; move pxk_sdrawer_r - pxk_sdrawer_w / 2 + pxk_sdrawer_sk / 2, 0 - pxk_sdrawer_h / 2; line pxk_sdrawer_w / 2 - pxk_sdrawer_r + pxk_sdrawer_sk / 2, 0 - pxk_sdrawer_h / 2; curve pxk_sdrawer_w / 2 + pxk_sdrawer_sk / 2 - pxk_sdrawer_r * pxk_sdrawer_sk / pxk_sdrawer_l, pxk_sdrawer_r * pxk_sdrawer_h / pxk_sdrawer_l - pxk_sdrawer_h / 2 via pxk_sdrawer_w / 2 + pxk_sdrawer_sk / 2, 0 - pxk_sdrawer_h / 2; line pxk_sdrawer_w / 2 - pxk_sdrawer_sk / 2 + pxk_sdrawer_r * pxk_sdrawer_sk / pxk_sdrawer_l, pxk_sdrawer_h / 2 - pxk_sdrawer_r * pxk_sdrawer_h / pxk_sdrawer_l; curve pxk_sdrawer_w / 2 - pxk_sdrawer_sk / 2 - pxk_sdrawer_r, pxk_sdrawer_h / 2 via pxk_sdrawer_w / 2 - pxk_sdrawer_sk / 2, pxk_sdrawer_h / 2; line pxk_sdrawer_r - pxk_sdrawer_w / 2 - pxk_sdrawer_sk / 2, pxk_sdrawer_h / 2; curve pxk_sdrawer_r * pxk_sdrawer_sk / pxk_sdrawer_l - pxk_sdrawer_w / 2 - pxk_sdrawer_sk / 2, pxk_sdrawer_h / 2 - pxk_sdrawer_r * pxk_sdrawer_h / pxk_sdrawer_l via 0 - pxk_sdrawer_w / 2 - pxk_sdrawer_sk / 2, pxk_sdrawer_h / 2; line pxk_sdrawer_sk / 2 - pxk_sdrawer_w / 2 - pxk_sdrawer_r * pxk_sdrawer_sk / pxk_sdrawer_l, pxk_sdrawer_r * pxk_sdrawer_h / pxk_sdrawer_l - pxk_sdrawer_h / 2; curve pxk_sdrawer_r - pxk_sdrawer_w / 2 + pxk_sdrawer_sk / 2, 0 - pxk_sdrawer_h / 2 via pxk_sdrawer_sk / 2 - pxk_sdrawer_w / 2, 0 - pxk_sdrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and dl0 > 0.004; opacity: px_k * clamp((dl0 - 0.004) * 4, 0, 1)
+            path { at: dl.ex + if(px_k > 0.5 and (dl0 > 0.004), 0, 30000), dl.ey; color: obsidian; move pxk_ldrawer_r - pxk_ldrawer_w / 2 + pxk_ldrawer_sk / 2, 0 - pxk_ldrawer_h / 2; line pxk_ldrawer_w / 2 - pxk_ldrawer_r + pxk_ldrawer_sk / 2, 0 - pxk_ldrawer_h / 2; curve pxk_ldrawer_w / 2 + pxk_ldrawer_sk / 2 - pxk_ldrawer_r * pxk_ldrawer_sk / pxk_ldrawer_l, pxk_ldrawer_r * pxk_ldrawer_h / pxk_ldrawer_l - pxk_ldrawer_h / 2 via pxk_ldrawer_w / 2 + pxk_ldrawer_sk / 2, 0 - pxk_ldrawer_h / 2; line pxk_ldrawer_w / 2 - pxk_ldrawer_sk / 2 + pxk_ldrawer_r * pxk_ldrawer_sk / pxk_ldrawer_l, pxk_ldrawer_h / 2 - pxk_ldrawer_r * pxk_ldrawer_h / pxk_ldrawer_l; curve pxk_ldrawer_w / 2 - pxk_ldrawer_sk / 2 - pxk_ldrawer_r, pxk_ldrawer_h / 2 via pxk_ldrawer_w / 2 - pxk_ldrawer_sk / 2, pxk_ldrawer_h / 2; line pxk_ldrawer_r - pxk_ldrawer_w / 2 - pxk_ldrawer_sk / 2, pxk_ldrawer_h / 2; curve pxk_ldrawer_r * pxk_ldrawer_sk / pxk_ldrawer_l - pxk_ldrawer_w / 2 - pxk_ldrawer_sk / 2, pxk_ldrawer_h / 2 - pxk_ldrawer_r * pxk_ldrawer_h / pxk_ldrawer_l via 0 - pxk_ldrawer_w / 2 - pxk_ldrawer_sk / 2, pxk_ldrawer_h / 2; line pxk_ldrawer_sk / 2 - pxk_ldrawer_w / 2 - pxk_ldrawer_r * pxk_ldrawer_sk / pxk_ldrawer_l, pxk_ldrawer_r * pxk_ldrawer_h / pxk_ldrawer_l - pxk_ldrawer_h / 2; curve pxk_ldrawer_r - pxk_ldrawer_w / 2 + pxk_ldrawer_sk / 2, 0 - pxk_ldrawer_h / 2 via pxk_ldrawer_sk / 2 - pxk_ldrawer_w / 2, 0 - pxk_ldrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and dax0 > 0.002; opacity: px_k * clamp((dax0 - 0.002) * 4, 0, 1)
+            path { at: dax.ex + (dax.br - dax.bl) / 2 + if(dax0 > 0.002, 0, 30000) + if(px_k > 0.5, 0, 30000), dax.ey + (dax.bb - dax.bt) / 2; color: obsidian; move pxk_xdrawer_r - pxk_xdrawer_w / 2 + pxk_xdrawer_sk / 2, 0 - pxk_xdrawer_h / 2; line pxk_xdrawer_w / 2 - pxk_xdrawer_r + pxk_xdrawer_sk / 2, 0 - pxk_xdrawer_h / 2; curve pxk_xdrawer_w / 2 + pxk_xdrawer_sk / 2 - pxk_xdrawer_r * pxk_xdrawer_sk / pxk_xdrawer_l, pxk_xdrawer_r * pxk_xdrawer_h / pxk_xdrawer_l - pxk_xdrawer_h / 2 via pxk_xdrawer_w / 2 + pxk_xdrawer_sk / 2, 0 - pxk_xdrawer_h / 2; line pxk_xdrawer_w / 2 - pxk_xdrawer_sk / 2 + pxk_xdrawer_r * pxk_xdrawer_sk / pxk_xdrawer_l, pxk_xdrawer_h / 2 - pxk_xdrawer_r * pxk_xdrawer_h / pxk_xdrawer_l; curve pxk_xdrawer_w / 2 - pxk_xdrawer_sk / 2 - pxk_xdrawer_r, pxk_xdrawer_h / 2 via pxk_xdrawer_w / 2 - pxk_xdrawer_sk / 2, pxk_xdrawer_h / 2; line pxk_xdrawer_r - pxk_xdrawer_w / 2 - pxk_xdrawer_sk / 2, pxk_xdrawer_h / 2; curve pxk_xdrawer_r * pxk_xdrawer_sk / pxk_xdrawer_l - pxk_xdrawer_w / 2 - pxk_xdrawer_sk / 2, pxk_xdrawer_h / 2 - pxk_xdrawer_r * pxk_xdrawer_h / pxk_xdrawer_l via 0 - pxk_xdrawer_w / 2 - pxk_xdrawer_sk / 2, pxk_xdrawer_h / 2; line pxk_xdrawer_sk / 2 - pxk_xdrawer_w / 2 - pxk_xdrawer_r * pxk_xdrawer_sk / pxk_xdrawer_l, pxk_xdrawer_r * pxk_xdrawer_h / pxk_xdrawer_l - pxk_xdrawer_h / 2; curve pxk_xdrawer_r - pxk_xdrawer_w / 2 + pxk_xdrawer_sk / 2, 0 - pxk_xdrawer_h / 2 via pxk_xdrawer_sk / 2 - pxk_xdrawer_w / 2, 0 - pxk_xdrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and fm > 0.5 and do0 > 0.004; opacity: px_k * clamp((do0 - 0.004) * 4, 0, 1)
+            path { at: do.ex + if(fm > 0.5, 0, 30000) + if(px_k > 0.5 and (do0 > 0.004), 0, 30000), do.ey; color: obsidian; move pxk_odrawer_r - pxk_odrawer_w / 2 + pxk_odrawer_sk / 2, 0 - pxk_odrawer_h / 2; line pxk_odrawer_w / 2 - pxk_odrawer_r + pxk_odrawer_sk / 2, 0 - pxk_odrawer_h / 2; curve pxk_odrawer_w / 2 + pxk_odrawer_sk / 2 - pxk_odrawer_r * pxk_odrawer_sk / pxk_odrawer_l, pxk_odrawer_r * pxk_odrawer_h / pxk_odrawer_l - pxk_odrawer_h / 2 via pxk_odrawer_w / 2 + pxk_odrawer_sk / 2, 0 - pxk_odrawer_h / 2; line pxk_odrawer_w / 2 - pxk_odrawer_sk / 2 + pxk_odrawer_r * pxk_odrawer_sk / pxk_odrawer_l, pxk_odrawer_h / 2 - pxk_odrawer_r * pxk_odrawer_h / pxk_odrawer_l; curve pxk_odrawer_w / 2 - pxk_odrawer_sk / 2 - pxk_odrawer_r, pxk_odrawer_h / 2 via pxk_odrawer_w / 2 - pxk_odrawer_sk / 2, pxk_odrawer_h / 2; line pxk_odrawer_r - pxk_odrawer_w / 2 - pxk_odrawer_sk / 2, pxk_odrawer_h / 2; curve pxk_odrawer_r * pxk_odrawer_sk / pxk_odrawer_l - pxk_odrawer_w / 2 - pxk_odrawer_sk / 2, pxk_odrawer_h / 2 - pxk_odrawer_r * pxk_odrawer_h / pxk_odrawer_l via 0 - pxk_odrawer_w / 2 - pxk_odrawer_sk / 2, pxk_odrawer_h / 2; line pxk_odrawer_sk / 2 - pxk_odrawer_w / 2 - pxk_odrawer_r * pxk_odrawer_sk / pxk_odrawer_l, pxk_odrawer_r * pxk_odrawer_h / pxk_odrawer_l - pxk_odrawer_h / 2; curve pxk_odrawer_r - pxk_odrawer_w / 2 + pxk_odrawer_sk / 2, 0 - pxk_odrawer_h / 2 via pxk_odrawer_sk / 2 - pxk_odrawer_w / 2, 0 - pxk_odrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and dm0 > 0.004; opacity: px_k * clamp((dm0 - 0.004) * 4, 0, 1)
+            path { at: dm.ex + if(px_k > 0.5 and (dm0 > 0.004), 0, 30000), dm.ey - sg.up / 2; color: obsidian; move pxk_mdrawer_r - pxk_mdrawer_w / 2 + pxk_mdrawer_sk / 2, 0 - pxk_mdrawer_h / 2; line pxk_mdrawer_w / 2 - pxk_mdrawer_r + pxk_mdrawer_sk / 2, 0 - pxk_mdrawer_h / 2; curve pxk_mdrawer_w / 2 + pxk_mdrawer_sk / 2 - pxk_mdrawer_r * pxk_mdrawer_sk / pxk_mdrawer_l, pxk_mdrawer_r * pxk_mdrawer_h / pxk_mdrawer_l - pxk_mdrawer_h / 2 via pxk_mdrawer_w / 2 + pxk_mdrawer_sk / 2, 0 - pxk_mdrawer_h / 2; line pxk_mdrawer_w / 2 - pxk_mdrawer_sk / 2 + pxk_mdrawer_r * pxk_mdrawer_sk / pxk_mdrawer_l, pxk_mdrawer_h / 2 - pxk_mdrawer_r * pxk_mdrawer_h / pxk_mdrawer_l; curve pxk_mdrawer_w / 2 - pxk_mdrawer_sk / 2 - pxk_mdrawer_r, pxk_mdrawer_h / 2 via pxk_mdrawer_w / 2 - pxk_mdrawer_sk / 2, pxk_mdrawer_h / 2; line pxk_mdrawer_r - pxk_mdrawer_w / 2 - pxk_mdrawer_sk / 2, pxk_mdrawer_h / 2; curve pxk_mdrawer_r * pxk_mdrawer_sk / pxk_mdrawer_l - pxk_mdrawer_w / 2 - pxk_mdrawer_sk / 2, pxk_mdrawer_h / 2 - pxk_mdrawer_r * pxk_mdrawer_h / pxk_mdrawer_l via 0 - pxk_mdrawer_w / 2 - pxk_mdrawer_sk / 2, pxk_mdrawer_h / 2; line pxk_mdrawer_sk / 2 - pxk_mdrawer_w / 2 - pxk_mdrawer_r * pxk_mdrawer_sk / pxk_mdrawer_l, pxk_mdrawer_r * pxk_mdrawer_h / pxk_mdrawer_l - pxk_mdrawer_h / 2; curve pxk_mdrawer_r - pxk_mdrawer_w / 2 + pxk_mdrawer_sk / 2, 0 - pxk_mdrawer_h / 2 via pxk_mdrawer_sk / 2 - pxk_mdrawer_w / 2, 0 - pxk_mdrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and fm > 0.5 and dz0 > 0.004; opacity: px_k * clamp((dz0 - 0.004) * 4, 0, 1)
+            path { at: dz.fx + if(fm > 0.5, 0, 30000) + if(px_k > 0.5 and (dz0 > 0.004), 0, 30000), dz.fcy; color: obsidian; move pxk_zdrawer_r - pxk_zdrawer_w / 2 + pxk_zdrawer_sk / 2, 0 - pxk_zdrawer_h / 2; line pxk_zdrawer_w / 2 - pxk_zdrawer_r + pxk_zdrawer_sk / 2, 0 - pxk_zdrawer_h / 2; curve pxk_zdrawer_w / 2 + pxk_zdrawer_sk / 2 - pxk_zdrawer_r * pxk_zdrawer_sk / pxk_zdrawer_l, pxk_zdrawer_r * pxk_zdrawer_h / pxk_zdrawer_l - pxk_zdrawer_h / 2 via pxk_zdrawer_w / 2 + pxk_zdrawer_sk / 2, 0 - pxk_zdrawer_h / 2; line pxk_zdrawer_w / 2 - pxk_zdrawer_sk / 2 + pxk_zdrawer_r * pxk_zdrawer_sk / pxk_zdrawer_l, pxk_zdrawer_h / 2 - pxk_zdrawer_r * pxk_zdrawer_h / pxk_zdrawer_l; curve pxk_zdrawer_w / 2 - pxk_zdrawer_sk / 2 - pxk_zdrawer_r, pxk_zdrawer_h / 2 via pxk_zdrawer_w / 2 - pxk_zdrawer_sk / 2, pxk_zdrawer_h / 2; line pxk_zdrawer_r - pxk_zdrawer_w / 2 - pxk_zdrawer_sk / 2, pxk_zdrawer_h / 2; curve pxk_zdrawer_r * pxk_zdrawer_sk / pxk_zdrawer_l - pxk_zdrawer_w / 2 - pxk_zdrawer_sk / 2, pxk_zdrawer_h / 2 - pxk_zdrawer_r * pxk_zdrawer_h / pxk_zdrawer_l via 0 - pxk_zdrawer_w / 2 - pxk_zdrawer_sk / 2, pxk_zdrawer_h / 2; line pxk_zdrawer_sk / 2 - pxk_zdrawer_w / 2 - pxk_zdrawer_r * pxk_zdrawer_sk / pxk_zdrawer_l, pxk_zdrawer_r * pxk_zdrawer_h / pxk_zdrawer_l - pxk_zdrawer_h / 2; curve pxk_zdrawer_r - pxk_zdrawer_w / 2 + pxk_zdrawer_sk / 2, 0 - pxk_zdrawer_h / 2 via pxk_zdrawer_sk / 2 - pxk_zdrawer_w / 2, 0 - pxk_zdrawer_h / 2; close }
+        }
+        group { show: px_k > 0.01 and sg > 0.35; opacity: px_k * clamp((sg - 0.35) * 4, 0, 1)
+            path { at: (sg.lr - sg.r) / 2 + if(sg > 0.35, 0, 30000) + if(px_k > 0.5, 0, 30000), yo + (sg.hc - sg.r) / 2; color: obsidian; move pxk_sgl_r - pxk_sgl_w / 2 + pxk_sgl_sk / 2, 0 - pxk_sgl_h / 2; line pxk_sgl_w / 2 - pxk_sgl_r + pxk_sgl_sk / 2, 0 - pxk_sgl_h / 2; curve pxk_sgl_w / 2 + pxk_sgl_sk / 2 - pxk_sgl_r * pxk_sgl_sk / pxk_sgl_l, pxk_sgl_r * pxk_sgl_h / pxk_sgl_l - pxk_sgl_h / 2 via pxk_sgl_w / 2 + pxk_sgl_sk / 2, 0 - pxk_sgl_h / 2; line pxk_sgl_w / 2 - pxk_sgl_sk / 2 + pxk_sgl_r * pxk_sgl_sk / pxk_sgl_l, pxk_sgl_h / 2 - pxk_sgl_r * pxk_sgl_h / pxk_sgl_l; curve pxk_sgl_w / 2 - pxk_sgl_sk / 2 - pxk_sgl_r, pxk_sgl_h / 2 via pxk_sgl_w / 2 - pxk_sgl_sk / 2, pxk_sgl_h / 2; line pxk_sgl_r - pxk_sgl_w / 2 - pxk_sgl_sk / 2, pxk_sgl_h / 2; curve pxk_sgl_r * pxk_sgl_sk / pxk_sgl_l - pxk_sgl_w / 2 - pxk_sgl_sk / 2, pxk_sgl_h / 2 - pxk_sgl_r * pxk_sgl_h / pxk_sgl_l via 0 - pxk_sgl_w / 2 - pxk_sgl_sk / 2, pxk_sgl_h / 2; line pxk_sgl_sk / 2 - pxk_sgl_w / 2 - pxk_sgl_r * pxk_sgl_sk / pxk_sgl_l, pxk_sgl_r * pxk_sgl_h / pxk_sgl_l - pxk_sgl_h / 2; curve pxk_sgl_r - pxk_sgl_w / 2 + pxk_sgl_sk / 2, 0 - pxk_sgl_h / 2 via pxk_sgl_sk / 2 - pxk_sgl_w / 2, 0 - pxk_sgl_h / 2; close }
+        }
+        group { show: px_k > 0.01 and sg > 0.35; opacity: px_k * clamp((sg - 0.35) * 4, 0, 1)
+            path { at: (sg.q0 + sg.q1) / 2 + if(sg > 0.35, 0, 30000) + if(px_k > 0.5, 0, 30000), yo + (sg.hc - sg.r) / 2; color: obsidian; move pxk_sgc_r - pxk_sgc_w / 2 + pxk_sgc_sk / 2, 0 - pxk_sgc_h / 2; line pxk_sgc_w / 2 - pxk_sgc_r + pxk_sgc_sk / 2, 0 - pxk_sgc_h / 2; curve pxk_sgc_w / 2 + pxk_sgc_sk / 2 - pxk_sgc_r * pxk_sgc_sk / pxk_sgc_l, pxk_sgc_r * pxk_sgc_h / pxk_sgc_l - pxk_sgc_h / 2 via pxk_sgc_w / 2 + pxk_sgc_sk / 2, 0 - pxk_sgc_h / 2; line pxk_sgc_w / 2 - pxk_sgc_sk / 2 + pxk_sgc_r * pxk_sgc_sk / pxk_sgc_l, pxk_sgc_h / 2 - pxk_sgc_r * pxk_sgc_h / pxk_sgc_l; curve pxk_sgc_w / 2 - pxk_sgc_sk / 2 - pxk_sgc_r, pxk_sgc_h / 2 via pxk_sgc_w / 2 - pxk_sgc_sk / 2, pxk_sgc_h / 2; line pxk_sgc_r - pxk_sgc_w / 2 - pxk_sgc_sk / 2, pxk_sgc_h / 2; curve pxk_sgc_r * pxk_sgc_sk / pxk_sgc_l - pxk_sgc_w / 2 - pxk_sgc_sk / 2, pxk_sgc_h / 2 - pxk_sgc_r * pxk_sgc_h / pxk_sgc_l via 0 - pxk_sgc_w / 2 - pxk_sgc_sk / 2, pxk_sgc_h / 2; line pxk_sgc_sk / 2 - pxk_sgc_w / 2 - pxk_sgc_r * pxk_sgc_sk / pxk_sgc_l, pxk_sgc_r * pxk_sgc_h / pxk_sgc_l - pxk_sgc_h / 2; curve pxk_sgc_r - pxk_sgc_w / 2 + pxk_sgc_sk / 2, 0 - pxk_sgc_h / 2 via pxk_sgc_sk / 2 - pxk_sgc_w / 2, 0 - pxk_sgc_h / 2; close }
+        }
+        group { show: px_k > 0.01 and sg > 0.35; opacity: px_k * clamp((sg - 0.35) * 4, 0, 1)
+            path { at: (sg.rq + screen.width + sg.r) / 2 + if(sg > 0.35, 0, 30000) + if(px_k > 0.5, 0, 30000), yo + (sg.hc - sg.r) / 2; color: obsidian; move pxk_sgr_r - pxk_sgr_w / 2 + pxk_sgr_sk / 2, 0 - pxk_sgr_h / 2; line pxk_sgr_w / 2 - pxk_sgr_r + pxk_sgr_sk / 2, 0 - pxk_sgr_h / 2; curve pxk_sgr_w / 2 + pxk_sgr_sk / 2 - pxk_sgr_r * pxk_sgr_sk / pxk_sgr_l, pxk_sgr_r * pxk_sgr_h / pxk_sgr_l - pxk_sgr_h / 2 via pxk_sgr_w / 2 + pxk_sgr_sk / 2, 0 - pxk_sgr_h / 2; line pxk_sgr_w / 2 - pxk_sgr_sk / 2 + pxk_sgr_r * pxk_sgr_sk / pxk_sgr_l, pxk_sgr_h / 2 - pxk_sgr_r * pxk_sgr_h / pxk_sgr_l; curve pxk_sgr_w / 2 - pxk_sgr_sk / 2 - pxk_sgr_r, pxk_sgr_h / 2 via pxk_sgr_w / 2 - pxk_sgr_sk / 2, pxk_sgr_h / 2; line pxk_sgr_r - pxk_sgr_w / 2 - pxk_sgr_sk / 2, pxk_sgr_h / 2; curve pxk_sgr_r * pxk_sgr_sk / pxk_sgr_l - pxk_sgr_w / 2 - pxk_sgr_sk / 2, pxk_sgr_h / 2 - pxk_sgr_r * pxk_sgr_h / pxk_sgr_l via 0 - pxk_sgr_w / 2 - pxk_sgr_sk / 2, pxk_sgr_h / 2; line pxk_sgr_sk / 2 - pxk_sgr_w / 2 - pxk_sgr_r * pxk_sgr_sk / pxk_sgr_l, pxk_sgr_r * pxk_sgr_h / pxk_sgr_l - pxk_sgr_h / 2; curve pxk_sgr_r - pxk_sgr_w / 2 + pxk_sgr_sk / 2, 0 - pxk_sgr_h / 2 via pxk_sgr_sk / 2 - pxk_sgr_w / 2, 0 - pxk_sgr_h / 2; close }
+        }
+        group { show: px_k > 0.01 and cdk.g > 0.02; opacity: px_k * clamp((cdk.g - 0.02) * 4, 0, 1)
+            path { at: cdk.bx + if(cdk.g > 0.02, 0, 30000) + if(px_k > 0.5, 0, 30000), cdk.by; color: obsidian; move pxk_cdk_r - pxk_cdk_w / 2 + pxk_cdk_sk / 2, 0 - pxk_cdk_h / 2; line pxk_cdk_w / 2 - pxk_cdk_r + pxk_cdk_sk / 2, 0 - pxk_cdk_h / 2; curve pxk_cdk_w / 2 + pxk_cdk_sk / 2 - pxk_cdk_r * pxk_cdk_sk / pxk_cdk_l, pxk_cdk_r * pxk_cdk_h / pxk_cdk_l - pxk_cdk_h / 2 via pxk_cdk_w / 2 + pxk_cdk_sk / 2, 0 - pxk_cdk_h / 2; line pxk_cdk_w / 2 - pxk_cdk_sk / 2 + pxk_cdk_r * pxk_cdk_sk / pxk_cdk_l, pxk_cdk_h / 2 - pxk_cdk_r * pxk_cdk_h / pxk_cdk_l; curve pxk_cdk_w / 2 - pxk_cdk_sk / 2 - pxk_cdk_r, pxk_cdk_h / 2 via pxk_cdk_w / 2 - pxk_cdk_sk / 2, pxk_cdk_h / 2; line pxk_cdk_r - pxk_cdk_w / 2 - pxk_cdk_sk / 2, pxk_cdk_h / 2; curve pxk_cdk_r * pxk_cdk_sk / pxk_cdk_l - pxk_cdk_w / 2 - pxk_cdk_sk / 2, pxk_cdk_h / 2 - pxk_cdk_r * pxk_cdk_h / pxk_cdk_l via 0 - pxk_cdk_w / 2 - pxk_cdk_sk / 2, pxk_cdk_h / 2; line pxk_cdk_sk / 2 - pxk_cdk_w / 2 - pxk_cdk_r * pxk_cdk_sk / pxk_cdk_l, pxk_cdk_r * pxk_cdk_h / pxk_cdk_l - pxk_cdk_h / 2; curve pxk_cdk_r - pxk_cdk_w / 2 + pxk_cdk_sk / 2, 0 - pxk_cdk_h / 2 via pxk_cdk_sk / 2 - pxk_cdk_w / 2, 0 - pxk_cdk_h / 2; close }
+        }
+        group { show: px_k > 0.01 and adk.g > 0.02; opacity: px_k * clamp((adk.g - 0.02) * 4, 0, 1)
+            path { at: adk.bx + if(adk.g > 0.02, 0, 30000) + if(px_k > 0.5, 0, 30000), adk.by; color: obsidian; move pxk_adk_r - pxk_adk_w / 2 + pxk_adk_sk / 2, 0 - pxk_adk_h / 2; line pxk_adk_w / 2 - pxk_adk_r + pxk_adk_sk / 2, 0 - pxk_adk_h / 2; curve pxk_adk_w / 2 + pxk_adk_sk / 2 - pxk_adk_r * pxk_adk_sk / pxk_adk_l, pxk_adk_r * pxk_adk_h / pxk_adk_l - pxk_adk_h / 2 via pxk_adk_w / 2 + pxk_adk_sk / 2, 0 - pxk_adk_h / 2; line pxk_adk_w / 2 - pxk_adk_sk / 2 + pxk_adk_r * pxk_adk_sk / pxk_adk_l, pxk_adk_h / 2 - pxk_adk_r * pxk_adk_h / pxk_adk_l; curve pxk_adk_w / 2 - pxk_adk_sk / 2 - pxk_adk_r, pxk_adk_h / 2 via pxk_adk_w / 2 - pxk_adk_sk / 2, pxk_adk_h / 2; line pxk_adk_r - pxk_adk_w / 2 - pxk_adk_sk / 2, pxk_adk_h / 2; curve pxk_adk_r * pxk_adk_sk / pxk_adk_l - pxk_adk_w / 2 - pxk_adk_sk / 2, pxk_adk_h / 2 - pxk_adk_r * pxk_adk_h / pxk_adk_l via 0 - pxk_adk_w / 2 - pxk_adk_sk / 2, pxk_adk_h / 2; line pxk_adk_sk / 2 - pxk_adk_w / 2 - pxk_adk_r * pxk_adk_sk / pxk_adk_l, pxk_adk_r * pxk_adk_h / pxk_adk_l - pxk_adk_h / 2; curve pxk_adk_r - pxk_adk_w / 2 + pxk_adk_sk / 2, 0 - pxk_adk_h / 2 via pxk_adk_sk / 2 - pxk_adk_w / 2, 0 - pxk_adk_h / 2; close }
+        }
+        //  The Proxy's HUD marks: on every drawer that is out, a slanted black plate hanging off its top left with a green-to-yellow health bar (a pink bar under it, a numbered cell at its start), a data pill with a round blue badge at the top right,
+        //  and a hazard-stripe rail under it. They are drawn on the glass, outside it. The bar gets the combo tag and the round ability buttons.
+        group {
+            show: px_k > 0.01 and dk0 > 0.9
+            opacity: px_k * clamp(dk0 * 3 - 2, 0, 1)
+            let pxdkl = dk.ex - dk.ew / 2
+            let pxdkr = dk.ex + dk.ew / 2
+            let pxdkt = dk.ey - dk.eh / 2
+            let pxdkb = min(dk.ey + dk.eh / 2, vb - lf.t - 1)
+            box { from: pxdkl + 20 * u + 34 * u, pxdkb - 11; size: pxdkr - pxdkl - 40 * u - 2 * 34 * u, 9; color: #0b0d10 }
+            repeat pxdkch in 0..130 {
+                path { at: pxdkl + 20 * u + 34 * u + pxdkch * 16 * u, pxdkb - 11; color: #ffd21f; opacity: if(pxdkl + 20 * u + 34 * u + pxdkch * 16 * u + 8 * u + 5 < pxdkr - 20 * u - 34 * u, 100%, 0); move 5, 0; line 8 * u + 5, 0; line 8 * u, 9; line 0, 9; close }
+            }
+            repeat pxdkcc in 0..7 {
+                repeat pxdkcw in 0..3 {
+                    ellipse { at: pxdkl + 20 * u + pxdkcc * 34 * u / 7, pxdkb - 9.5 + pxdkcw * 3.6 + mod(pxdkcc, 2) * 1.8; radius: 0.5 + pxdkcc * 0.28; color: if(mod(pxdkcc, 2) == 0, #ffd21f, #0b0d10) }
+                    ellipse { at: pxdkr - 20 * u - pxdkcc * 34 * u / 7, pxdkb - 9.5 + pxdkcw * 3.6 + mod(pxdkcc, 2) * 1.8; radius: 0.5 + pxdkcc * 0.28; color: if(mod(pxdkcc, 2) == 0, #ffd21f, #0b0d10) }
+                }
+            }
+        }
+        group {
+            show: px_k > 0.01 and dc0 > 0.9
+            opacity: px_k * clamp(dc0 * 3 - 2, 0, 1)
+            let pxdcl = dc.ex - dc.ew / 2
+            let pxdcr = dc.ex + dc.ew / 2
+            let pxdct = dc.ey - dc.eh / 2
+            let pxdcb = min(dc.ey + dc.eh / 2, vb - lf.t - 1)
+            box { from: pxdcl + 20 * u + 34 * u, pxdcb - 11; size: pxdcr - pxdcl - 40 * u - 2 * 34 * u, 9; color: #0b0d10 }
+            repeat pxdcch in 0..130 {
+                path { at: pxdcl + 20 * u + 34 * u + pxdcch * 16 * u, pxdcb - 11; color: #ffd21f; opacity: if(pxdcl + 20 * u + 34 * u + pxdcch * 16 * u + 8 * u + 5 < pxdcr - 20 * u - 34 * u, 100%, 0); move 5, 0; line 8 * u + 5, 0; line 8 * u, 9; line 0, 9; close }
+            }
+            repeat pxdccc in 0..7 {
+                repeat pxdccw in 0..3 {
+                    ellipse { at: pxdcl + 20 * u + pxdccc * 34 * u / 7, pxdcb - 9.5 + pxdccw * 3.6 + mod(pxdccc, 2) * 1.8; radius: 0.5 + pxdccc * 0.28; color: if(mod(pxdccc, 2) == 0, #ffd21f, #0b0d10) }
+                    ellipse { at: pxdcr - 20 * u - pxdccc * 34 * u / 7, pxdcb - 9.5 + pxdccw * 3.6 + mod(pxdccc, 2) * 1.8; radius: 0.5 + pxdccc * 0.28; color: if(mod(pxdccc, 2) == 0, #ffd21f, #0b0d10) }
+                }
+            }
+        }
+        group {
+            show: px_k > 0.01 and ds0 > 0.9
+            opacity: px_k * clamp(ds0 * 3 - 2, 0, 1)
+            let pxdsl = ds.ex - ds.ew / 2
+            let pxdsr = ds.ex + ds.ew / 2
+            let pxdst = ds.ey - ds.eh / 2
+            let pxdsb = min(ds.ey + ds.eh / 2, vb - lf.t - 1)
+            box { from: pxdsl + 20 * u + 34 * u, pxdsb - 11; size: pxdsr - pxdsl - 40 * u - 2 * 34 * u, 9; color: #0b0d10 }
+            repeat pxdsch in 0..130 {
+                path { at: pxdsl + 20 * u + 34 * u + pxdsch * 16 * u, pxdsb - 11; color: #ffd21f; opacity: if(pxdsl + 20 * u + 34 * u + pxdsch * 16 * u + 8 * u + 5 < pxdsr - 20 * u - 34 * u, 100%, 0); move 5, 0; line 8 * u + 5, 0; line 8 * u, 9; line 0, 9; close }
+            }
+            repeat pxdscc in 0..7 {
+                repeat pxdscw in 0..3 {
+                    ellipse { at: pxdsl + 20 * u + pxdscc * 34 * u / 7, pxdsb - 9.5 + pxdscw * 3.6 + mod(pxdscc, 2) * 1.8; radius: 0.5 + pxdscc * 0.28; color: if(mod(pxdscc, 2) == 0, #ffd21f, #0b0d10) }
+                    ellipse { at: pxdsr - 20 * u - pxdscc * 34 * u / 7, pxdsb - 9.5 + pxdscw * 3.6 + mod(pxdscc, 2) * 1.8; radius: 0.5 + pxdscc * 0.28; color: if(mod(pxdscc, 2) == 0, #ffd21f, #0b0d10) }
+                }
+            }
+        }
+        group {
+            show: px_k > 0.01 and dl0 > 0.9
+            opacity: px_k * clamp(dl0 * 3 - 2, 0, 1)
+            let pxdll = dl.ex - dl.ew / 2
+            let pxdlr = dl.ex + dl.ew / 2
+            let pxdlt = dl.ey - dl.eh / 2
+            let pxdlb = min(dl.ey + dl.eh / 2, vb - lf.t - 1)
+            box { from: pxdll + 20 * u + 34 * u, pxdlb - 11; size: pxdlr - pxdll - 40 * u - 2 * 34 * u, 9; color: #0b0d10 }
+            repeat pxdlch in 0..130 {
+                path { at: pxdll + 20 * u + 34 * u + pxdlch * 16 * u, pxdlb - 11; color: #ffd21f; opacity: if(pxdll + 20 * u + 34 * u + pxdlch * 16 * u + 8 * u + 5 < pxdlr - 20 * u - 34 * u, 100%, 0); move 5, 0; line 8 * u + 5, 0; line 8 * u, 9; line 0, 9; close }
+            }
+            repeat pxdlcc in 0..7 {
+                repeat pxdlcw in 0..3 {
+                    ellipse { at: pxdll + 20 * u + pxdlcc * 34 * u / 7, pxdlb - 9.5 + pxdlcw * 3.6 + mod(pxdlcc, 2) * 1.8; radius: 0.5 + pxdlcc * 0.28; color: if(mod(pxdlcc, 2) == 0, #ffd21f, #0b0d10) }
+                    ellipse { at: pxdlr - 20 * u - pxdlcc * 34 * u / 7, pxdlb - 9.5 + pxdlcw * 3.6 + mod(pxdlcc, 2) * 1.8; radius: 0.5 + pxdlcc * 0.28; color: if(mod(pxdlcc, 2) == 0, #ffd21f, #0b0d10) }
+                }
+            }
+        }
+        group {
+            show: px_k > 0.01 and dm0 > 0.9
+            opacity: px_k * clamp(dm0 * 3 - 2, 0, 1)
+            let pxdml = dm.ex - dm.ew / 2
+            let pxdmr = dm.ex + dm.ew / 2
+            let pxdmt = dm.ey - dm.eh / 2
+            let pxdmb = min(dm.ey + dm.eh / 2, vb - lf.t - 1)
+            box { from: pxdml + 20 * u + 34 * u, pxdmb - 11; size: pxdmr - pxdml - 40 * u - 2 * 34 * u, 9; color: #0b0d10 }
+            repeat pxdmch in 0..130 {
+                path { at: pxdml + 20 * u + 34 * u + pxdmch * 16 * u, pxdmb - 11; color: #ffd21f; opacity: if(pxdml + 20 * u + 34 * u + pxdmch * 16 * u + 8 * u + 5 < pxdmr - 20 * u - 34 * u, 100%, 0); move 5, 0; line 8 * u + 5, 0; line 8 * u, 9; line 0, 9; close }
+            }
+            repeat pxdmcc in 0..7 {
+                repeat pxdmcw in 0..3 {
+                    ellipse { at: pxdml + 20 * u + pxdmcc * 34 * u / 7, pxdmb - 9.5 + pxdmcw * 3.6 + mod(pxdmcc, 2) * 1.8; radius: 0.5 + pxdmcc * 0.28; color: if(mod(pxdmcc, 2) == 0, #ffd21f, #0b0d10) }
+                    ellipse { at: pxdmr - 20 * u - pxdmcc * 34 * u / 7, pxdmb - 9.5 + pxdmcw * 3.6 + mod(pxdmcc, 2) * 1.8; radius: 0.5 + pxdmcc * 0.28; color: if(mod(pxdmcc, 2) == 0, #ffd21f, #0b0d10) }
+                }
+            }
+        }
+        //  The Cyber's HUD marks: bright corner brackets (with a soft glow) round the bar and round every drawer that is out, and a little ruler of ticks under each. At each one's bottom right a terminal readout: hex digits that jump between three values, and a block cursor that blinks.
+        //  They are drawn on the glass, outside it, and never outline it.
+        group {
+            show: cy_k > 0.01 and lm < 0.5
+            opacity: cy_k * (1 - lm)
+            let cybarl = cx - (bar.w + pv * 10 * u) / 2
+            let cybarr = cx + (bar.w + pv * 10 * u) / 2
+            let cybart = bar.y - bar.h / 2
+            let cybarb = bar.y - bar.h / 2 + bar.h + pop
+            //  (the bar itself has no corner brackets: only the drawers and the cards under it do; its ruler of ticks and its readout stay)
+            repeat cybark in 0..13 {
+                line { from: cybarl + 22 + cybark * 6 * u, cybarb + 6 * u + 1; to: cybarl + 22 + cybark * 6 * u, cybarb + 6 * u + 1 + if(mod(cybark, 4) == 0, 6 * u, 3 * u); width: 1.1; color: mint; opacity: 70% }
+            }
+        
+            text "SYS 7F3A·9C21" { at: cybarr - 9 * u, cybarb + 6 * u + 11 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 0), 3) == 0, 85%, 0) }
+            text "SYS A1E4·03BD" { at: cybarr - 9 * u, cybarb + 6 * u + 11 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 0), 3) == 1, 85%, 0) }
+            text "SYS 5C90·E7F2" { at: cybarr - 9 * u, cybarb + 6 * u + 11 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 0), 3) == 2, 85%, 0) }
+            box { at: cybarr - 3 * u, cybarb + 6 * u + 11 * u; size: 5 * u, 10 * u; color: minthi; opacity: cy_on * if(mod(time * 1.7, 1) < 0.5, 90%, 0) }
+        }
+        group {
+            show: cy_k > 0.01 and dk0 > 0.9
+            opacity: cy_k * clamp(dk0 * 3 - 2, 0, 1)
+            let cydkl = dk.ex - dk.ew / 2
+            let cydkr = dk.ex + dk.ew / 2
+            let cydkt = dk.ey - dk.eh / 2
+            let cydkb = min(dk.ey + dk.eh / 2, vb - lf.t - 1)
+            shader matrix { at: cydkl, cydkt; size: cydkr - cydkl, cydkb - cydkt; corner: 24 * u; values: 0.28, 1; colors: mint, minthi }
+            CyHud(cydkl, cydkt, cydkr, cydkb, "CONTROLS // 01", 14, 1, cy_on, u)
+            repeat cydkc in 0..4 {
+                let cydkx = if(mod(cydkc, 2) == 0, cydkl - 7 * u, cydkr + 7 * u)
+                let cydky = if(cydkc < 2, cydkt - 7 * u, cydkb + 7 * u)
+                let cydksx = if(mod(cydkc, 2) == 0, -1, 1)
+                let cydksy = if(cydkc < 2, -1, 1)
+                path { at: cydkx, cydky; stroke: 5 * u; color: mint; opacity: 16%; move 0, -cydksy * 15 * u; line 0, 0; line -cydksx * 15 * u, 0 }
+                path { at: cydkx, cydky; stroke: 1.7; color: minthi; move 0, -cydksy * 15 * u; line 0, 0; line -cydksx * 15 * u, 0 }
+            }
+            repeat cydkk in 0..13 {
+                line { from: cydkl + 22 + cydkk * 6 * u, cydkb + 7 * u + 1; to: cydkl + 22 + cydkk * 6 * u, cydkb + 7 * u + 1 + if(mod(cydkk, 4) == 0, 6 * u, 3 * u); width: 1.1; color: mint; opacity: 70% }
+            }
+        
+            text "SYS 2B6D·F418" { at: cydkr - 16 * u, cydkb - 9 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 1), 3) == 0, 85%, 0) }
+            text "SYS E90C·57A3" { at: cydkr - 16 * u, cydkb - 9 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 1), 3) == 1, 85%, 0) }
+            text "SYS 30D8·B166" { at: cydkr - 16 * u, cydkb - 9 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 1), 3) == 2, 85%, 0) }
+            box { at: cydkr - 10 * u, cydkb - 9 * u; size: 5 * u, 10 * u; color: minthi; opacity: cy_on * if(mod(time * 1.7, 1) < 0.5, 90%, 0) }
+        }
+        group {
+            show: cy_k > 0.01 and dc0 > 0.9
+            opacity: cy_k * clamp(dc0 * 3 - 2, 0, 1)
+            let cydcl = dc.ex - dc.ew / 2
+            let cydcr = dc.ex + dc.ew / 2
+            let cydct = dc.ey - dc.eh / 2
+            let cydcb = min(dc.ey + dc.eh / 2, vb - lf.t - 1)
+            shader matrix { at: cydcl, cydct; size: cydcr - cydcl, cydcb - cydct; corner: 24 * u; values: 0.28, 1; colors: mint, minthi }
+            CyHud(cydcl, cydct, cydcr, cydcb, "CALENDAR // 02", 14, 2, cy_on, u)
+            repeat cydcc in 0..4 {
+                let cydcx = if(mod(cydcc, 2) == 0, cydcl - 7 * u, cydcr + 7 * u)
+                let cydcy = if(cydcc < 2, cydct - 7 * u, cydcb + 7 * u)
+                let cydcsx = if(mod(cydcc, 2) == 0, -1, 1)
+                let cydcsy = if(cydcc < 2, -1, 1)
+                path { at: cydcx, cydcy; stroke: 5 * u; color: mint; opacity: 16%; move 0, -cydcsy * 15 * u; line 0, 0; line -cydcsx * 15 * u, 0 }
+                path { at: cydcx, cydcy; stroke: 1.7; color: minthi; move 0, -cydcsy * 15 * u; line 0, 0; line -cydcsx * 15 * u, 0 }
+            }
+            repeat cydck in 0..13 {
+                line { from: cydcl + 22 + cydck * 6 * u, cydcb + 7 * u + 1; to: cydcl + 22 + cydck * 6 * u, cydcb + 7 * u + 1 + if(mod(cydck, 4) == 0, 6 * u, 3 * u); width: 1.1; color: mint; opacity: 70% }
+            }
+        
+            text "SYS C4F1·0A9E" { at: cydcr - 16 * u, cydcb - 9 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 2), 3) == 0, 85%, 0) }
+            text "SYS 18B7·D620" { at: cydcr - 16 * u, cydcb - 9 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 2), 3) == 1, 85%, 0) }
+            text "SYS 9E05·4CF3" { at: cydcr - 16 * u, cydcb - 9 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 2), 3) == 2, 85%, 0) }
+            box { at: cydcr - 10 * u, cydcb - 9 * u; size: 5 * u, 10 * u; color: minthi; opacity: cy_on * if(mod(time * 1.7, 1) < 0.5, 90%, 0) }
+        }
+        group {
+            show: cy_k > 0.01 and ds0 > 0.9
+            opacity: cy_k * clamp(ds0 * 3 - 2, 0, 1)
+            let cydsl = ds.ex - ds.ew / 2
+            let cydsr = ds.ex + ds.ew / 2
+            let cydst = ds.ey - ds.eh / 2
+            let cydsb = min(ds.ey + ds.eh / 2, vb - lf.t - 1)
+            shader matrix { at: cydsl, cydst; size: cydsr - cydsl, cydsb - cydst; corner: 24 * u; values: 0.28, 1; colors: mint, minthi }
+            CyHud(cydsl, cydst, cydsr, cydsb, "SETTINGS // 03", 14, 3, cy_on, u)
+            repeat cydsc in 0..4 {
+                let cydsx = if(mod(cydsc, 2) == 0, cydsl - 7 * u, cydsr + 7 * u)
+                let cydsy = if(cydsc < 2, cydst - 7 * u, cydsb + 7 * u)
+                let cydssx = if(mod(cydsc, 2) == 0, -1, 1)
+                let cydssy = if(cydsc < 2, -1, 1)
+                path { at: cydsx, cydsy; stroke: 5 * u; color: mint; opacity: 16%; move 0, -cydssy * 15 * u; line 0, 0; line -cydssx * 15 * u, 0 }
+                path { at: cydsx, cydsy; stroke: 1.7; color: minthi; move 0, -cydssy * 15 * u; line 0, 0; line -cydssx * 15 * u, 0 }
+            }
+            repeat cydsk in 0..13 {
+                line { from: cydsl + 22 + cydsk * 6 * u, cydsb + 7 * u + 1; to: cydsl + 22 + cydsk * 6 * u, cydsb + 7 * u + 1 + if(mod(cydsk, 4) == 0, 6 * u, 3 * u); width: 1.1; color: mint; opacity: 70% }
+            }
+        
+            text "SYS 7F3A·9C21" { at: cydsr - 16 * u, cydsb - 9 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 3), 3) == 0, 85%, 0) }
+            text "SYS A1E4·03BD" { at: cydsr - 16 * u, cydsb - 9 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 3), 3) == 1, 85%, 0) }
+            text "SYS 5C90·E7F2" { at: cydsr - 16 * u, cydsb - 9 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 3), 3) == 2, 85%, 0) }
+            box { at: cydsr - 10 * u, cydsb - 9 * u; size: 5 * u, 10 * u; color: minthi; opacity: cy_on * if(mod(time * 1.7, 1) < 0.5, 90%, 0) }
+        }
+        group {
+            show: cy_k > 0.01 and dl0 > 0.9
+            opacity: cy_k * clamp(dl0 * 3 - 2, 0, 1)
+            let cydll = dl.ex - dl.ew / 2
+            let cydlr = dl.ex + dl.ew / 2
+            let cydlt = dl.ey - dl.eh / 2
+            let cydlb = min(dl.ey + dl.eh / 2, vb - lf.t - 1)
+            shader matrix { at: cydll, cydlt; size: cydlr - cydll, cydlb - cydlt; corner: 24 * u; values: 0.28, 1; colors: mint, minthi }
+            CyHud(cydll, cydlt, cydlr, cydlb, "SEARCH // 04", 12, 4, cy_on, u)
+            repeat cydlc in 0..4 {
+                let cydlx = if(mod(cydlc, 2) == 0, cydll - 7 * u, cydlr + 7 * u)
+                let cydly = if(cydlc < 2, cydlt - 7 * u, cydlb + 7 * u)
+                let cydlsx = if(mod(cydlc, 2) == 0, -1, 1)
+                let cydlsy = if(cydlc < 2, -1, 1)
+                path { at: cydlx, cydly; stroke: 5 * u; color: mint; opacity: 16%; move 0, -cydlsy * 15 * u; line 0, 0; line -cydlsx * 15 * u, 0 }
+                path { at: cydlx, cydly; stroke: 1.7; color: minthi; move 0, -cydlsy * 15 * u; line 0, 0; line -cydlsx * 15 * u, 0 }
+            }
+            repeat cydlk in 0..13 {
+                line { from: cydll + 22 + cydlk * 6 * u, cydlb + 7 * u + 1; to: cydll + 22 + cydlk * 6 * u, cydlb + 7 * u + 1 + if(mod(cydlk, 4) == 0, 6 * u, 3 * u); width: 1.1; color: mint; opacity: 70% }
+            }
+        
+            text "SYS 2B6D·F418" { at: cydlr - 16 * u, cydlb - 9 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 4), 3) == 0, 85%, 0) }
+            text "SYS E90C·57A3" { at: cydlr - 16 * u, cydlb - 9 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 4), 3) == 1, 85%, 0) }
+            text "SYS 30D8·B166" { at: cydlr - 16 * u, cydlb - 9 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 4), 3) == 2, 85%, 0) }
+            box { at: cydlr - 10 * u, cydlb - 9 * u; size: 5 * u, 10 * u; color: minthi; opacity: cy_on * if(mod(time * 1.7, 1) < 0.5, 90%, 0) }
+        }
+        group {
+            show: cy_k > 0.01 and dm0 > 0.9
+            opacity: cy_k * clamp(dm0 * 3 - 2, 0, 1)
+            let cydml = dm.ex - dm.ew / 2
+            let cydmr = dm.ex + dm.ew / 2
+            let cydmt = dm.ey - dm.eh / 2
+            let cydmb = min(dm.ey + dm.eh / 2, vb - lf.t - 1)
+            shader matrix { at: cydml, cydmt; size: cydmr - cydml, cydmb - cydmt; corner: 24 * u; values: 0.28, 1; colors: mint, minthi }
+            CyHud(cydml, cydmt, cydmr, cydmb, "WINDOWS // 05", 13, 5, cy_on, u)
+            repeat cydmc in 0..4 {
+                let cydmx = if(mod(cydmc, 2) == 0, cydml - 7 * u, cydmr + 7 * u)
+                let cydmy = if(cydmc < 2, cydmt - 7 * u, cydmb + 7 * u)
+                let cydmsx = if(mod(cydmc, 2) == 0, -1, 1)
+                let cydmsy = if(cydmc < 2, -1, 1)
+                path { at: cydmx, cydmy; stroke: 5 * u; color: mint; opacity: 16%; move 0, -cydmsy * 15 * u; line 0, 0; line -cydmsx * 15 * u, 0 }
+                path { at: cydmx, cydmy; stroke: 1.7; color: minthi; move 0, -cydmsy * 15 * u; line 0, 0; line -cydmsx * 15 * u, 0 }
+            }
+            repeat cydmk in 0..13 {
+                line { from: cydml + 22 + cydmk * 6 * u, cydmb + 7 * u + 1; to: cydml + 22 + cydmk * 6 * u, cydmb + 7 * u + 1 + if(mod(cydmk, 4) == 0, 6 * u, 3 * u); width: 1.1; color: mint; opacity: 70% }
+            }
+        
+            text "SYS C4F1·0A9E" { at: cydmr - 16 * u, cydmb - 9 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 5), 3) == 0, 85%, 0) }
+            text "SYS 18B7·D620" { at: cydmr - 16 * u, cydmb - 9 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 5), 3) == 1, 85%, 0) }
+            text "SYS 9E05·4CF3" { at: cydmr - 16 * u, cydmb - 9 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 5), 3) == 2, 85%, 0) }
+            box { at: cydmr - 10 * u, cydmb - 9 * u; size: 5 * u, 10 * u; color: minthi; opacity: cy_on * if(mod(time * 1.7, 1) < 0.5, 90%, 0) }
+        }
+        group {
+            show: cy_k > 0.01 and dz0 > 0.9
+            opacity: cy_k * clamp(dz0 * 3 - 2, 0, 1)
+            //  The glass the Desk's body is drawn as (`dz.f*`, as `box zdrawer` has it), not the rectangle it would have along the top (`dz.s*`): in the frame
+            //  layout the two differ by a few pixels, and the corner lines stood off the glass unevenly.
+            let cydzl = dz.fl
+            let cydzr = dz.fr
+            let cydzt = dz.ft
+            let cydzb = min(dz.fb, vb - lf.t - 1)
+            shader matrix { at: cydzl, cydzt; size: cydzr - cydzl, cydzb - cydzt; corner: 24 * u; values: 0.28, 1; colors: mint, minthi }
+            CyHud(cydzl, cydzt, cydzr, cydzb, "myPad // 06", 11, 6, cy_on, u)
+            repeat cydzc in 0..4 {
+                let cydzx = if(mod(cydzc, 2) == 0, cydzl - 7 * u, cydzr + 7 * u)
+                let cydzy = if(cydzc < 2, cydzt - 7 * u, cydzb + 7 * u)
+                let cydzsx = if(mod(cydzc, 2) == 0, -1, 1)
+                let cydzsy = if(cydzc < 2, -1, 1)
+                path { at: cydzx, cydzy; stroke: 5 * u; color: mint; opacity: 16%; move 0, -cydzsy * 15 * u; line 0, 0; line -cydzsx * 15 * u, 0 }
+                path { at: cydzx, cydzy; stroke: 1.7; color: minthi; move 0, -cydzsy * 15 * u; line 0, 0; line -cydzsx * 15 * u, 0 }
+            }
+            repeat cydzk in 0..13 {
+                line { from: cydzl + 22 + cydzk * 6 * u, cydzb + 7 * u + 1; to: cydzl + 22 + cydzk * 6 * u, cydzb + 7 * u + 1 + if(mod(cydzk, 4) == 0, 6 * u, 3 * u); width: 1.1; color: mint; opacity: 70% }
+            }
+        
+            text "SYS 7F3A·9C21" { at: cydzr - 16 * u, cydzb - 9 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 6), 3) == 0, 85%, 0) }
+            text "SYS A1E4·03BD" { at: cydzr - 16 * u, cydzb - 9 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 6), 3) == 1, 85%, 0) }
+            text "SYS 5C90·E7F2" { at: cydzr - 16 * u, cydzb - 9 * u; anchor: right center; size: 10; weight: 500; color: minthi; family: "SpaceMono Nerd Font"; opacity: cy_on * if(mod(floor(time * 7 + 6), 3) == 2, 85%, 0) }
+            box { at: cydzr - 10 * u, cydzb - 9 * u; size: 5 * u, 10 * u; color: minthi; opacity: cy_on * if(mod(time * 1.7, 1) < 0.5, 90%, 0) }
+        }
+        //  The UwU theme's graphics, on every drawer that is out (and round the screen, below): cat ears on its top corners, three twinkling stars along its
+        //  top, two hearts that bob and a trail of paw prints in its bottom corners, and sparkles rising from the hearts. The ears are the only part outside
+        //  the drawer; the rest sits in its margin and never touches what it holds. Each sticker has a grape outline, as the drawers have.
+        group {
+            show: uwu_k > 0.01 and dk0 > 0.9
+            opacity: uwu_k * clamp(dk0 * 3 - 2, 0, 1)
+            let wdk.l = dk.ex - dk.ew / 2
+            let wdk.r = dk.ex + dk.ew / 2
+            let wdk.t = dk.ey - dk.eh / 2
+            let wdk.b = min(dk.ey + dk.eh / 2, vb - lf.t - 1)
+            let wdk.m = (dk.ex)
+            repeat side in 0..2 {
+                let ex = if(side == 0, wdk.l + 50 * u, wdk.r - 50 * u)
+                let sg = if(side == 0, -1, 1)
+                path { at: ex, wdk.t; color: obsidian; move -23 * u, 8; line sg * 13 * u, -30 * u; line 23 * u, 8; close }
+                path { at: ex, wdk.t; stroke: 3 * u; color: deep; move -23 * u, 8; line sg * 13 * u, -30 * u; line 23 * u, 8 }
+                path { at: ex, wdk.t; color: #ff8fc8; move -14 * u, 5; line sg * 9 * u, -19 * u; line 14 * u, 5; close }
+            }
+            //  Whiskers: three on each side of the drawer, fanning out of its edges at the bottom corners.
+            repeat wk in 0..6 {
+                let wks = if(wk < 3, -1, 1)
+                let wkx = if(wk < 3, wdk.l, wdk.r)
+                let wky = wdk.b - 20 * u + (mod(wk, 3) - 1) * 7 * u
+                line { from: wkx - wks * 6 * u, wky; to: wkx + wks * 26 * u, wky + (mod(wk, 3) - 1) * 6 * u; width: 4; color: deep }
+                line { from: wkx - wks * 6 * u, wky; to: wkx + wks * 26 * u, wky + (mod(wk, 3) - 1) * 6 * u; width: 1.8; color: #ffffff }
+            }
+            repeat s in 0..3 {
+                let sx = wdk.m + (s - 1) * 44 * u
+                let sr = if(s == 1, 7, 5) * u
+                group { scale: 1 + 0.22 * sin(time * 160 + s * 120); pivot: sx, wdk.t + 9
+                    path { at: sx, wdk.t + 9; stroke: 3; color: deep; move 0, -sr; line 0.3 * sr, -0.3 * sr; line sr, 0; line 0.3 * sr, 0.3 * sr; line 0, sr; line -0.3 * sr, 0.3 * sr; line -sr, 0; line -0.3 * sr, -0.3 * sr; close }
+                    path { at: sx, wdk.t + 9; color: pick(s, #ffe27a, #ffffff, #7fd3ff); move 0, -sr; line 0.3 * sr, -0.3 * sr; line sr, 0; line 0.3 * sr, 0.3 * sr; line 0, sr; line -0.3 * sr, 0.3 * sr; line -sr, 0; line -0.3 * sr, -0.3 * sr; close }
+                }
+            }
+            repeat hh in 0..2 {
+                let hx = wdk.l + (22 + hh * 22) * u
+                let hy = wdk.b - 11
+                let hr = if(hh == 0, 5.5, 4.5) * u
+                group { scale: 1 + 0.13 * sin(time * 200 + hh * 150); pivot: hx, hy
+                    ellipse { at: hx - 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62 + 1.5; color: deep }
+                    ellipse { at: hx + 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62 + 1.5; color: deep }
+                    path { at: hx, hy; stroke: 3; color: deep; move -1.12 * hr, -0.1 * hr; line 0, 1.2 * hr; line 1.12 * hr, -0.1 * hr; close }
+                    ellipse { at: hx - 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62; color: pick(hh, #ff6eb4, #b69cff) }
+                    ellipse { at: hx + 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62; color: pick(hh, #ff6eb4, #b69cff) }
+                    path { at: hx, hy; color: pick(hh, #ff6eb4, #b69cff); move -1.1 * hr, -0.1 * hr; line 0, 1.15 * hr; line 1.1 * hr, -0.1 * hr; close }
+                    ellipse { at: hx - 0.7 * hr, hy - 0.5 * hr; radius: hr * 0.2; color: #ffffff; opacity: 80% }
+                }
+            }
+            repeat pw in 0..3 {
+                let px = wdk.r - (26 + pw * 28) * u
+                let py = wdk.b - 12 + if(mod(pw, 2) == 0, 0, -3)
+                ellipse { at: px, py + 2.4; radius: 6; color: deep }
+                ellipse { at: px - 6.4, py - 3.2; radius: 3.4; color: deep }
+                ellipse { at: px - 2.4, py - 7.6; radius: 3.4; color: deep }
+                ellipse { at: px + 2.4, py - 7.6; radius: 3.4; color: deep }
+                ellipse { at: px + 6.4, py - 3.2; radius: 3.4; color: deep }
+                ellipse { at: px, py + 2.4; radius: 4.6; color: #ff8fc8 }
+                ellipse { at: px - 6.4, py - 3.2; radius: 2.2; color: #ff8fc8 }
+                ellipse { at: px - 2.4, py - 7.6; radius: 2.2; color: #ff8fc8 }
+                ellipse { at: px + 2.4, py - 7.6; radius: 2.2; color: #ff8fc8 }
+                ellipse { at: px + 6.4, py - 3.2; radius: 2.2; color: #ff8fc8 }
+            }
+            particles { at: wdk.l + 36 * u, wdk.b - 16; area: 36 * u, 6; count: 16; life: 1.4s .. 2.6s; speed: 18 .. 42; direction: -90deg; spread: 40deg; size: 3.6, 1; colors: #ff6eb4, #b69cff; shape: spark }
+        }
+        group {
+            show: uwu_k > 0.01 and dc0 > 0.9
+            opacity: uwu_k * clamp(dc0 * 3 - 2, 0, 1)
+            let wdc.l = dc.ex - dc.ew / 2
+            let wdc.r = dc.ex + dc.ew / 2
+            let wdc.t = dc.ey - dc.eh / 2
+            let wdc.b = min(dc.ey + dc.eh / 2, vb - lf.t - 1)
+            let wdc.m = (dc.ex)
+            repeat side in 0..2 {
+                let ex = if(side == 0, wdc.l + 50 * u, wdc.r - 50 * u)
+                let sg = if(side == 0, -1, 1)
+                path { at: ex, wdc.t; color: obsidian; move -23 * u, 8; line sg * 13 * u, -30 * u; line 23 * u, 8; close }
+                path { at: ex, wdc.t; stroke: 3 * u; color: deep; move -23 * u, 8; line sg * 13 * u, -30 * u; line 23 * u, 8 }
+                path { at: ex, wdc.t; color: #ff8fc8; move -14 * u, 5; line sg * 9 * u, -19 * u; line 14 * u, 5; close }
+            }
+            //  Whiskers: three on each side of the drawer, fanning out of its edges at the bottom corners.
+            repeat wk in 0..6 {
+                let wks = if(wk < 3, -1, 1)
+                let wkx = if(wk < 3, wdc.l, wdc.r)
+                let wky = wdc.b - 20 * u + (mod(wk, 3) - 1) * 7 * u
+                line { from: wkx - wks * 6 * u, wky; to: wkx + wks * 26 * u, wky + (mod(wk, 3) - 1) * 6 * u; width: 4; color: deep }
+                line { from: wkx - wks * 6 * u, wky; to: wkx + wks * 26 * u, wky + (mod(wk, 3) - 1) * 6 * u; width: 1.8; color: #ffffff }
+            }
+            repeat s in 0..3 {
+                let sx = wdc.m + (s - 1) * 44 * u
+                let sr = if(s == 1, 7, 5) * u
+                group { scale: 1 + 0.22 * sin(time * 160 + s * 120); pivot: sx, wdc.t + 9
+                    path { at: sx, wdc.t + 9; stroke: 3; color: deep; move 0, -sr; line 0.3 * sr, -0.3 * sr; line sr, 0; line 0.3 * sr, 0.3 * sr; line 0, sr; line -0.3 * sr, 0.3 * sr; line -sr, 0; line -0.3 * sr, -0.3 * sr; close }
+                    path { at: sx, wdc.t + 9; color: pick(s, #ffe27a, #ffffff, #7fd3ff); move 0, -sr; line 0.3 * sr, -0.3 * sr; line sr, 0; line 0.3 * sr, 0.3 * sr; line 0, sr; line -0.3 * sr, 0.3 * sr; line -sr, 0; line -0.3 * sr, -0.3 * sr; close }
+                }
+            }
+            repeat hh in 0..2 {
+                let hx = wdc.l + (22 + hh * 22) * u
+                let hy = wdc.b - 11
+                let hr = if(hh == 0, 5.5, 4.5) * u
+                group { scale: 1 + 0.13 * sin(time * 200 + hh * 150); pivot: hx, hy
+                    ellipse { at: hx - 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62 + 1.5; color: deep }
+                    ellipse { at: hx + 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62 + 1.5; color: deep }
+                    path { at: hx, hy; stroke: 3; color: deep; move -1.12 * hr, -0.1 * hr; line 0, 1.2 * hr; line 1.12 * hr, -0.1 * hr; close }
+                    ellipse { at: hx - 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62; color: pick(hh, #ff6eb4, #b69cff) }
+                    ellipse { at: hx + 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62; color: pick(hh, #ff6eb4, #b69cff) }
+                    path { at: hx, hy; color: pick(hh, #ff6eb4, #b69cff); move -1.1 * hr, -0.1 * hr; line 0, 1.15 * hr; line 1.1 * hr, -0.1 * hr; close }
+                    ellipse { at: hx - 0.7 * hr, hy - 0.5 * hr; radius: hr * 0.2; color: #ffffff; opacity: 80% }
+                }
+            }
+            repeat pw in 0..3 {
+                let px = wdc.r - (26 + pw * 28) * u
+                let py = wdc.b - 12 + if(mod(pw, 2) == 0, 0, -3)
+                ellipse { at: px, py + 2.4; radius: 6; color: deep }
+                ellipse { at: px - 6.4, py - 3.2; radius: 3.4; color: deep }
+                ellipse { at: px - 2.4, py - 7.6; radius: 3.4; color: deep }
+                ellipse { at: px + 2.4, py - 7.6; radius: 3.4; color: deep }
+                ellipse { at: px + 6.4, py - 3.2; radius: 3.4; color: deep }
+                ellipse { at: px, py + 2.4; radius: 4.6; color: #ff8fc8 }
+                ellipse { at: px - 6.4, py - 3.2; radius: 2.2; color: #ff8fc8 }
+                ellipse { at: px - 2.4, py - 7.6; radius: 2.2; color: #ff8fc8 }
+                ellipse { at: px + 2.4, py - 7.6; radius: 2.2; color: #ff8fc8 }
+                ellipse { at: px + 6.4, py - 3.2; radius: 2.2; color: #ff8fc8 }
+            }
+            particles { at: wdc.l + 36 * u, wdc.b - 16; area: 36 * u, 6; count: 16; life: 1.4s .. 2.6s; speed: 18 .. 42; direction: -90deg; spread: 40deg; size: 3.6, 1; colors: #ff6eb4, #b69cff; shape: spark }
+        }
+        group {
+            show: uwu_k > 0.01 and ds0 > 0.9
+            opacity: uwu_k * clamp(ds0 * 3 - 2, 0, 1)
+            let wds.l = ds.ex - ds.ew / 2
+            let wds.r = ds.ex + ds.ew / 2
+            let wds.t = ds.ey - ds.eh / 2
+            let wds.b = min(ds.ey + ds.eh / 2, vb - lf.t - 1)
+            let wds.m = (ds.ex)
+            repeat side in 0..2 {
+                let ex = if(side == 0, wds.l + 50 * u, wds.r - 50 * u)
+                let sg = if(side == 0, -1, 1)
+                path { at: ex, wds.t; color: obsidian; move -23 * u, 8; line sg * 13 * u, -30 * u; line 23 * u, 8; close }
+                path { at: ex, wds.t; stroke: 3 * u; color: deep; move -23 * u, 8; line sg * 13 * u, -30 * u; line 23 * u, 8 }
+                path { at: ex, wds.t; color: #ff8fc8; move -14 * u, 5; line sg * 9 * u, -19 * u; line 14 * u, 5; close }
+            }
+            //  Whiskers: three on each side of the drawer, fanning out of its edges at the bottom corners.
+            repeat wk in 0..6 {
+                let wks = if(wk < 3, -1, 1)
+                let wkx = if(wk < 3, wds.l, wds.r)
+                let wky = wds.b - 20 * u + (mod(wk, 3) - 1) * 7 * u
+                line { from: wkx - wks * 6 * u, wky; to: wkx + wks * 26 * u, wky + (mod(wk, 3) - 1) * 6 * u; width: 4; color: deep }
+                line { from: wkx - wks * 6 * u, wky; to: wkx + wks * 26 * u, wky + (mod(wk, 3) - 1) * 6 * u; width: 1.8; color: #ffffff }
+            }
+            repeat s in 0..3 {
+                let sx = wds.m + (s - 1) * 44 * u
+                let sr = if(s == 1, 7, 5) * u
+                group { scale: 1 + 0.22 * sin(time * 160 + s * 120); pivot: sx, wds.t + 9
+                    path { at: sx, wds.t + 9; stroke: 3; color: deep; move 0, -sr; line 0.3 * sr, -0.3 * sr; line sr, 0; line 0.3 * sr, 0.3 * sr; line 0, sr; line -0.3 * sr, 0.3 * sr; line -sr, 0; line -0.3 * sr, -0.3 * sr; close }
+                    path { at: sx, wds.t + 9; color: pick(s, #ffe27a, #ffffff, #7fd3ff); move 0, -sr; line 0.3 * sr, -0.3 * sr; line sr, 0; line 0.3 * sr, 0.3 * sr; line 0, sr; line -0.3 * sr, 0.3 * sr; line -sr, 0; line -0.3 * sr, -0.3 * sr; close }
+                }
+            }
+            repeat hh in 0..2 {
+                let hx = wds.l + (22 + hh * 22) * u
+                let hy = wds.b - 11
+                let hr = if(hh == 0, 5.5, 4.5) * u
+                group { scale: 1 + 0.13 * sin(time * 200 + hh * 150); pivot: hx, hy
+                    ellipse { at: hx - 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62 + 1.5; color: deep }
+                    ellipse { at: hx + 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62 + 1.5; color: deep }
+                    path { at: hx, hy; stroke: 3; color: deep; move -1.12 * hr, -0.1 * hr; line 0, 1.2 * hr; line 1.12 * hr, -0.1 * hr; close }
+                    ellipse { at: hx - 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62; color: pick(hh, #ff6eb4, #b69cff) }
+                    ellipse { at: hx + 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62; color: pick(hh, #ff6eb4, #b69cff) }
+                    path { at: hx, hy; color: pick(hh, #ff6eb4, #b69cff); move -1.1 * hr, -0.1 * hr; line 0, 1.15 * hr; line 1.1 * hr, -0.1 * hr; close }
+                    ellipse { at: hx - 0.7 * hr, hy - 0.5 * hr; radius: hr * 0.2; color: #ffffff; opacity: 80% }
+                }
+            }
+            repeat pw in 0..3 {
+                let px = wds.r - (26 + pw * 28) * u
+                let py = wds.b - 12 + if(mod(pw, 2) == 0, 0, -3)
+                ellipse { at: px, py + 2.4; radius: 6; color: deep }
+                ellipse { at: px - 6.4, py - 3.2; radius: 3.4; color: deep }
+                ellipse { at: px - 2.4, py - 7.6; radius: 3.4; color: deep }
+                ellipse { at: px + 2.4, py - 7.6; radius: 3.4; color: deep }
+                ellipse { at: px + 6.4, py - 3.2; radius: 3.4; color: deep }
+                ellipse { at: px, py + 2.4; radius: 4.6; color: #ff8fc8 }
+                ellipse { at: px - 6.4, py - 3.2; radius: 2.2; color: #ff8fc8 }
+                ellipse { at: px - 2.4, py - 7.6; radius: 2.2; color: #ff8fc8 }
+                ellipse { at: px + 2.4, py - 7.6; radius: 2.2; color: #ff8fc8 }
+                ellipse { at: px + 6.4, py - 3.2; radius: 2.2; color: #ff8fc8 }
+            }
+            particles { at: wds.l + 36 * u, wds.b - 16; area: 36 * u, 6; count: 16; life: 1.4s .. 2.6s; speed: 18 .. 42; direction: -90deg; spread: 40deg; size: 3.6, 1; colors: #ff6eb4, #b69cff; shape: spark }
+        }
+        group {
+            show: uwu_k > 0.01 and dl0 > 0.9
+            opacity: uwu_k * clamp(dl0 * 3 - 2, 0, 1)
+            let wdl.l = dl.ex - dl.ew / 2
+            let wdl.r = dl.ex + dl.ew / 2
+            let wdl.t = dl.ey - dl.eh / 2
+            let wdl.b = min(dl.ey + dl.eh / 2, vb - lf.t - 1)
+            let wdl.m = (dl.ex)
+            repeat side in 0..2 {
+                let ex = if(side == 0, wdl.l + 50 * u, wdl.r - 50 * u)
+                let sg = if(side == 0, -1, 1)
+                path { at: ex, wdl.t; color: obsidian; move -23 * u, 8; line sg * 13 * u, -30 * u; line 23 * u, 8; close }
+                path { at: ex, wdl.t; stroke: 3 * u; color: deep; move -23 * u, 8; line sg * 13 * u, -30 * u; line 23 * u, 8 }
+                path { at: ex, wdl.t; color: #ff8fc8; move -14 * u, 5; line sg * 9 * u, -19 * u; line 14 * u, 5; close }
+            }
+            //  Whiskers: three on each side of the drawer, fanning out of its edges at the bottom corners.
+            repeat wk in 0..6 {
+                let wks = if(wk < 3, -1, 1)
+                let wkx = if(wk < 3, wdl.l, wdl.r)
+                let wky = wdl.b - 20 * u + (mod(wk, 3) - 1) * 7 * u
+                line { from: wkx - wks * 6 * u, wky; to: wkx + wks * 26 * u, wky + (mod(wk, 3) - 1) * 6 * u; width: 4; color: deep }
+                line { from: wkx - wks * 6 * u, wky; to: wkx + wks * 26 * u, wky + (mod(wk, 3) - 1) * 6 * u; width: 1.8; color: #ffffff }
+            }
+            repeat s in 0..3 {
+                let sx = wdl.m + (s - 1) * 44 * u
+                let sr = if(s == 1, 7, 5) * u
+                group { scale: 1 + 0.22 * sin(time * 160 + s * 120); pivot: sx, wdl.t + 9
+                    path { at: sx, wdl.t + 9; stroke: 3; color: deep; move 0, -sr; line 0.3 * sr, -0.3 * sr; line sr, 0; line 0.3 * sr, 0.3 * sr; line 0, sr; line -0.3 * sr, 0.3 * sr; line -sr, 0; line -0.3 * sr, -0.3 * sr; close }
+                    path { at: sx, wdl.t + 9; color: pick(s, #ffe27a, #ffffff, #7fd3ff); move 0, -sr; line 0.3 * sr, -0.3 * sr; line sr, 0; line 0.3 * sr, 0.3 * sr; line 0, sr; line -0.3 * sr, 0.3 * sr; line -sr, 0; line -0.3 * sr, -0.3 * sr; close }
+                }
+            }
+            repeat hh in 0..2 {
+                let hx = wdl.l + (22 + hh * 22) * u
+                let hy = wdl.b - 11
+                let hr = if(hh == 0, 5.5, 4.5) * u
+                group { scale: 1 + 0.13 * sin(time * 200 + hh * 150); pivot: hx, hy
+                    ellipse { at: hx - 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62 + 1.5; color: deep }
+                    ellipse { at: hx + 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62 + 1.5; color: deep }
+                    path { at: hx, hy; stroke: 3; color: deep; move -1.12 * hr, -0.1 * hr; line 0, 1.2 * hr; line 1.12 * hr, -0.1 * hr; close }
+                    ellipse { at: hx - 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62; color: pick(hh, #ff6eb4, #b69cff) }
+                    ellipse { at: hx + 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62; color: pick(hh, #ff6eb4, #b69cff) }
+                    path { at: hx, hy; color: pick(hh, #ff6eb4, #b69cff); move -1.1 * hr, -0.1 * hr; line 0, 1.15 * hr; line 1.1 * hr, -0.1 * hr; close }
+                    ellipse { at: hx - 0.7 * hr, hy - 0.5 * hr; radius: hr * 0.2; color: #ffffff; opacity: 80% }
+                }
+            }
+            repeat pw in 0..3 {
+                let px = wdl.r - (26 + pw * 28) * u
+                let py = wdl.b - 12 + if(mod(pw, 2) == 0, 0, -3)
+                ellipse { at: px, py + 2.4; radius: 6; color: deep }
+                ellipse { at: px - 6.4, py - 3.2; radius: 3.4; color: deep }
+                ellipse { at: px - 2.4, py - 7.6; radius: 3.4; color: deep }
+                ellipse { at: px + 2.4, py - 7.6; radius: 3.4; color: deep }
+                ellipse { at: px + 6.4, py - 3.2; radius: 3.4; color: deep }
+                ellipse { at: px, py + 2.4; radius: 4.6; color: #ff8fc8 }
+                ellipse { at: px - 6.4, py - 3.2; radius: 2.2; color: #ff8fc8 }
+                ellipse { at: px - 2.4, py - 7.6; radius: 2.2; color: #ff8fc8 }
+                ellipse { at: px + 2.4, py - 7.6; radius: 2.2; color: #ff8fc8 }
+                ellipse { at: px + 6.4, py - 3.2; radius: 2.2; color: #ff8fc8 }
+            }
+            particles { at: wdl.l + 36 * u, wdl.b - 16; area: 36 * u, 6; count: 16; life: 1.4s .. 2.6s; speed: 18 .. 42; direction: -90deg; spread: 40deg; size: 3.6, 1; colors: #ff6eb4, #b69cff; shape: spark }
+        }
+        group {
+            show: uwu_k > 0.01 and dm0 > 0.9
+            opacity: uwu_k * clamp(dm0 * 3 - 2, 0, 1)
+            let wdm.l = dm.ex - dm.ew / 2
+            let wdm.r = dm.ex + dm.ew / 2
+            let wdm.t = dm.ey - dm.eh / 2
+            let wdm.b = min(dm.ey + dm.eh / 2, vb - lf.t - 1)
+            let wdm.m = (dm.ex)
+            repeat side in 0..2 {
+                let ex = if(side == 0, wdm.l + 50 * u, wdm.r - 50 * u)
+                let sg = if(side == 0, -1, 1)
+                path { at: ex, wdm.t; color: obsidian; move -23 * u, 8; line sg * 13 * u, -30 * u; line 23 * u, 8; close }
+                path { at: ex, wdm.t; stroke: 3 * u; color: deep; move -23 * u, 8; line sg * 13 * u, -30 * u; line 23 * u, 8 }
+                path { at: ex, wdm.t; color: #ff8fc8; move -14 * u, 5; line sg * 9 * u, -19 * u; line 14 * u, 5; close }
+            }
+            //  Whiskers: three on each side of the drawer, fanning out of its edges at the bottom corners.
+            repeat wk in 0..6 {
+                let wks = if(wk < 3, -1, 1)
+                let wkx = if(wk < 3, wdm.l, wdm.r)
+                let wky = wdm.b - 20 * u + (mod(wk, 3) - 1) * 7 * u
+                line { from: wkx - wks * 6 * u, wky; to: wkx + wks * 26 * u, wky + (mod(wk, 3) - 1) * 6 * u; width: 4; color: deep }
+                line { from: wkx - wks * 6 * u, wky; to: wkx + wks * 26 * u, wky + (mod(wk, 3) - 1) * 6 * u; width: 1.8; color: #ffffff }
+            }
+            repeat s in 0..3 {
+                let sx = wdm.m + (s - 1) * 44 * u
+                let sr = if(s == 1, 7, 5) * u
+                group { scale: 1 + 0.22 * sin(time * 160 + s * 120); pivot: sx, wdm.t + 9
+                    path { at: sx, wdm.t + 9; stroke: 3; color: deep; move 0, -sr; line 0.3 * sr, -0.3 * sr; line sr, 0; line 0.3 * sr, 0.3 * sr; line 0, sr; line -0.3 * sr, 0.3 * sr; line -sr, 0; line -0.3 * sr, -0.3 * sr; close }
+                    path { at: sx, wdm.t + 9; color: pick(s, #ffe27a, #ffffff, #7fd3ff); move 0, -sr; line 0.3 * sr, -0.3 * sr; line sr, 0; line 0.3 * sr, 0.3 * sr; line 0, sr; line -0.3 * sr, 0.3 * sr; line -sr, 0; line -0.3 * sr, -0.3 * sr; close }
+                }
+            }
+            repeat hh in 0..2 {
+                let hx = wdm.l + (22 + hh * 22) * u
+                let hy = wdm.b - 11
+                let hr = if(hh == 0, 5.5, 4.5) * u
+                group { scale: 1 + 0.13 * sin(time * 200 + hh * 150); pivot: hx, hy
+                    ellipse { at: hx - 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62 + 1.5; color: deep }
+                    ellipse { at: hx + 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62 + 1.5; color: deep }
+                    path { at: hx, hy; stroke: 3; color: deep; move -1.12 * hr, -0.1 * hr; line 0, 1.2 * hr; line 1.12 * hr, -0.1 * hr; close }
+                    ellipse { at: hx - 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62; color: pick(hh, #ff6eb4, #b69cff) }
+                    ellipse { at: hx + 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62; color: pick(hh, #ff6eb4, #b69cff) }
+                    path { at: hx, hy; color: pick(hh, #ff6eb4, #b69cff); move -1.1 * hr, -0.1 * hr; line 0, 1.15 * hr; line 1.1 * hr, -0.1 * hr; close }
+                    ellipse { at: hx - 0.7 * hr, hy - 0.5 * hr; radius: hr * 0.2; color: #ffffff; opacity: 80% }
+                }
+            }
+            repeat pw in 0..3 {
+                let px = wdm.r - (26 + pw * 28) * u
+                let py = wdm.b - 12 + if(mod(pw, 2) == 0, 0, -3)
+                ellipse { at: px, py + 2.4; radius: 6; color: deep }
+                ellipse { at: px - 6.4, py - 3.2; radius: 3.4; color: deep }
+                ellipse { at: px - 2.4, py - 7.6; radius: 3.4; color: deep }
+                ellipse { at: px + 2.4, py - 7.6; radius: 3.4; color: deep }
+                ellipse { at: px + 6.4, py - 3.2; radius: 3.4; color: deep }
+                ellipse { at: px, py + 2.4; radius: 4.6; color: #ff8fc8 }
+                ellipse { at: px - 6.4, py - 3.2; radius: 2.2; color: #ff8fc8 }
+                ellipse { at: px - 2.4, py - 7.6; radius: 2.2; color: #ff8fc8 }
+                ellipse { at: px + 2.4, py - 7.6; radius: 2.2; color: #ff8fc8 }
+                ellipse { at: px + 6.4, py - 3.2; radius: 2.2; color: #ff8fc8 }
+            }
+            particles { at: wdm.l + 36 * u, wdm.b - 16; area: 36 * u, 6; count: 16; life: 1.4s .. 2.6s; speed: 18 .. 42; direction: -90deg; spread: 40deg; size: 3.6, 1; colors: #ff6eb4, #b69cff; shape: spark }
+        }
+        group {
+            show: uwu_k > 0.01 and dz0 > 0.9
+            opacity: uwu_k * clamp(dz0 * 3 - 2, 0, 1)
+            let wdz.l = dz.fx - dz.fw / 2
+            let wdz.r = dz.fx + dz.fw / 2
+            let wdz.t = dz.fcy - dz.fh / 2
+            let wdz.b = min(dz.fcy + dz.fh / 2, vb - lf.t - 1)
+            let wdz.m = (dz.fx)
+            repeat side in 0..2 {
+                let ex = if(side == 0, wdz.l + 50 * u, wdz.r - 50 * u)
+                let sg = if(side == 0, -1, 1)
+                path { at: ex, wdz.t; color: obsidian; move -23 * u, 8; line sg * 13 * u, -30 * u; line 23 * u, 8; close }
+                path { at: ex, wdz.t; stroke: 3 * u; color: deep; move -23 * u, 8; line sg * 13 * u, -30 * u; line 23 * u, 8 }
+                path { at: ex, wdz.t; color: #ff8fc8; move -14 * u, 5; line sg * 9 * u, -19 * u; line 14 * u, 5; close }
+            }
+            //  Whiskers: three on each side of the drawer, fanning out of its edges at the bottom corners.
+            repeat wk in 0..6 {
+                let wks = if(wk < 3, -1, 1)
+                let wkx = if(wk < 3, wdz.l, wdz.r)
+                let wky = wdz.b - 20 * u + (mod(wk, 3) - 1) * 7 * u
+                line { from: wkx - wks * 6 * u, wky; to: wkx + wks * 26 * u, wky + (mod(wk, 3) - 1) * 6 * u; width: 4; color: deep }
+                line { from: wkx - wks * 6 * u, wky; to: wkx + wks * 26 * u, wky + (mod(wk, 3) - 1) * 6 * u; width: 1.8; color: #ffffff }
+            }
+            repeat s in 0..3 {
+                let sx = wdz.m + (s - 1) * 44 * u
+                let sr = if(s == 1, 7, 5) * u
+                group { scale: 1 + 0.22 * sin(time * 160 + s * 120); pivot: sx, wdz.t + 9
+                    path { at: sx, wdz.t + 9; stroke: 3; color: deep; move 0, -sr; line 0.3 * sr, -0.3 * sr; line sr, 0; line 0.3 * sr, 0.3 * sr; line 0, sr; line -0.3 * sr, 0.3 * sr; line -sr, 0; line -0.3 * sr, -0.3 * sr; close }
+                    path { at: sx, wdz.t + 9; color: pick(s, #ffe27a, #ffffff, #7fd3ff); move 0, -sr; line 0.3 * sr, -0.3 * sr; line sr, 0; line 0.3 * sr, 0.3 * sr; line 0, sr; line -0.3 * sr, 0.3 * sr; line -sr, 0; line -0.3 * sr, -0.3 * sr; close }
+                }
+            }
+            repeat hh in 0..2 {
+                let hx = wdz.l + (22 + hh * 22) * u
+                let hy = wdz.b - 11
+                let hr = if(hh == 0, 5.5, 4.5) * u
+                group { scale: 1 + 0.13 * sin(time * 200 + hh * 150); pivot: hx, hy
+                    ellipse { at: hx - 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62 + 1.5; color: deep }
+                    ellipse { at: hx + 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62 + 1.5; color: deep }
+                    path { at: hx, hy; stroke: 3; color: deep; move -1.12 * hr, -0.1 * hr; line 0, 1.2 * hr; line 1.12 * hr, -0.1 * hr; close }
+                    ellipse { at: hx - 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62; color: pick(hh, #ff6eb4, #b69cff) }
+                    ellipse { at: hx + 0.52 * hr, hy - 0.3 * hr; radius: hr * 0.62; color: pick(hh, #ff6eb4, #b69cff) }
+                    path { at: hx, hy; color: pick(hh, #ff6eb4, #b69cff); move -1.1 * hr, -0.1 * hr; line 0, 1.15 * hr; line 1.1 * hr, -0.1 * hr; close }
+                    ellipse { at: hx - 0.7 * hr, hy - 0.5 * hr; radius: hr * 0.2; color: #ffffff; opacity: 80% }
+                }
+            }
+            repeat pw in 0..3 {
+                let px = wdz.r - (26 + pw * 28) * u
+                let py = wdz.b - 12 + if(mod(pw, 2) == 0, 0, -3)
+                ellipse { at: px, py + 2.4; radius: 6; color: deep }
+                ellipse { at: px - 6.4, py - 3.2; radius: 3.4; color: deep }
+                ellipse { at: px - 2.4, py - 7.6; radius: 3.4; color: deep }
+                ellipse { at: px + 2.4, py - 7.6; radius: 3.4; color: deep }
+                ellipse { at: px + 6.4, py - 3.2; radius: 3.4; color: deep }
+                ellipse { at: px, py + 2.4; radius: 4.6; color: #ff8fc8 }
+                ellipse { at: px - 6.4, py - 3.2; radius: 2.2; color: #ff8fc8 }
+                ellipse { at: px - 2.4, py - 7.6; radius: 2.2; color: #ff8fc8 }
+                ellipse { at: px + 2.4, py - 7.6; radius: 2.2; color: #ff8fc8 }
+                ellipse { at: px + 6.4, py - 3.2; radius: 2.2; color: #ff8fc8 }
+            }
+            particles { at: wdz.l + 36 * u, wdz.b - 16; area: 36 * u, 6; count: 16; life: 1.4s .. 2.6s; speed: 18 .. 42; direction: -90deg; spread: 40deg; size: 3.6, 1; colors: #ff6eb4, #b69cff; shape: spark }
+        }
+        //  The UwU's star burst, in place of the ripples the liquid sends along the strip's edge (switched off while it is on): when a drawer has closed, five small stars fan
+        //  out from where it went back into the frame, shrink and fade. One clock for each drawer (`sb.*`, restarted by its closing; vitreus.plm).
+        group {
+            show: uwu_k > 0.01 and sb_dc < 0.995 and fm > 0.5
+            opacity: uwu_k * 80%
+            repeat st in 0..5 {
+                let bdca = 0 + (st - 2) * 24
+                let bdcd = (10 + 58 * (1 - (1 - sb_dc) * (1 - sb_dc))) * u
+                let bdcr = (2 + 3.5 * (1 - sb_dc) * (1 - sb_dc) + 1.2 * mod(st, 2)) * u * clamp((1 - sb_dc) * 3, 0, 1)
+                path { at: mix(lf.w + cos(bdca) * bdcd, pcx + sin(bdca) * bdcd, tm), mix(dc.ey + sin(bdca) * bdcd, lf.w + cos(bdca) * bdcd, tm); stroke: 2.4; color: deep; opacity: clamp((1 - sb_dc) * 3, 0, 1); move 0, -bdcr; line 0.3 * bdcr, -0.3 * bdcr; line bdcr, 0; line 0.3 * bdcr, 0.3 * bdcr; line 0, bdcr; line -0.3 * bdcr, 0.3 * bdcr; line -bdcr, 0; line -0.3 * bdcr, -0.3 * bdcr; close }
+                path { at: mix(lf.w + cos(bdca) * bdcd, pcx + sin(bdca) * bdcd, tm), mix(dc.ey + sin(bdca) * bdcd, lf.w + cos(bdca) * bdcd, tm); color: pick(mod(st, 5), #ffe27a, #ff6eb4, #7fd3ff, #b69cff, #ffffff); opacity: clamp((1 - sb_dc) * 3, 0, 1); move 0, -bdcr; line 0.3 * bdcr, -0.3 * bdcr; line bdcr, 0; line 0.3 * bdcr, 0.3 * bdcr; line 0, bdcr; line -0.3 * bdcr, 0.3 * bdcr; line -bdcr, 0; line -0.3 * bdcr, -0.3 * bdcr; close }
+            }
+        }
+        group {
+            show: uwu_k > 0.01 and sb_dk < 0.995 and fm > 0.5
+            opacity: uwu_k * 80%
+            repeat st in 0..5 {
+                let bdka = 0 + (st - 2) * 24
+                let bdkd = (10 + 58 * (1 - (1 - sb_dk) * (1 - sb_dk))) * u
+                let bdkr = (2 + 3.5 * (1 - sb_dk) * (1 - sb_dk) + 1.2 * mod(st, 2)) * u * clamp((1 - sb_dk) * 3, 0, 1)
+                path { at: mix(lf.w + cos(bdka) * bdkd, pcx + sin(bdka) * bdkd, tm), mix(dk.ey + sin(bdka) * bdkd, lf.w + cos(bdka) * bdkd, tm); stroke: 2.4; color: deep; opacity: clamp((1 - sb_dk) * 3, 0, 1); move 0, -bdkr; line 0.3 * bdkr, -0.3 * bdkr; line bdkr, 0; line 0.3 * bdkr, 0.3 * bdkr; line 0, bdkr; line -0.3 * bdkr, 0.3 * bdkr; line -bdkr, 0; line -0.3 * bdkr, -0.3 * bdkr; close }
+                path { at: mix(lf.w + cos(bdka) * bdkd, pcx + sin(bdka) * bdkd, tm), mix(dk.ey + sin(bdka) * bdkd, lf.w + cos(bdka) * bdkd, tm); color: pick(mod(st, 5), #ffe27a, #ff6eb4, #7fd3ff, #b69cff, #ffffff); opacity: clamp((1 - sb_dk) * 3, 0, 1); move 0, -bdkr; line 0.3 * bdkr, -0.3 * bdkr; line bdkr, 0; line 0.3 * bdkr, 0.3 * bdkr; line 0, bdkr; line -0.3 * bdkr, 0.3 * bdkr; line -bdkr, 0; line -0.3 * bdkr, -0.3 * bdkr; close }
+            }
+        }
+        group {
+            show: uwu_k > 0.01 and sb_dm < 0.995 and fm > 0.5
+            opacity: uwu_k * 80%
+            repeat st in 0..5 {
+                let bdma = 0 + (st - 2) * 24
+                let bdmd = (10 + 58 * (1 - (1 - sb_dm) * (1 - sb_dm))) * u
+                let bdmr = (2 + 3.5 * (1 - sb_dm) * (1 - sb_dm) + 1.2 * mod(st, 2)) * u * clamp((1 - sb_dm) * 3, 0, 1)
+                path { at: mix(lf.w + cos(bdma) * bdmd, pcx + sin(bdma) * bdmd, tm), mix(dm.ey + sin(bdma) * bdmd, lf.w + cos(bdma) * bdmd, tm); stroke: 2.4; color: deep; opacity: clamp((1 - sb_dm) * 3, 0, 1); move 0, -bdmr; line 0.3 * bdmr, -0.3 * bdmr; line bdmr, 0; line 0.3 * bdmr, 0.3 * bdmr; line 0, bdmr; line -0.3 * bdmr, 0.3 * bdmr; line -bdmr, 0; line -0.3 * bdmr, -0.3 * bdmr; close }
+                path { at: mix(lf.w + cos(bdma) * bdmd, pcx + sin(bdma) * bdmd, tm), mix(dm.ey + sin(bdma) * bdmd, lf.w + cos(bdma) * bdmd, tm); color: pick(mod(st, 5), #ffe27a, #ff6eb4, #7fd3ff, #b69cff, #ffffff); opacity: clamp((1 - sb_dm) * 3, 0, 1); move 0, -bdmr; line 0.3 * bdmr, -0.3 * bdmr; line bdmr, 0; line 0.3 * bdmr, 0.3 * bdmr; line 0, bdmr; line -0.3 * bdmr, 0.3 * bdmr; line -bdmr, 0; line -0.3 * bdmr, -0.3 * bdmr; close }
+            }
+        }
+        group {
+            show: uwu_k > 0.01 and sb_ds < 0.995 and lm > 0.5
+            opacity: uwu_k * 80%
+            repeat st in 0..5 {
+                let bdsa = -90 + (st - 2) * 24
+                let bdsd = (10 + 58 * (1 - (1 - sb_ds) * (1 - sb_ds))) * u
+                let bdsr = (2 + 3.5 * (1 - sb_ds) * (1 - sb_ds) + 1.2 * mod(st, 2)) * u * clamp((1 - sb_ds) * 3, 0, 1)
+                path { at: ccx + cos(bdsa) * bdsd, vb - lf.t / 2 + sin(bdsa) * bdsd; stroke: 2.4; color: deep; opacity: clamp((1 - sb_ds) * 3, 0, 1); move 0, -bdsr; line 0.3 * bdsr, -0.3 * bdsr; line bdsr, 0; line 0.3 * bdsr, 0.3 * bdsr; line 0, bdsr; line -0.3 * bdsr, 0.3 * bdsr; line -bdsr, 0; line -0.3 * bdsr, -0.3 * bdsr; close }
+                path { at: ccx + cos(bdsa) * bdsd, vb - lf.t / 2 + sin(bdsa) * bdsd; color: pick(mod(st, 5), #ffe27a, #ff6eb4, #7fd3ff, #b69cff, #ffffff); opacity: clamp((1 - sb_ds) * 3, 0, 1); move 0, -bdsr; line 0.3 * bdsr, -0.3 * bdsr; line bdsr, 0; line 0.3 * bdsr, 0.3 * bdsr; line 0, bdsr; line -0.3 * bdsr, 0.3 * bdsr; line -bdsr, 0; line -0.3 * bdsr, -0.3 * bdsr; close }
+            }
+        }
+        group {
+            show: uwu_k > 0.01 and sb_dl < 0.995 and lm > 0.5
+            opacity: uwu_k * 80%
+            repeat st in 0..5 {
+                let bdla = 90 + (st - 2) * 24
+                let bdld = (10 + 58 * (1 - (1 - sb_dl) * (1 - sb_dl))) * u
+                let bdlr = (2 + 3.5 * (1 - sb_dl) * (1 - sb_dl) + 1.2 * mod(st, 2)) * u * clamp((1 - sb_dl) * 3, 0, 1)
+                path { at: ccx + cos(bdla) * bdld, yo + lf.t / 2 + sin(bdla) * bdld; stroke: 2.4; color: deep; opacity: clamp((1 - sb_dl) * 3, 0, 1); move 0, -bdlr; line 0.3 * bdlr, -0.3 * bdlr; line bdlr, 0; line 0.3 * bdlr, 0.3 * bdlr; line 0, bdlr; line -0.3 * bdlr, 0.3 * bdlr; line -bdlr, 0; line -0.3 * bdlr, -0.3 * bdlr; close }
+                path { at: ccx + cos(bdla) * bdld, yo + lf.t / 2 + sin(bdla) * bdld; color: pick(mod(st, 5), #ffe27a, #ff6eb4, #7fd3ff, #b69cff, #ffffff); opacity: clamp((1 - sb_dl) * 3, 0, 1); move 0, -bdlr; line 0.3 * bdlr, -0.3 * bdlr; line bdlr, 0; line 0.3 * bdlr, 0.3 * bdlr; line 0, bdlr; line -0.3 * bdlr, 0.3 * bdlr; line -bdlr, 0; line -0.3 * bdlr, -0.3 * bdlr; close }
+            }
+        }
+        group {
+            show: uwu_k > 0.01 and sb_dz < 0.995 and lm > 0.5
+            opacity: uwu_k * 80%
+            repeat st in 0..5 {
+                let bdza = 180 + (st - 2) * 24
+                let bdzd = (10 + 58 * (1 - (1 - sb_dz) * (1 - sb_dz))) * u
+                let bdzr = (2 + 3.5 * (1 - sb_dz) * (1 - sb_dz) + 1.2 * mod(st, 2)) * u * clamp((1 - sb_dz) * 3, 0, 1)
+                path { at: screen.width - lf.t + cos(bdza) * bdzd, dz.fcy + sin(bdza) * bdzd; stroke: 2.4; color: deep; opacity: clamp((1 - sb_dz) * 3, 0, 1); move 0, -bdzr; line 0.3 * bdzr, -0.3 * bdzr; line bdzr, 0; line 0.3 * bdzr, 0.3 * bdzr; line 0, bdzr; line -0.3 * bdzr, 0.3 * bdzr; line -bdzr, 0; line -0.3 * bdzr, -0.3 * bdzr; close }
+                path { at: screen.width - lf.t + cos(bdza) * bdzd, dz.fcy + sin(bdza) * bdzd; color: pick(mod(st, 5), #ffe27a, #ff6eb4, #7fd3ff, #b69cff, #ffffff); opacity: clamp((1 - sb_dz) * 3, 0, 1); move 0, -bdzr; line 0.3 * bdzr, -0.3 * bdzr; line bdzr, 0; line 0.3 * bdzr, 0.3 * bdzr; line 0, bdzr; line -0.3 * bdzr, 0.3 * bdzr; line -bdzr, 0; line -0.3 * bdzr, -0.3 * bdzr; close }
+            }
+        }
+        group {
+            show: uwu_k > 0.01 and sb_do < 0.995 and lm > 0.5
+            opacity: uwu_k * 80%
+            repeat st in 0..5 {
+                let bdoa = 180 + (st - 2) * 24
+                let bdod = (10 + 58 * (1 - (1 - sb_do) * (1 - sb_do))) * u
+                let bdor = (2 + 3.5 * (1 - sb_do) * (1 - sb_do) + 1.2 * mod(st, 2)) * u * clamp((1 - sb_do) * 3, 0, 1)
+                path { at: screen.width - lf.t + cos(bdoa) * bdod, do.ey + sin(bdoa) * bdod; stroke: 2.4; color: deep; opacity: clamp((1 - sb_do) * 3, 0, 1); move 0, -bdor; line 0.3 * bdor, -0.3 * bdor; line bdor, 0; line 0.3 * bdor, 0.3 * bdor; line 0, bdor; line -0.3 * bdor, 0.3 * bdor; line -bdor, 0; line -0.3 * bdor, -0.3 * bdor; close }
+                path { at: screen.width - lf.t + cos(bdoa) * bdod, do.ey + sin(bdoa) * bdod; color: pick(mod(st, 5), #ffe27a, #ff6eb4, #7fd3ff, #b69cff, #ffffff); opacity: clamp((1 - sb_do) * 3, 0, 1); move 0, -bdor; line 0.3 * bdor, -0.3 * bdor; line bdor, 0; line 0.3 * bdor, 0.3 * bdor; line 0, bdor; line -0.3 * bdor, 0.3 * bdor; line -bdor, 0; line -0.3 * bdor, -0.3 * bdor; close }
+            }
+        }
+        //  Round the screen: confetti dots along the frame's bottom and right edges, and twinkling stars on its right corners.
+        group {
+            show: uwu_k > 0.01 and lm > 0.35
+            opacity: uwu_k * lm
+            repeat cd in 0..92 {
+                ellipse { at: 14 * u + cd * 27 * u, vb - lf.t / 2; radius: 2.3; color: pick(mod(cd, 4), #ff6eb4, #b69cff, #7fd3ff, #ffe27a) }
+            }
+            repeat cd2 in 0..40 {
+                ellipse { at: screen.width - lf.t / 2, yo + 40 * u + cd2 * 27 * u; radius: 2.3; color: pick(mod(cd2, 4), #7fd3ff, #ffe27a, #ff6eb4, #b69cff) }
+            }
+            repeat cs in 0..2 {
+                let cy2 = if(cs == 0, yo + lf.t / 2, vb - lf.t / 2)
+                let cx2 = screen.width - lf.t / 2
+                group { scale: 1 + 0.25 * sin(time * 170 + cs * 140); pivot: cx2, cy2
+                    path { at: cx2, cy2; color: #ffe27a; move 0, -6; line 1.8, -1.8; line 6, 0; line 1.8, 1.8; line 0, 6; line -1.8, 1.8; line -6, 0; line -1.8, -1.8; close }
+                }
+            }
+        }
+        //  The three dots on each tab (the volume card's hint): always there, in the frame while the tab is in it, and in the tab as it comes out;
+        //  they fade out as the panel they open comes out.
+        group {
+            show: lm > 0.35 or fm > 0.35
+            repeat i in 0..3 {
+                ellipse { at: ccx + (i - 1) * 6.5 * cu, yo + lf.t / 2 + (lf.t + nt_d) / 2 * nt_vis_t.$screen; radius: 1.6 * cu; color: ink; opacity: (35% + 55% * ntn_t.hover) * (1 - clamp(dl, 0, 1)) * if(lm > 0.35 and sb > 0.5, 1, 0) }
+                ellipse { at: ccx + (i - 1) * 6.5 * cu, vb - lf.t / 2 - (lf.t + nt_d) / 2 * nt_vis_b.$screen; radius: 1.6 * cu; color: ink; opacity: (35% + 55% * ntn_b.hover) * (1 - clamp(ds, 0, 1)) * if(fm > 0.35 and sb > 0.5, 1, 0) }
+            }
+        }
+        //  The charging glint: a soft band of the accent that crosses the bar from left to right, inside its shape. Built
+        //  of thin slices whose strength follows a bell, so it has no hard edge; it is strongest in the middle of the
+        //  crossing and gone (opacity 0) whenever `charge_sweep` rests at 1.
+        group {
+            let cg.l = mix(cx - (bar.w + pv * 10 * bu) / 2, sg.q0, sg)             // the pill's edges: the bar's, or the middle notch's in the Notches layout
+            let cg.r = mix(cx + (bar.w + pv * 10 * bu) / 2, sg.q1, sg)
+            let cg.y = mix(bar.y - bar.h / 2 + (bar.h + pop) / 2, yo + sg.hc / 2, sg)
+            let cg.h = mix(bar.h + pop, sg.hc, sg)
+            clip inset 0 box { at: (cg.l + cg.r) / 2, cg.y; size: cg.r - cg.l, cg.h; corner: bar.rad }
+            let cg.w = 130 * bu                                                   // the band's width
+            let cg.x = mix(cg.l - cg.w / 2, cg.r + cg.w / 2, clamp(charge_sweep, 0, 1))
+            let cg.a = sin(clamp(charge_sweep, 0, 1) * 180) * batt_on * (1 - lm)           // fades in and out over the crossing
+            repeat k in 0..14 {
+                box { at: cg.x + (k - 6.5) * cg.w / 14, cg.y; size: cg.w / 14 + 1, cg.h; color: mint; opacity: 15% * cg.a * sin((k + 0.5) / 14 * 180) }
+            }
+        }
+
+        //  The strip's zones: none on a monitor that has only the frame (`sb`, vitreus.plm).
+        group {
+            show: sb > 0.5
+        // ── the bar ──────────────────────────────────────────────────
+        //  Under everything else on the bar (declared first, so the pieces win their presses): it only says that the
+        //  pointer is over the bar, in the gaps between them.
+        //  The bar's bulge (`bar_bulge`): slivers along the bar, under everything else here, that say where along it the pointer is (the bulge goes there): across the Island's pill or
+        //  a top or bottom strip, down a side one. Every one's leaving is before any one's entering: going from one to the next is both in the same frame, and the rule declared
+        //  last is the one that counts.
+        repeat i in 0..48 {
+            zone box bg_z.$i { at: mix(cx - bar.w / 2 + (i + 0.5) * bar.w / 48, lf.x, lm), mix(bar.y, vc - vh / 2 + (i + 0.5) * vh / 48, lm); size: mix(bar.w / 48, lf.w, lm), mix(bar.h + 8 * bu * (1 - fm), vh / 48, lm); active: bar_bulge }
+            on leave bg_z.$i { bg_hot.$screen: 0 }
+        }
+        repeat i in 0..48 {
+            on enter bg_z.$i { bg_hot.$screen: 1; bg_hx.$screen: mix(cx - bar.w / 2 + (i + 0.5) * bar.w / 48, vc - vh / 2 + (i + 0.5) * vh / 48, lm) }
+            on enter bg_z.$i while bg_hot.$screen < 0.04 { bg_hx.$screen: mix(cx - bar.w / 2 + (i + 0.5) * bar.w / 48, vc - vh / 2 + (i + 0.5) * vh / 48, lm) ~16ms }
+        }
+        zone box bar_hover { at: cx, bar.y; size: bar.w, bar.h; active: lm < 0.5 }
+        zone box lf_hover { at: lf.x, vc; size: lf.w, vh; active: lm > 0.5 }
+        repeat i in 1..11 {
+            //  A zone as long as the slot and its share of the gap, so the zones touch.
+            let wa = ws.a.$i
+            let wsz = (ws.s.$i + ws.g) * ws.vis.$i
+            zone box ws.hit.$i { label: pick(i - 1, "Workspace 1", "Workspace 2", "Workspace 3", "Workspace 4", "Workspace 5", "Workspace 6", "Workspace 7", "Workspace 8", "Workspace 9", "Workspace 10"); at: mix(wa, lf.x, lm), mix(bar.y, wa, lm); size: mix(wsz, 40 * bu, lm), mix(bar.h, wsz, lm); cursor: pointer; active: bs.ws > 0.5 and ws.vis.$i > 0.5 }
+            on press ws.hit.$i { emit go(i) }
+            follow wsh.$i.$screen = ws.hit.$i.hover
+            follow wsp.$i.$screen = ws.hit.$i.hover
+        }
+        zone box ws_plus { label: "New workspace"; at: mix(ws.pa, lf.x, lm), mix(bar.y, ws.pa, lm); size: mix(ws.psv + ws.g, 40 * bu, lm), mix(bar.h, ws.psv + ws.g, lm); cursor: pointer; active: bs.ws > 0.5 and ws.pv > 0.5 }
+        on press ws_plus { emit go(ws.new) }
+        follow wspl.$screen = ws_plus.hover
+        zone box ov_btn { label: "Workspace overview"; at: ob.x, ob.y; size: ob.s + 8 * bu, ob.s + 8 * bu; cursor: pointer; active: bs.ws > 0.5 }
+        on press ov_btn { emit ov_toggle }
+        follow ovp.$screen = ov_btn.hover
+        follow ws_lv = if(abs(pl.T - ws.active) > 0.02 or abs(pl.H - ws.active) > 0.02, 1, 0)
+        follow bar_lv = if(bar_hover.hover > 0.01 or lf_hover.hover > 0.01 or abs(trn - bartrays.count) > 0.02 or abs(pvn - (if(priv_mic, 1, 0) + if(priv_cam, 1, 0) + if(priv_scr and not rec_on, 1, 0) + if(kb_multi, 1, 0))) > 0.02 or abs(media_open - if(media_on, 1, 0)) > 0.02 or charge_sweep < 0.98, 1, 0)
+
+        //  What is in front: the app in small type above, the title under it, cut
+        //  with an ellipsis where the clock starts.
+        //  The title gives up room to the controls while something plays.
+
+        //  The whole title area is a button: it opens the controls panel. Declared before
+        //  the little player controls below, which sit over it and win where they overlap.
+        //  It is only as wide as the text it holds (never past `win.w`, never thinner than a
+        //  fingertip), not the whole gap up to the clock. Unseen copies, with no width limit,
+        //  only to know how wide the app name and the title really are.
+        text win.class { at: 0, 0; anchor: left center; size: 15 * bz; weight: 600; lines: 1; measure: vclw; opacity: 0; family: "Space Grotesk" }
+    text win.title { at: 0, 0; anchor: left center; size: 14 * bz; weight: 500; lines: 1; measure: vtiw; opacity: 0; family: "Space Grotesk" }
+    text win.class { at: floor(win.x + 0.5), floor(bar.y - 6.5 * bu + 0.5); anchor: left center; size: 17 * bz; weight: 600; lines: 1; measure: clsw; opacity: 0; family: "Space Grotesk" }
+        text win.title { at: floor(win.x + 0.5), floor(bar.y + 8.75 * bu + 0.5); anchor: left center; size: 13.5 * bz; weight: 500; lines: 1; measure: titw; opacity: 0; family: "Space Grotesk" }
+        //  While a player exists its buttons (previous, play, next: 48 wide) sit in this button's top right, beside the app name.
+        //  With a name in front (`win.have` 1) the button is as wide as the name, with the player's buttons in its top right. With no window
+        //  the texts are empty, and the button would be a narrow strip at the left: it then takes most of the gap and is centred in it, with the
+        //  player's buttons in the middle.
+        let win.have = clamp(max(clsw.width, titw.width) / (6 * bu), 0, 1)
+        let win.zc = mix(win.cm, win.xs - 6 * bu + win.hw / 2, win.have)
+        let win.zw = mix(max(48 * bu, win.w - 12 * bu), win.hw, win.have)
+        let mcx = mix(win.cm, win.xs - 6 * bu + win.hw - 27.5 * bu, win.have)
+        let mcy = mix(bar.y, bar.y - 6.5 * bu, win.have)
+        //  The title and the clock are one button along the top and the bottom: it runs from the clock's left edge to the title's right one, with no gap between them (the media
+        //  buttons, declared after it, are still their own). Down the left they stay what they were.
+        let win.hl = min(win.zc - win.zw / 2, if(bs.clock > 0.5, at.clock - fw.clock / 2 - 4 * bu, 99999))
+        let win.hr = max(win.zc + win.zw / 2, if(bs.clock > 0.5, at.clock + fw.clock / 2 + 4 * bu, -99999))
+        zone box win_hit { label: "Dashboard: calendar, media and windows"; at: mix((win.hl + win.hr) / 2, win.zc, lm), bar.y; size: mix(win.hr - win.hl, win.zw, lm), bar.h; cursor: pointer; active: bs.title > 0.5 }
+        on press right win_hit { panel = none }
+        on press win_hit { pending = none; panel_scr = screen.index; panel = if(panel == calendar, none, calendar) }
+        follow ptab_hold.$screen = 0       // the title's small tab that came out on hover is gone: it never comes out (its glass in bar_shapes.plm stays off the screen)
+
+        // ── the player, small, in the bar ────────────────────────────
+        //  While there is a player, playing or paused; they fade in as the title gives them room.
+        group {
+            opacity: mshow * bs.media
+            //  In the title button's top right (`mcx`, `mcy`), and small: 17 between centres.
+            zone box bp.prev { label: "Previous track"; at: mcx - 17 * bu, mcy; size: 17 * bu, 18 * bu; cursor: pointer }
+            zone box bp.play { label: "Play or pause"; at: mcx, mcy; size: 17 * bu, 18 * bu; cursor: pointer }
+            zone box bp.next { label: "Next track"; at: mcx + 17 * bu, mcy; size: 17 * bu, 18 * bu; cursor: pointer }
+            on press bp.prev { emit mcmd(0) }
+            on press bp.play { emit mcmd(1) }
+            on press bp.next { emit mcmd(2) }
+        }
+
+        zone box vt_hit { at: lf.x, lv.tm; size: lf.w - 6 * bu, max(1, lv.span); cursor: pointer; active: lm > 0.5 and bv.title and lv.span > 20 * bu }
+        on press vt_hit { pending = none; panel_scr = screen.index; panel = if(panel == calendar, none, calendar) }
+        zone box vm_prev { label: "Previous track"; at: lf.x, lv.mid + 17 * bcu; size: 30 * bcu, 17 * bcu; cursor: pointer; active: lm > 0.5 and bv.media and mshow > 0.5 }
+        zone box vm_play { label: "Play or pause"; at: lf.x, lv.mid; size: 30 * bcu, 17 * bcu; cursor: pointer; active: lm > 0.5 and bv.media and mshow > 0.5 }
+        zone box vm_next { label: "Next track"; at: lf.x, lv.mid - 17 * bcu; size: 30 * bcu, 17 * bcu; cursor: pointer; active: lm > 0.5 and bv.media and mshow > 0.5 }
+        on press vm_prev { emit mcmd(0) }
+        on press vm_play { emit mcmd(1) }
+        on press vm_next { emit mcmd(2) }
+        zone box set_hit { label: "Settings"; at: mix(set.x, lf.x, lm), mix(bar.y, lv.set, lm); size: mix(24 * bu, 36 * bu, lm), mix(bar.h, 30 * bu, lm); cursor: pointer; active: bs.set > 0.5 }
+        on press set_hit { panel_scr = screen.index; panel = if(panel == settings, none, settings) }
+
+        zone box sr_hit { label: "Launcher"; at: mix(sr.x, lf.x, lm), mix(bar.y, lv.sr, lm); size: mix(24 * bu, 36 * bu, lm), mix(bar.h, 30 * bu, lm); cursor: pointer; active: bs.sr > 0.5 }
+        on press sr_hit { panel_scr = screen.index; panel = if(panel == launch, none, launch) }
+        zone box ctl_hit { label: "Control Center"; at: mix(ctl.x, lf.x, lm), mix(bar.y, lv.ctl, lm); size: mix(26 * bu, 36 * bu, lm), mix(bar.h, 30 * bu, lm); cursor: pointer; active: bs.ctl > 0.5 }
+        on press ctl_hit { pending = none; panel_scr = screen.index; panel = if(panel == controls, none, controls) }
+
+        //  The calendar's button is the clock and a little around it: 4 more at each side.
+        zone box bar_hit { at: mix(at.clock, lf.x, lm), mix(bar.y, lv.clk + 30 * bu, lm); size: mix(fw.clock + 8 * bu, lf.w - 4 * bu, lm), mix(bar.h, 100 * bu, lm); cursor: pointer; active: bs.clock > 0.5 }
+        on press bar_hit { pending = none; panel_scr = screen.index; panel = if(panel == calendar, none, calendar) }
+        //  Right-click closes whatever is open. It also matters for a reason that
+        //  has nothing to do with the calendar: pleamar treats an unclaimed right
+        //  click, anywhere in a scene that never uses the right button at all, as
+        //  an emergency exit and quits outright - which is exactly what looked
+        //  like "everything crashes." Claiming it here, once, disarms that for
+        //  the whole scene.
+        on press right bar_hit { panel = none }
+        }
+    }
+}

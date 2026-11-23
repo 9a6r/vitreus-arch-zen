@@ -1,0 +1,61 @@
+# ── A Vitreus add-on with a drawer ─────────────────────────────────────────────────────────────────────
+# Copy this whole folder to  ~/.config/pleamar/vitreus-addons/<id>/  (the id is the folder's
+# name: lowercase letters, digits and dashes) and change it. It appears under
+# Settings > Add-ons as a card of its own, with a switch; updating Vitreus never touches that folder.
+# A folder there that starts with "_" is ignored, and so is this one where it stands.
+#
+# An add-on is a pleamar scene of its own, started and kept running by Vitreus while its
+# switch is on. It draws its own surface and declares its own `permissions` (every program
+# it runs, every service it reads): read them before turning someone else's add-on on, it
+# is not sandboxed. A mistake in this file is shown under the list and the add-on is left out.
+
+name        = "My drawer"                    # the title of the card (up to ~28 characters)
+description = "What it does, in one line"      # the line under the title (up to ~80 characters; one line is shown)
+author      = "Your Name <you@example.com>"      # shown small, with the version, under the description
+version     = "0.1"
+
+# The scene to run, in this folder (leave it out and it is <id>.plm). Rename addon.plm to something of your own (your id is a good name) and
+# put it here: two add-ons whose scene files have the same name cannot both run.
+scene = "addon.plm"
+
+# Style: read STYLE.md in this folder (and use addon-pencil.plm, which draws it). An add-on included in Vitreus itself has to follow it; one you write and share on your own is free to look as you like. Vitreus prefers the boiled pencil for an add-on's icon and graphics: hand-drawn, slightly crooked lines, each drawn twice (the second pass fainter and a hair off) with a wash
+# of the accent colour inside, and, in the scene, strokes redrawn about eight times a second (`floor(ax_clk * 8)` on a clock of the scene's own, never `time`: STYLE.md; see PCup, PBell and PEnvelope in vitreus.plm, and the pencil
+# components of the Home Assistant add-on). The shell wobbles the pill icon itself under the pointer. An add-on may instead use its own SVG or PNG icons and artwork: that is allowed.
+#
+# The icon on the add-on pill, the pill of icons in the corner the app dock is not in (an .svg or .png in this folder, about 24 px: a single colour that suits dark and light
+# themes, like #f5f7f5 on white, is the safest, since the shell does not recolour it). A click on it opens the panel below. A panel needs it: without one the add-on is left out.
+icon = "icon.svg"
+
+# A panel out of that pill (see the scene for what the shell gives it and what it cannot do yet: the title bar with its X, the glass that stands against the frame, the
+# corner handles that resize it, one monitor). The size is the first one, in pixels: width 240 to 1600, height 160 to 1600, or 0 to leave it to the shell (about the size of the
+# control centre); the user can resize the panel and the new size is kept. Take this section out for an add-on that is only a window: its icon then switches the window on and off (`slot_open`).
+[drawer]
+width  = 0
+height = 420
+
+# An add-on that frames wallpapers (a matte frame, blur, any effect): whenever Vitreus sets a wallpaper it first asks this add-on for the picture awww should show, and waits
+# (the old wallpaper stays, for up to 30 s, longer while the add-on says it is busy). One add-on frames at a time: the first that is on. logic/wallpaper_hook.luau has the
+# messages (`wph_cur` is sent again every 10 s with the same path: act only when it differs from the last one you saw); the scene needs `"pleamar"` in its `run:` permissions. Take it out for an add-on that does not touch wallpapers.
+# [wallpaper]
+# frames = true
+
+# A desktop widget: a card on the desktop that behaves like the shell's own (the clock, the system monitor). The desktop editor (a right press on the bare wallpaper) gets a
+# tile for it, after its own, with this name and picture (the add-on's icon if left out); a click on the tile shows or hides the widget. Settings > Theme > Pin widgets keeps it
+# with the theme, like the others. Take the # off to use it, and give the scene a surface of its own for it (see the scene). What the scene is told and answers:
+#   fact widget_shown   whether it is on the desktop: the tile sets it (`fact widget_shown true`) and reads it back (`get widget_shown`). Keep it (in your data folder) and say
+#                       it at start: the add-on decides, Vitreus only asks.
+#   fact widget_edit    the desktop editor is open: show the cells it takes, and let it be dragged (and resized, and set up) on the desktop itself, as the clock is.
+#   text widget_place   where it is, in your own words (cells, size, monitor...): Pin widgets reads it (`get widget_place`) and gives it back (`text widget_place ...`). Keep it
+#                       up to date whenever the widget moves, and take a value you gave as an order to go there; one you cannot use (a monitor that is not plugged in) is ignored.
+#   fact glide          (optional) a theme is putting the widgets back: move to the new place on a slower spring while it holds, instead of jumping.
+# With `menu = true` the tile does not show or hide it: it asks the add-on to open a menu of its own over the shelf (to add several widgets, one of each thing, say),
+#   text widget_mon_name, fact widget_mx, fact widget_my   the editor's monitor, and the middle of the tile and the top of the shelf on it, in pixels
+#   emit widget_menu                                      open it there (the add-on's surface is over the windows while `widget_edit` holds)
+# and the tile is ticked while `widget_shown` is true (any of them is on the desktop). The editor does not keep asking: when your widgets come and go from the menu,
+# tell it (the scene needs "pleamar" in its `run:` permissions; while the editor is not running this just fails, and it asks when it opens):
+#   pleamar --say desktopedit "text aw_said <your scene's file name, without .plm>" "fact aw_said_on true|false" "emit aw_say"
+# The grid the shell's widgets snap to: 28 columns and 16 rows, from 16 px inside the room the bar takes (`room_t/r/b/l`, which every add-on is told). The editor shows its dots.
+# [widget]
+# name = "My widget"     # up to 16 characters (the add-on's name if left out)
+# icon = "icon.svg"      # its picture on the tile: an .svg or .png in this folder, one colour (the shell tints it)
+# menu = false           # true: the tile opens the add-on's own menu instead of showing or hiding the widget (see above)
