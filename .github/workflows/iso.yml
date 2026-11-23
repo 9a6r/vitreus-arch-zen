@@ -51,7 +51,9 @@ jobs:
             bash -euo pipefail -c '
               read -r snapshot < packages/arch-snapshot
               [[ "$snapshot" =~ ^[0-9]{4}/[0-9]{2}/[0-9]{2}$ ]]
-              printf "Server = https://archive.archlinux.org/repos/%s/\$repo/os/\$arch\n" "$snapshot" > /etc/pacman.d/mirrorlist
+              for host in archive.archlinux.org umea.archive.pkgbuild.com; do
+                printf "Server = https://%s/repos/%s/\$repo/os/\$arch\n" "$host" "$snapshot"
+              done > /etc/pacman.d/mirrorlist
               pacman-key --init
               pacman-key --populate archlinux
               pacman -Syy --noconfirm --needed archlinux-keyring
@@ -131,3 +133,15 @@ jobs:
           compression-level: 0
           retention-days: 2
           if-no-files-found: error
+
+      - name: Keep the generated ISO for diagnosing a failed check
+        if: failure() && steps.pack.outcome != 'success'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: unverified-iso-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/vitreus/out/*.iso
+            ${{ runner.temp }}/vitreus/build/output/*.iso
+          compression-level: 0
+          retention-days: 2
+          if-no-files-found: ignore
