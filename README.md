@@ -4,23 +4,22 @@
 
 ## تنزيل الصورة أو تحديث نسخة قديمة
 
-نزّل أداة التحديث مرة واحدة. التنزيل من الريبو العام متاح من غير حساب GitHub.
+نزّل أداة التحديث مرة واحدة من آخر إصدار منشور. تحتاج Python 3.8 أو أحدث. التحميل من الريبو العام متاح من غير حساب GitHub.
 
 ```bash
-git clone https://github.com/9a6r/vitreus-arch-zen.git
-cd vitreus-arch-zen
+curl -fL -o iso_delta.py https://github.com/9a6r/vitreus-arch-zen/releases/latest/download/iso_delta.py
 ```
 
 أول تنزيل يحتاج الصورة كاملة.
 
 ```bash
-python3 scripts/iso_delta.py fetch --repo 9a6r/vitreus-arch-zen --output vitreus.iso
+python3 iso_delta.py fetch --repo 9a6r/vitreus-arch-zen --output vitreus.iso
 ```
 
 بعد صدور نسخة أحدث، استخدم ملف الـ ISO القديم كمصدر للأجزاء الموجودة عندك. اترك مساحة كافية لحفظ الصورة الجديدة.
 
 ```bash
-python3 scripts/iso_delta.py fetch --repo 9a6r/vitreus-arch-zen --seed vitreus.iso --output vitreus-new.iso
+python3 iso_delta.py fetch --repo 9a6r/vitreus-arch-zen --seed vitreus.iso --output vitreus-new.iso
 ```
 
 الأداة تقارن محتوى الإصدارين، وتنزّل الأجزاء الناقصة، وتتحقق من بصمة SHA-256 للصورة النهائية. حجم التنزيل يعتمد على التغييرات الفعلية. تحديث النواة أو عدد كبير من حزم Arch قد يغيّر أجزاء كبيرة من الصورة. لتحديث فلاشة الإقلاع، اكتب عليها ملف الـ ISO الجديد بعد اكتمال التحقق.
@@ -41,6 +40,13 @@ python3 scripts/iso_delta.py fetch --repo 9a6r/vitreus-arch-zen --seed vitreus.i
 الصور وعروض الحركة الأصلية متاحة في [README الخاص بـ Vitreus](https://github.com/natepayn3/Vitreus/blob/12bf45c64534d262f89c785c77b25349df45bd9c/README.md).
 
 ## تعديل المشروع وإصدار ISO جديد
+
+نزّل ملفات المشروع للتعديل.
+
+```bash
+git clone https://github.com/9a6r/vitreus-arch-zen.git
+cd vitreus-arch-zen
+```
 
 ملفات Vitreus موجودة في `desktop/vitreus/`. ملفات جلسة الـ Live موجودة في `desktop/session/`، وحزم سطح المكتب في `packages/desktop.list`. لقطة حزم Arch مثبّتة في `packages/arch-snapshot` حتى تقدر تعيد البناء بنفس إصدارات الحزم بعد تعديل الخلفية أو ملفات الجلسة. الخلفية الابتدائية هي صورة `assets/greeter.jpeg` اللي وزّعها Vitreus. بعض الخلفيات المفتوحة في عروض الريدمي كانت على جهاز المصمّم.
 
