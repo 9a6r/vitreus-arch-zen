@@ -72,7 +72,8 @@ jobs:
         run: |
           sudo apt-get -o Acquire::Retries=3 update
           sudo apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
-            acl libegl1 libegl-mesa0 libgl1-mesa-dri ovmf qemu-system-gui qemu-system-x86 xauth xvfb
+            acl libegl1 libegl-mesa0 libgl1-mesa-dri ovmf python3-pil \
+            qemu-system-gui qemu-system-x86 xauth xvfb
           if [[ -c /dev/kvm ]]; then
             sudo setfacl -m "u:$(id -un):rw" /dev/kvm
           fi

@@ -38,6 +38,7 @@ sed -i '/^linux$/c\linux-zen' "$profile/packages.x86_64"
 cat "$project/packages/desktop.list" >>"$profile/packages.x86_64"
 LC_ALL=C sort -u -o "$profile/packages.x86_64" "$profile/packages.x86_64"
 grep -qx linux-zen "$profile/packages.x86_64"
+"$project/scripts/cache-image-packages.sh" "$profile" "$work"
 
 # Keep the releng loader identifiers that its menus include, changing only the
 # kernel/initrd paths in the BIOS, UEFI, PXE and GRUB loopback entries.

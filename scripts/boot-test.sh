@@ -51,7 +51,7 @@ fi
 echo "Booting $iso with $accel and software virgl graphics."
 qemu-system-x86_64 -machine "q35,accel=$accel" -cpu "$cpu" -smp 4 -m 4096 \
     -boot order=d -cdrom "$iso" -nic none -no-reboot \
-    -vga none -device virtio-vga-gl -display gtk,gl=on -serial "file:$results/serial.log" \
+    -vga none -device virtio-vga-gl -display gtk,gl=on,show-menubar=off -full-screen -serial "file:$results/serial.log" \
     -monitor stdio -smbios "$(credential systemd.extra-unit.vitreus-probe.service unit)" \
     -smbios "$(credential systemd.unit-dropin.multi-user.target dropin)" \
     -smbios "$(credential vitreus.probe "$script_dir/test/guest-session.sh")" \
@@ -73,17 +73,14 @@ wait_marker() {
 }
 capture() {
     local name=$1
-    printf 'screendump %s.png -f png\n' "$name" >&3
-    for ((n=0; n<40; n++)); do
-        # IEND marks a complete PNG before moving it out of the monitor's working directory.
-        if [[ -f $name.png ]] && tail -c 12 "$name.png" | LC_ALL=C grep -aq IEND; then
-            mv -- "$name.png" "$results/"
-            return
-        fi
-        sleep 0.25
-    done
-    echo "QEMU could not capture $name.png" >&2
-    return 1
+    # Read the displayed virgl scanout. QEMU's monitor can only dump CPU-backed surfaces.
+    /usr/bin/python3 - "$results/$name.png" <<'PYTHON'
+import os
+import sys
+from PIL import ImageGrab
+
+ImageGrab.grab(xdisplay=os.environ["DISPLAY"]).save(sys.argv[1])
+PYTHON
 }
 if ! wait_marker VITREUS_SMOKE_DESKTOP 720; then
     if kill -0 "$vm" 2>/dev/null; then capture failed || true; fi
